@@ -16,7 +16,7 @@ pub fn init_default_db() -> Result<Connection> {
 ///
 /// The schema creation is idempotent, so repeated calls on the same file are safe.
 pub fn init_db<P: AsRef<Path>>(path: P) -> Result<Connection> {
-    let conn = Connection::open(path)?;
+    let mut conn = Connection::open(path)?;
     conn.pragma_update(None, "journal_mode", &"WAL")?;
     conn.pragma_update(None, "foreign_keys", &1)?;
 
