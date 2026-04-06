@@ -1,6 +1,8 @@
-<img src="../imgs/logo_no_text.png" width="250">
+<div style="text-align: center;">
+    <img src="../imgs/logo.png" width="400">
+</div>
 
-# Feather Mesh
+<!-- # Feather Mesh -->
 
 Feather Mesh (feam) is an HPC-native middleware layer that standardizes how teams publish, discover, and consume reusable data products without forcing teams to give up ownership of their data. It is intended to reduce duplicated work, improve cross-team interoperability, and make pipelines more reliable by replacing ad hoc path conventions with a governed product catalog and deterministic retrieval workflows.
 
