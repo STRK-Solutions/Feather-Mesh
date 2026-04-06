@@ -1,6 +1,6 @@
-<div style="text-align: center;">
+<p style="text-align: center;">
     <img src="../imgs/logo.png" width="400">
-</div>
+</p>
 
 <!-- # Feather Mesh -->
 
