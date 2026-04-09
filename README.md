@@ -20,7 +20,7 @@ Start here if you want to:
 - inspect the mock registry data and Python packaging setup
 - understand the early prototype workflow
 
-See [`python_mvp/README.md`](/Users/tazimkhan/git/capstone/dcat_4_hpc/python_mvp/README.md) for installation, commands, and usage examples.
+See [`python_mvp/README.md`](/python_mvp/README.md) for installation, commands, and usage examples.
 
 ### `feather-mesh/`
 
@@ -31,7 +31,7 @@ Key parts of this directory include:
 - `mesh_core/` for the shared Rust library and core domain logic
 - `mesh_cli/` for the command-line interface built on top of the core library
 
-See [`feather-mesh/README.md`](/Users/tazimkhan/git/capstone/dcat_4_hpc/feather-mesh/README.md) for build, run, and test instructions.
+See [`feather-mesh/README.md`](/feather-mesh/README.md) for build, run, and test instructions.
 
 ### `diagrams/`
 
@@ -55,6 +55,6 @@ Contains the product definition document, outlining an in-depth overview of the 
 
 ## Where To Go Next
 
-- If you want the Python prototype, start in [`python_mvp/README.md`](/Users/tazimkhan/git/capstone/dcat_4_hpc/python_mvp/README.md).
-- If you want the Rust implementation, start in [`feather-mesh/README.md`](/Users/tazimkhan/git/capstone/dcat_4_hpc/feather-mesh/README.md).
+- If you want the Python prototype, start in [`python_mvp/README.md`](/python_mvp/README.md).
+- If you want the Rust implementation, start in [`feather-mesh/README.md`](/feather-mesh/README.md).
 - If you want architecture context first, browse `diagrams/`, `proposal.md`, and `Feather_Mesh_PDD_Revised.pdf`.
