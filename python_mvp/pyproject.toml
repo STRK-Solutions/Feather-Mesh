@@ -1,7 +1,7 @@
 [project]
 name = "data-registry-cli"
 version = "0.1.0"
-description = "MVP data registry CLI for datamesh capstone"
+description = "MVP data registry CLI for feather mesh capstone"
 authors = [
   { name = "Capstone Team" },
 ]
@@ -13,6 +13,6 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-# This will create a `mesh` command that runs the CLI
-# Usage after install: `mesh teams`, `mesh products`, etc.
-mesh = "registry.cli:main"
+# This will create a `feam` command that runs the CLI
+# Usage after install: `feam teams`, `feam products`, etc.
+feam = "registry.cli:main"

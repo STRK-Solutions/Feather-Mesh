@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+*.pyc
+data_registry_cli.egg-info/
+dist/

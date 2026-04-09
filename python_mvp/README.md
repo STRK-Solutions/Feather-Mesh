@@ -1,9 +1,9 @@
 # Data Registry CLI (MVP)
 
-Simple in-memory data registry CLI for a data mesh capstone project.
+Simple in-memory data registry CLI for a data feam capstone project.
 
-The CLI is exposed as a `mesh` command with a few subcommands for listing and
-inspecting mock data products.
+The CLI is exposed as a `feam` command with a few MVP subcommands for creating,
+searching, and inspecting mock data products.
 
 ## Installation (Windows / PowerShell)
 
@@ -27,13 +27,13 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-4. Install the package in editable mode so the `mesh` command is created:
+4. Install the package in editable mode so the `feam` command is created:
 
 ```powershell
 pip install -e .
 ```
 
-After this, `mesh` should be available in the activated PowerShell session.
+After this, `feam` should be available in the activated PowerShell session.
 
 > If PowerShell blocks running the activation script, you can temporarily
 > relax the execution policy for the current session:
@@ -43,38 +43,46 @@ After this, `mesh` should be available in the activated PowerShell session.
 > .venv\Scripts\Activate.ps1
 > ```
 
+If you make changes and need the `feam` commands to reflect these changes, first uninstall:
+
+```powershell
+pip uninstall data-registry-cli
+```
+
+Then run:
+
+```powershell
+pip install -e .
+```
+
 ## CLI commands
 
 Once installed, the main entry point is:
 
 ```powershell
-mesh <command> [options]
+feam <command> [options]
 ```
 
 Available commands:
 
-- `mesh teams` – list all teams in the mock registry.
-- `mesh products` – list all data products.
-- `mesh product <id>` – show full details for a single data product by ID.
-- `mesh search <term>` – search data products by name containing `<term>`.
-- `mesh add-product` – interactively add a new data product via prompts.
+- `feam serve <path> --name <name> --asset-type <type>` – current MVP command name for creating a product entry.
+- `feam search <query> [--filter key=value]` – search data products by name containing `<query>`.
+- `feam show <product_id> [--version <v>]` – show full details for a single data product by ID.
+
+Current MVP helpers that still exist:
+
+- `feam teams` – list all teams in the mock registry.
+- `feam products` – list all data products.
 
 ## Example usage (PowerShell)
 
 ```powershell
-# List teams
-mesh teams
-
-# List products
-mesh products
-
-# Show details for product with ID 1
-mesh product 1
+# Create a product entry
+feam serve ./path/to/asset --name climate_daily --asset-type dataset
 
 # Search for products whose name contains "climate"
-mesh search climate
+feam search climate --filter status=active
 
-# Interactively add a new data product
-mesh add-product
+# Show details for product with ID 1
+feam show 1 --version 1.0.0
 ```
-

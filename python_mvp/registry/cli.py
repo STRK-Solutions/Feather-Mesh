@@ -9,7 +9,97 @@ from registry.seed import seed_mock_data
 import json
 from pathlib import Path
 
-DATA_FILE = Path("mesh_registry.json")
+DATA_FILE = Path("feam_registry.json")
+
+
+def load_registry(registry: Registry) -> None:
+	"""Load registry state from disk, with a fallback migration for old files."""
+	if not DATA_FILE.exists():
+		seed_mock_data(registry)
+		return
+
+	with DATA_FILE.open("r", encoding="utf-8") as f:
+		data = json.load(f)
+
+	for team in data.get("teams", []):
+		registry.create_team(team["name"])
+
+	for product in data.get("products", []):
+		registry.create_data_product(
+			name=product["name"],
+			description=product["description"],
+			owner_team_id=product["owner_team_id"],
+			data_format=product["data_format"],
+			access_uri=product["access_uri"],
+			status=product["status"],
+			classification=product["classification"],
+		)
+
+	metadata_entries = data.get("metadata")
+	if metadata_entries is None:
+		restore_seed_metadata(registry)
+		return
+
+	for entry in metadata_entries:
+		registry.add_metadata(
+			data_product_id=entry["data_product_id"],
+			namespace=entry["namespace"],
+			meta_key=entry["meta_key"],
+			meta_value=entry["meta_value"],
+			value_type=entry["value_type"],
+		)
+
+
+def restore_seed_metadata(registry: Registry) -> None:
+	"""Backfill metadata for old JSON files that predate metadata persistence."""
+	seeded_registry = Registry()
+	seed_mock_data(seeded_registry)
+
+	seeded_products = {product.name: product for product in seeded_registry.list_products()}
+	for product in registry.list_products():
+		seeded_product = seeded_products.get(product.name)
+		if seeded_product is None or product.metadata:
+			continue
+		for entry in seeded_product.metadata:
+			registry.add_metadata(
+				data_product_id=product.product_id,
+				namespace=entry.namespace,
+				meta_key=entry.meta_key,
+				meta_value=entry.meta_value,
+				value_type=entry.value_type,
+			)
+
+
+def save_registry(registry: Registry) -> None:
+	data = {
+		"teams": [{"name": t.name} for t in registry.list_teams()],
+		"products": [
+			{
+				"name": p.name,
+				"description": p.description,
+				"owner_team_id": p.owner_team_id,
+				"data_format": p.data_format,
+				"access_uri": p.access_uri,
+				"status": p.status,
+				"classification": p.classification,
+			}
+			for p in registry.list_products()
+		],
+		"metadata": [
+			{
+				"data_product_id": p.product_id,
+				"namespace": m.namespace,
+				"meta_key": m.meta_key,
+				"meta_value": m.meta_value,
+				"value_type": m.value_type,
+			}
+			for p in registry.list_products()
+			for m in p.metadata
+		],
+	}
+
+	with DATA_FILE.open("w", encoding="utf-8") as f:
+		json.dump(data, f, indent=2)
 
 
 def print_header(title: str) -> None:
@@ -124,39 +214,51 @@ def search_products(registry: Registry) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-	"""Create the top-level argument parser for the `dcat` executable."""
+	"""Create the top-level argument parser for the `feam` executable."""
 
 	parser = argparse.ArgumentParser(
-		prog="mesh",
+		prog="feam",
 		description="Data registry CLI (mock MVP)",
 	)
 	subparsers = parser.add_subparsers(dest="command", required=True)
 
-	# dcat teams
+	# Legacy MVP helper commands
 	subparsers.add_parser("teams", help="List teams")
 
-	# dcat products
+	# Legacy MVP helper commands
 	subparsers.add_parser("products", help="List data products")
 
-	# dcat product <id>
-	product_parser = subparsers.add_parser(
-		"product",
+	# feam show <product_id> [--version <v>]
+	show_parser = subparsers.add_parser(
+		"show",
 		help="Show a data product by id",
 	)
-	product_parser.add_argument("id", type=int, help="Data product id")
- 
-	# dcat search <term>
+	show_parser.add_argument("product_id", type=int, help="Data product id")
+	show_parser.add_argument(
+		"--version",
+		help="Optional product version to inspect",
+	)
+
+	# feam search <query> [--filter key=value]
 	search_parser = subparsers.add_parser(
 		"search",
 		help="Search data products by name",
 	)
-	search_parser.add_argument("term", help="Search term in product name")
-
-	# dcat add-product  (still interactive for now)
-	subparsers.add_parser(
-		"add-product",
-		help="Interactively add a new data product",
+	search_parser.add_argument("query", help="Search term in product name")
+	search_parser.add_argument(
+		"--filter",
+		dest="filter_expr",
+		help="Optional filter expression such as key=value",
 	)
+
+	# feam serve <path> --name <name> --asset-type <type> [flags]
+	serve_parser = subparsers.add_parser(
+		"serve",
+		help="Create a new data product entry",
+	)
+	serve_parser.add_argument("path", nargs="?", help="Asset path to serve")
+	serve_parser.add_argument("--name", help="Asset name")
+	serve_parser.add_argument("--asset-type", help="Asset type")
 
 	return parser
 
@@ -165,81 +267,36 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def run(argv: Optional[List[str]] = None) -> None:
-    parser = build_parser()
-    args = parser.parse_args(argv)
+	parser = build_parser()
+	args = parser.parse_args(argv)
 
-    registry = Registry()
+	registry = Registry()
+	load_registry(registry)
 
-    # ----------------------
-    # LOAD EXISTING STATE
-    # ----------------------
-    if DATA_FILE.exists():
-        with DATA_FILE.open("r") as f:
-            data = json.load(f)
+	cmd = args.command
 
-        for team in data.get("teams", []):
-            registry.create_team(team["name"])
+	if cmd == "teams":
+		print_teams(registry)
+	elif cmd == "products":
+		print_products(registry)
+	elif cmd == "show":
+		print_product_details(registry, args.product_id)
+	elif cmd == "search":
+		results = registry.search_products_by_name(args.query)
+		if not results:
+			print(f"No products found for term '{args.query}'.")
+		else:
+			print_header(f"Search results for '{args.query}'")
+			for p in results:
+				team = registry.get_team(p.owner_team_id)
+				owner = team.name if team else f"team:{p.owner_team_id}"
+				print(f"[{p.product_id}] {p.name} (owner={owner})")
+	elif cmd == "serve":
+		add_product_interactively(registry)
+	else:
+		parser.error(f"Unknown feam subcommand: {cmd}")
 
-        for product in data.get("products", []):
-            registry.create_data_product(
-                name=product["name"],
-                description=product["description"],
-                owner_team_id=product["owner_team_id"],
-                data_format=product["data_format"],
-                access_uri=product["access_uri"],
-                status=product["status"],
-                classification=product["classification"],
-            )
-    else:
-        seed_mock_data(registry)
-
-    # ----------------------
-    # EXECUTE COMMAND
-    # ----------------------
-    cmd = args.command
-
-    if cmd == "teams":
-        print_teams(registry)
-    elif cmd == "products":
-        print_products(registry)
-    elif cmd == "product":
-        print_product_details(registry, args.id)
-    elif cmd == "search":
-        results = registry.search_products_by_name(args.term)
-        if not results:
-            print(f"No products found for term '{args.term}'.")
-        else:
-            print_header(f"Search results for '{args.term}'")
-            for p in results:
-                team = registry.get_team(p.owner_team_id)
-                owner = team.name if team else f"team:{p.owner_team_id}"
-                print(f"[{p.product_id}] {p.name} (owner={owner})")
-    elif cmd == "add-product":
-        add_product_interactively(registry)
-    else:
-        parser.error(f"Unknown mesh subcommand: {cmd}")
-
-    # ----------------------
-    # SAVE STATE
-    # ----------------------
-    data = {
-        "teams": [{"name": t.name} for t in registry.list_teams()],
-        "products": [
-            {
-                "name": p.name,
-                "description": p.description,
-                "owner_team_id": p.owner_team_id,
-                "data_format": p.data_format,
-                "access_uri": p.access_uri,
-                "status": p.status,
-                "classification": p.classification,
-            }
-            for p in registry.list_products()
-        ],
-    }
-
-    with DATA_FILE.open("w") as f:
-        json.dump(data, f, indent=2)
+	save_registry(registry)
 
 
 

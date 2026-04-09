@@ -1,0 +1,272 @@
+{
+  "teams": [
+    {
+      "name": "Climate & Environment"
+    },
+    {
+      "name": "Crop Analytics"
+    }
+  ],
+  "products": [
+    {
+      "name": "canada_climate_observations_daily",
+      "description": "Daily climate observations aggregated from Environment Canada weather stations.",
+      "owner_team_id": 1,
+      "data_format": "parquet",
+      "access_uri": "s3://agriculture-canada/curated/climate_observations_daily/",
+      "status": "active",
+      "classification": "public"
+    },
+    {
+      "name": "crop_yield_forecast_grid",
+      "description": "Grid-level crop yield forecasts derived from historical yield data and climate indicators.",
+      "owner_team_id": 2,
+      "data_format": "geoparquet",
+      "access_uri": "s3://agriculture-canada/curated/crop_yield_forecast/",
+      "status": "active",
+      "classification": "internal"
+    },
+    {
+      "name": "soil_moisture_index_weekly",
+      "description": "Weekly soil moisture index derived from satellite and in-situ sensor data.",
+      "owner_team_id": 1,
+      "data_format": "parquet",
+      "access_uri": "s3://agriculture-canada/curated/soil_moisture_index/",
+      "status": "active",
+      "classification": "internal"
+    },
+    {
+      "name": "livestock_population_statistics",
+      "description": "Quarterly livestock population counts across Canadian provinces.",
+      "owner_team_id": 2,
+      "data_format": "delta",
+      "access_uri": "s3://agriculture-canada/curated/livestock_population/",
+      "status": "active",
+      "classification": "restricted"
+    },
+    {
+      "name": "satellite_ndvi_timeseries",
+      "description": "Normalized Difference Vegetation Index (NDVI) timeseries derived from satellite imagery.",
+      "owner_team_id": 1,
+      "data_format": "geoparquet",
+      "access_uri": "s3://agriculture-canada/curated/ndvi_timeseries/",
+      "status": "active",
+      "classification": "public"
+    },
+    {
+      "name": "irrigation_water_usage_monthly",
+      "description": "Monthly irrigation water usage aggregated by agricultural region.",
+      "owner_team_id": 2,
+      "data_format": "parquet",
+      "access_uri": "s3://agriculture-canada/curated/irrigation_water_usage/",
+      "status": "draft",
+      "classification": "internal"
+    },
+    {
+      "name": "test",
+      "description": "tes",
+      "owner_team_id": 1,
+      "data_format": "test",
+      "access_uri": "test",
+      "status": "test",
+      "classification": "test"
+    },
+    {
+      "name": "test",
+      "description": "test",
+      "owner_team_id": 1,
+      "data_format": "test",
+      "access_uri": "test",
+      "status": "test",
+      "classification": "test"
+    },
+    {
+      "name": "new product",
+      "description": "new product",
+      "owner_team_id": 2,
+      "data_format": "parquet",
+      "access_uri": "/dta/lab_a/yield_model/v3",
+      "status": "active",
+      "classification": "internal"
+    },
+    {
+      "name": "data",
+      "description": "data",
+      "owner_team_id": 1,
+      "data_format": "parquet",
+      "access_uri": "dat/",
+      "status": "active",
+      "classification": "internal"
+    }
+  ],
+  "metadata": [
+    {
+      "data_product_id": 1,
+      "namespace": "business",
+      "meta_key": "domain",
+      "meta_value": "climate",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 1,
+      "namespace": "technical",
+      "meta_key": "spatial_resolution",
+      "meta_value": "station-level",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 1,
+      "namespace": "technical",
+      "meta_key": "refresh_schedule",
+      "meta_value": "0 6 * * *",
+      "value_type": "cron"
+    },
+    {
+      "data_product_id": 1,
+      "namespace": "governance",
+      "meta_key": "source",
+      "meta_value": "Environment and Climate Change Canada",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 2,
+      "namespace": "business",
+      "meta_key": "domain",
+      "meta_value": "agriculture",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 2,
+      "namespace": "technical",
+      "meta_key": "grid_system",
+      "meta_value": "10km x 10km national grid",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 2,
+      "namespace": "technical",
+      "meta_key": "model_type",
+      "meta_value": "regression + climate indicators",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 2,
+      "namespace": "governance",
+      "meta_key": "intended_use",
+      "meta_value": "research and policy analysis",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 3,
+      "namespace": "business",
+      "meta_key": "domain",
+      "meta_value": "climate",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 3,
+      "namespace": "technical",
+      "meta_key": "spatial_resolution",
+      "meta_value": "5km grid",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 3,
+      "namespace": "technical",
+      "meta_key": "refresh_schedule",
+      "meta_value": "0 3 * * 1",
+      "value_type": "cron"
+    },
+    {
+      "data_product_id": 3,
+      "namespace": "governance",
+      "meta_key": "source",
+      "meta_value": "Canadian Soil Monitoring Network",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 4,
+      "namespace": "business",
+      "meta_key": "domain",
+      "meta_value": "agriculture",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 4,
+      "namespace": "technical",
+      "meta_key": "spatial_resolution",
+      "meta_value": "province-level",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 4,
+      "namespace": "technical",
+      "meta_key": "refresh_schedule",
+      "meta_value": "0 2 1 */3 *",
+      "value_type": "cron"
+    },
+    {
+      "data_product_id": 4,
+      "namespace": "governance",
+      "meta_key": "intended_use",
+      "meta_value": "policy development and economic forecasting",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 5,
+      "namespace": "business",
+      "meta_key": "domain",
+      "meta_value": "agriculture",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 5,
+      "namespace": "technical",
+      "meta_key": "spatial_resolution",
+      "meta_value": "250m raster",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 5,
+      "namespace": "technical",
+      "meta_key": "refresh_schedule",
+      "meta_value": "0 4 * * 0",
+      "value_type": "cron"
+    },
+    {
+      "data_product_id": 5,
+      "namespace": "governance",
+      "meta_key": "source",
+      "meta_value": "Sentinel-2 Satellite Imagery",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 6,
+      "namespace": "business",
+      "meta_key": "domain",
+      "meta_value": "water_management",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 6,
+      "namespace": "technical",
+      "meta_key": "spatial_resolution",
+      "meta_value": "regional-level",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 6,
+      "namespace": "technical",
+      "meta_key": "refresh_schedule",
+      "meta_value": "0 1 1 * *",
+      "value_type": "cron"
+    },
+    {
+      "data_product_id": 6,
+      "namespace": "governance",
+      "meta_key": "intended_use",
+      "meta_value": "water resource planning",
+      "value_type": "string"
+    }
+  ]
+}
