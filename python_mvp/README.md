@@ -65,7 +65,7 @@ feam <command> [options]
 
 Available commands:
 
-- `feam serve <path> --name <name> --asset-type <type>` – current MVP command name for creating a product entry.
+- `feam serve <path> --name <name> --asset-type <type>` – simulate serving a product into the current team's publish folder.
 - `feam search <query> [--filter key=value]` – search data products by name containing `<query>`.
 - `feam show <product_id> [--version <v>]` – show full details for a single data product by ID.
 
@@ -77,7 +77,7 @@ Current MVP helpers that still exist:
 ## Example usage (PowerShell)
 
 ```powershell
-# Create a product entry
+# Serve a product into the current namespace's publish folder
 feam serve ./path/to/asset --name climate_daily --asset-type dataset
 
 # Search for products whose name contains "climate"
@@ -86,3 +86,8 @@ feam search climate --filter status=active
 # Show details for product with ID 1
 feam show 1 --version 1.0.0
 ```
+
+`feam serve` now assumes the current user is already operating inside a team namespace.
+The namespace is resolved from the `FEAM_NAMESPACE` environment variable and defaults
+to `team_a` if it is not set. The served product is stored with a simulated publish
+path like `/publish/<namespace>/<name>`.

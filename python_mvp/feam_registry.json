@@ -5,6 +5,9 @@
     },
     {
       "name": "Crop Analytics"
+    },
+    {
+      "name": "team_demo"
     }
   ],
   "products": [
@@ -95,6 +98,42 @@
       "owner_team_id": 1,
       "data_format": "parquet",
       "access_uri": "dat/",
+      "status": "active",
+      "classification": "internal"
+    },
+    {
+      "name": "yield_model_training_output",
+      "description": "Regional yield forecasting",
+      "owner_team_id": 3,
+      "data_format": "model_artifact",
+      "access_uri": "/publish/team_demo/yield_model_training_output",
+      "status": "draft",
+      "classification": "internal"
+    },
+    {
+      "name": "test",
+      "description": "test",
+      "owner_team_id": 4,
+      "data_format": "test",
+      "access_uri": "/publish/team_a/test",
+      "status": "active",
+      "classification": "internal"
+    },
+    {
+      "name": "test",
+      "description": "test",
+      "owner_team_id": 4,
+      "data_format": "test",
+      "access_uri": "/publish/team_a/test",
+      "status": "active",
+      "classification": "internal"
+    },
+    {
+      "name": "test",
+      "description": "test",
+      "owner_team_id": 3,
+      "data_format": "parquet",
+      "access_uri": "/publish/team_demo/test",
       "status": "active",
       "classification": "internal"
     }
@@ -266,6 +305,62 @@
       "namespace": "governance",
       "meta_key": "intended_use",
       "meta_value": "water resource planning",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 11,
+      "namespace": "feam",
+      "meta_key": "source_path",
+      "meta_value": "./data/team_demo/yield_model/v3",
+      "value_type": "path"
+    },
+    {
+      "data_product_id": 11,
+      "namespace": "feam",
+      "meta_key": "publish_namespace",
+      "meta_value": "team_demo",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 12,
+      "namespace": "feam",
+      "meta_key": "source_path",
+      "meta_value": "data/demo/",
+      "value_type": "path"
+    },
+    {
+      "data_product_id": 12,
+      "namespace": "feam",
+      "meta_key": "publish_namespace",
+      "meta_value": "team_a",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 13,
+      "namespace": "feam",
+      "meta_key": "source_path",
+      "meta_value": "data/demo",
+      "value_type": "path"
+    },
+    {
+      "data_product_id": 13,
+      "namespace": "feam",
+      "meta_key": "publish_namespace",
+      "meta_value": "team_a",
+      "value_type": "string"
+    },
+    {
+      "data_product_id": 14,
+      "namespace": "feam",
+      "meta_key": "source_path",
+      "meta_value": "datasets/demo",
+      "value_type": "path"
+    },
+    {
+      "data_product_id": 14,
+      "namespace": "feam",
+      "meta_key": "publish_namespace",
+      "meta_value": "team_demo",
       "value_type": "string"
     }
   ]

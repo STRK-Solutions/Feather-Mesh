@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from typing import List, Optional
 
 from registry.services import Registry
@@ -160,6 +161,63 @@ def print_product_details(registry: Registry, product_id: int) -> None:
 	print()
 
 
+def get_or_create_team(registry: Registry, team_name: str) -> int:
+	for team in registry.list_teams():
+		if team.name == team_name:
+			return team.teams_id
+	return registry.create_team(team_name).teams_id
+
+
+def resolve_current_namespace() -> str:
+	return os.getenv("FEAM_NAMESPACE", "team_demo")
+
+
+def serve_product(registry: Registry, args: argparse.Namespace) -> None:
+	namespace = resolve_current_namespace()
+	owner_team_id = get_or_create_team(registry, namespace)
+
+	path = args.path or input("Asset path: ").strip()
+	name = args.name or input("Name: ").strip()
+	asset_type = args.asset_type or input("Asset type: ").strip() or "dataset"
+	description = input("Description: ").strip()
+	status = input("Status (active, deprecated, draft): ").strip() or "draft"
+	classification = (
+		input("Classification (internal/restricted/public): ").strip() or "internal"
+	)
+	access_uri = f"/publish/{namespace}/{name}"
+
+	product = registry.create_data_product(
+		name=name,
+		description=description or f"Served from {path}",
+		owner_team_id=owner_team_id,
+		data_format=asset_type,
+		access_uri=access_uri,
+		status=status,
+		classification=classification,
+	)
+
+	registry.add_metadata(
+		data_product_id=product.product_id,
+		namespace="feam",
+		meta_key="source_path",
+		meta_value=path,
+		value_type="path",
+	)
+	registry.add_metadata(
+		data_product_id=product.product_id,
+		namespace="feam",
+		meta_key="publish_namespace",
+		meta_value=namespace,
+		value_type="string",
+	)
+
+	print_header("Served data product")
+	print(f"Namespace   : {namespace}")
+	print(f"Published to: {access_uri}")
+	print(f"Product ID  : {product.product_id}")
+	print(f"Name        : {product.name}")
+
+
 def add_product_interactively(registry: Registry) -> None:
 	print_header("Add new data product")
 	name = input("Name: ").strip()
@@ -292,7 +350,7 @@ def run(argv: Optional[List[str]] = None) -> None:
 				owner = team.name if team else f"team:{p.owner_team_id}"
 				print(f"[{p.product_id}] {p.name} (owner={owner})")
 	elif cmd == "serve":
-		add_product_interactively(registry)
+		serve_product(registry, args)
 	else:
 		parser.error(f"Unknown feam subcommand: {cmd}")
 
