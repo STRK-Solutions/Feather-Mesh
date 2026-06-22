@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use mesh_core::init_db;
-use mesh_core::services::RegistryService;
+use mesh_core::services::{RegistryService, RegistryServiceError};
 use rusqlite::Connection;
 
 // Builds an isolated temporary database path for each test.
@@ -39,6 +39,82 @@ fn registry_service_registers_and_lists_teams() {
 
     let teams = service.list_teams().expect("Failed to list teams");
     assert_eq!(teams, vec![team]);
+
+    fs::remove_file(path).ok();
+}
+
+#[test]
+// Verifies the service can register a data product without CLI callers touching repositories.
+fn registry_service_registers_data_product_for_existing_owner_team() {
+    let (conn, path) = test_connection();
+    let service = RegistryService::new(&conn);
+    let team = service
+        .register_team("Climate".to_string())
+        .expect("Failed to register team");
+
+    let product = service
+        .register_data_product(
+            "Daily Observations".to_string(),
+            Some("Daily climate station observations".to_string()),
+            team.team_id,
+            Some("Operational climate analytics".to_string()),
+        )
+        .expect("Failed to register data product");
+
+    assert!(product.product_id > 0);
+    assert_eq!(product.name, "Daily Observations");
+    assert_eq!(product.owner_team_id, team.team_id);
+    assert_eq!(
+        product.description,
+        Some("Daily climate station observations".to_string())
+    );
+    assert_eq!(
+        product.intended_use,
+        Some("Operational climate analytics".to_string())
+    );
+
+    fs::remove_file(path).ok();
+}
+
+#[test]
+// Verifies missing owners produce a stable service-level error before insert.
+fn registry_service_rejects_data_product_with_missing_owner_team() {
+    let (conn, path) = test_connection();
+    let service = RegistryService::new(&conn);
+
+    let error = service
+        .register_data_product("Daily Observations".to_string(), None, 404, None)
+        .expect_err("Missing owner team should fail");
+
+    assert!(matches!(error, RegistryServiceError::MissingOwnerTeam(404)));
+
+    fs::remove_file(path).ok();
+}
+
+#[test]
+// Verifies clearly invalid input is rejected by the service workflow.
+fn registry_service_rejects_data_product_with_invalid_input() {
+    let (conn, path) = test_connection();
+    let service = RegistryService::new(&conn);
+    let team = service
+        .register_team("Climate".to_string())
+        .expect("Failed to register team");
+
+    let empty_name_error = service
+        .register_data_product("   ".to_string(), None, team.team_id, None)
+        .expect_err("Empty name should fail");
+    assert!(matches!(
+        empty_name_error,
+        RegistryServiceError::InvalidInput(message) if message.contains("name")
+    ));
+
+    let invalid_owner_error = service
+        .register_data_product("Daily Observations".to_string(), None, 0, None)
+        .expect_err("Non-positive owner_team_id should fail");
+    assert!(matches!(
+        invalid_owner_error,
+        RegistryServiceError::InvalidInput(message) if message.contains("owner_team_id")
+    ));
 
     fs::remove_file(path).ok();
 }
