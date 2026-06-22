@@ -1,6 +1,6 @@
 # Services
 
-The service layer exposes business logic to `mesh_cli`.
+The service layer defines API-style functions that expose key Feather Mesh workflows for `mesh_cli` to call.
 
 ```
 services/
@@ -8,6 +8,6 @@ services/
 └── mod.rs               # Service module exports
 ```
 
-Services coordinate repositories and hide persistence details from `mesh_cli`.
+Services coordinate repositories and models, returning workflow-level results while hiding persistence details from `mesh_cli`.
 
-Keep CLI-facing workflow logic here, not in repositories or raw database code.
+Keep CLI-facing workflow functions here, not in repositories or raw database code.

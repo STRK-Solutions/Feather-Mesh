@@ -3,7 +3,7 @@ use rusqlite::{Connection, Result};
 use crate::models::{NewTeam, Team};
 use crate::repositories::TeamRepository;
 
-// RegistryService exposes business logic related to the registry for `mesh_cli`.
+// RegistryService exposes API-style registry workflows for `mesh_cli`.
 
 // note: `a -> lifetime of the connection reference, ensures registry service does not outlive the db connection it uses
 pub struct RegistryService<'a> {
