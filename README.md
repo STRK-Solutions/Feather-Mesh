@@ -4,7 +4,7 @@
 
 # Feather Mesh
 
-This repository contains the capstone work for Feather Mesh, an HPC-oriented data catalog / data mesh project. The repo includes an MVP Python CLI, a Rust implementation of the core Feather Mesh system, supporting diagrams, and project documentation.
+This STRK-Solutions repository contains the capstone work for Feather Mesh, an HPC-oriented data catalog / data mesh project. The repo includes an MVP Python CLI, a Rust workspace for the Feather Mesh implementation, supporting diagrams, and project documentation.
 
 This root README is intentionally high level. For setup, usage, and implementation details, use the README inside each subproject directory.
 
@@ -24,14 +24,14 @@ See [`python_mvp/README.md`](/python_mvp/README.md) for installation, commands, 
 
 ### `feather-mesh/`
 
-Contains the Rust implementation of Feather Mesh, the HPC-native middleware layer for publishing, discovering, and consuming reusable data products. This area holds the main systems-oriented implementation work.
+Contains the Rust workspace for Feather Mesh, the HPC-native middleware layer for publishing, discovering, and consuming reusable data products. This area holds the main systems-oriented implementation work.
 
 Key parts of this directory include:
 
 - `mesh_core/` for the shared Rust library and core domain logic
 - `mesh_cli/` for the command-line interface built on top of the core library
 
-See [`feather-mesh/README.md`](/feather-mesh/README.md) for build, run, and test instructions.
+See [`feather-mesh/README.md`](/feather-mesh/README.md) for workspace layout, crate boundary notes, build guidance, and the `cargo test` command.
 
 ### `diagrams/`
 
@@ -49,12 +49,12 @@ Contains GitHub-specific project automation, currently including workflow config
 
 Contains project-level written documentation separate from the implementation directories. Use this for broader context on the capstone proposal and framing.
 
-### PDD document
+### `Feather_Mesh_PDD_Revised.pdf`
 
-Contains the product definition document, outlining an in-depth overview of the Feather Mesh product.
+The product definition document, outlining an in-depth overview of the Feather Mesh product.
 
 ## Where To Go Next
 
 - If you want the Python prototype, start in [`python_mvp/README.md`](/python_mvp/README.md).
 - If you want the Rust implementation, start in [`feather-mesh/README.md`](/feather-mesh/README.md).
-- If you want architecture context first, browse `diagrams/`, `proposal.md`, and `Feather_Mesh_PDD_Revised.pdf`.
+- If you want architecture context, browse `diagrams/`, `proposal.md`, `Feather_Mesh_PDD_Revised.pdf`, and [`feather-mesh/README.md`](/feather-mesh/README.md).
