@@ -9,6 +9,7 @@ if [[ ! -f "$file" ]]; then
 fi
 
 required_patterns=(
+  "feam"
   "feather-mesh/"
   "mesh_core"
   "mesh_cli"
