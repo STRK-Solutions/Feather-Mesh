@@ -7,7 +7,7 @@ pub struct NewDataProductVersion {
     pub asset_type: String,
     pub source_path: String,
     pub data_quality: String,
-    pub classification: Option<String>,
+    pub classification: String,
 }
 
 impl NewDataProductVersion {
@@ -18,7 +18,7 @@ impl NewDataProductVersion {
         asset_type: String,
         source_path: String,
         data_quality: String,
-        classification: Option<String>,
+        classification: String,
     ) -> Self {
         Self {
             data_product_id,
@@ -37,14 +37,14 @@ mod tests {
 
     #[test]
     // Verifies the constructor leaves optional fields unset and preserves input values.
-    fn new_data_product_version_initializes_insert_model_with_optional_fields_to_none() {
+    fn new_data_product_version_initializes_insert_model() {
         let version = NewDataProductVersion::new(
             12,
             "v1.0.0".to_string(),
             "test".to_string(),
             "test/data".to_string(),
             "test".to_string(),
-            None,
+            "internal".to_string(),
         );
 
         assert_eq!(version.data_product_id, 12);
@@ -52,21 +52,6 @@ mod tests {
         assert_eq!(version.asset_type, "test");
         assert_eq!(version.source_path, "test/data");
         assert_eq!(version.data_quality, "test");
-        assert_eq!(version.classification, None);
-    }
-
-    #[test]
-    // Verifies the constructor preserves optional user-provided values.
-    fn new_data_product_version_preserves_optional_fields() {
-        let version = NewDataProductVersion::new(
-            12,
-            "v1.0.0".to_string(),
-            "test".to_string(),
-            "test/data".to_string(),
-            "test".to_string(),
-            Some("internal".to_string()),
-        );
-
-        assert_eq!(version.classification, Some("internal".to_string()));
+        assert_eq!(version.classification, "internal");
     }
 }

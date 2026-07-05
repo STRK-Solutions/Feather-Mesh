@@ -42,6 +42,8 @@ pub(crate) fn init_schema(conn: &Connection) -> Result<()> {
             name TEXT NOT NULL,
             description TEXT,
             owner_team_id INTEGER NOT NULL,
+            producer TEXT NOT NULL,
+            usage_policy TEXT NOT NULL,
             intended_use TEXT,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY(owner_team_id) REFERENCES teams(team_id) ON DELETE CASCADE
@@ -54,7 +56,7 @@ pub(crate) fn init_schema(conn: &Connection) -> Result<()> {
             asset_type TEXT NOT NULL,
             source_path TEXT NOT NULL,
             data_quality TEXT NOT NULL,
-            classification TEXT,
+            classification TEXT NOT NULL,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY(data_product_id) REFERENCES data_products(product_id) ON DELETE CASCADE
         );
@@ -80,11 +82,61 @@ pub(crate) fn init_schema(conn: &Connection) -> Result<()> {
 
         CREATE INDEX IF NOT EXISTS idx_data_products_owner_team_id ON data_products(owner_team_id);
         CREATE INDEX IF NOT EXISTS idx_data_product_versions_data_product_id ON data_product_versions(data_product_id);
+        CREATE INDEX IF NOT EXISTS idx_data_product_versions_source_path ON data_product_versions(source_path);
+        CREATE UNIQUE INDEX IF NOT EXISTS ux_data_product_versions_product_label
+            ON data_product_versions(data_product_id, version_label);
+        CREATE UNIQUE INDEX IF NOT EXISTS ux_data_product_versions_source_path
+            ON data_product_versions(source_path);
         CREATE INDEX IF NOT EXISTS idx_metadata_data_product_version_id ON metadata(data_product_version_id);
         CREATE INDEX IF NOT EXISTS idx_lineage_dependencies_downstream_version_id ON lineage_dependencies(downstream_version_id);
         "#,
     )?;
 
+    add_column_if_missing(
+        conn,
+        "data_products",
+        "producer",
+        "TEXT NOT NULL DEFAULT 'unknown'",
+    )?;
+    add_column_if_missing(
+        conn,
+        "data_products",
+        "usage_policy",
+        "TEXT NOT NULL DEFAULT 'unspecified'",
+    )?;
+    add_column_if_missing(
+        conn,
+        "data_product_versions",
+        "classification",
+        "TEXT NOT NULL DEFAULT 'internal'",
+    )?;
+    conn.execute(
+        "UPDATE data_product_versions
+         SET classification = 'internal'
+         WHERE classification IS NULL",
+        [],
+    )?;
+
+    Ok(())
+}
+
+fn add_column_if_missing(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+    definition: &str,
+) -> Result<()> {
+    let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+    let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+    for row in rows {
+        if row? == column {
+            return Ok(());
+        }
+    }
+    conn.execute(
+        &format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"),
+        [],
+    )?;
     Ok(())
 }
 
@@ -93,21 +145,29 @@ mod tests {
     use super::*;
     use std::fs;
     use std::path::PathBuf;
+    use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    fn unique_test_db_path() -> PathBuf {
+    static DB_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+    fn unique_test_db_path(prefix: &str) -> PathBuf {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("System time before UNIX EPOCH")
             .as_nanos();
         let mut path = std::env::temp_dir();
-        path.push(format!("mesh_core_registry_{}.db", timestamp));
+        path.push(format!(
+            "{prefix}_{}_{}_{}.db",
+            std::process::id(),
+            timestamp,
+            DB_COUNTER.fetch_add(1, Ordering::Relaxed)
+        ));
         path
     }
 
     #[test]
     fn init_db_creates_registry_db_and_enables_wal() {
-        let path = unique_test_db_path();
+        let path = unique_test_db_path("mesh_core_registry");
         if path.exists() {
             fs::remove_file(&path).unwrap();
         }
@@ -135,13 +195,108 @@ mod tests {
 
     #[test]
     fn init_db_is_idempotent() {
-        let path = unique_test_db_path();
+        let path = unique_test_db_path("mesh_core_registry");
         if path.exists() {
             fs::remove_file(&path).unwrap();
         }
 
         init_db(&path).expect("First init should succeed");
         init_db(&path).expect("Second init should still succeed");
+
+        fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn init_db_backfills_legacy_classification_and_adds_unique_indexes() {
+        let path = unique_test_db_path("mesh_core_registry");
+        if path.exists() {
+            fs::remove_file(&path).unwrap();
+        }
+
+        {
+            let conn = Connection::open(&path).expect("Failed to create legacy database");
+            conn.execute_batch(
+                r#"
+                CREATE TABLE teams (
+                    team_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL UNIQUE,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                );
+                CREATE TABLE data_products (
+                    product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    owner_team_id INTEGER NOT NULL,
+                    producer TEXT NOT NULL,
+                    usage_policy TEXT NOT NULL,
+                    intended_use TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    FOREIGN KEY(owner_team_id) REFERENCES teams(team_id) ON DELETE CASCADE
+                );
+                CREATE TABLE data_product_versions (
+                    version_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    data_product_id INTEGER NOT NULL,
+                    version_label TEXT NOT NULL,
+                    asset_type TEXT NOT NULL,
+                    source_path TEXT NOT NULL,
+                    data_quality TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    FOREIGN KEY(data_product_id) REFERENCES data_products(product_id) ON DELETE CASCADE
+                );
+                CREATE TABLE metadata (
+                    metadata_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    data_product_version_id INTEGER NOT NULL,
+                    namespace TEXT,
+                    meta_key TEXT NOT NULL,
+                    meta_value TEXT,
+                    value_type TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    FOREIGN KEY(data_product_version_id) REFERENCES data_product_versions(version_id) ON DELETE CASCADE
+                );
+                CREATE TABLE lineage_dependencies (
+                    dependency_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    downstream_version_id INTEGER NOT NULL,
+                    upstream_product_uri TEXT NOT NULL,
+                    upstream_version TEXT,
+                    FOREIGN KEY(downstream_version_id) REFERENCES data_product_versions(version_id) ON DELETE CASCADE
+                );
+                INSERT INTO teams (name) VALUES ('Legacy');
+                INSERT INTO data_products
+                    (name, owner_team_id, producer, usage_policy)
+                    VALUES ('Legacy Product', 1, 'Legacy Producer', 'Internal');
+                INSERT INTO data_product_versions
+                    (data_product_id, version_label, asset_type, source_path, data_quality)
+                    VALUES (1, 'v1', 'file', '/legacy/source.csv', 'production');
+                "#,
+            )
+            .expect("Failed to seed legacy schema");
+        }
+
+        let conn = init_db(&path).expect("Failed to migrate legacy database");
+        let classification: String = conn
+            .query_row(
+                "SELECT classification FROM data_product_versions WHERE version_id = 1",
+                [],
+                |row| row.get(0),
+            )
+            .expect("Failed to read backfilled classification");
+        assert_eq!(classification, "internal");
+
+        let duplicate_label = conn.execute(
+            "INSERT INTO data_product_versions
+                (data_product_id, version_label, asset_type, source_path, data_quality, classification)
+             VALUES (1, 'v1', 'file', '/legacy/other.csv', 'production', 'internal')",
+            [],
+        );
+        assert!(duplicate_label.is_err());
+
+        let duplicate_source = conn.execute(
+            "INSERT INTO data_product_versions
+                (data_product_id, version_label, asset_type, source_path, data_quality, classification)
+             VALUES (1, 'v2', 'file', '/legacy/source.csv', 'production', 'internal')",
+            [],
+        );
+        assert!(duplicate_source.is_err());
 
         fs::remove_file(&path).ok();
     }

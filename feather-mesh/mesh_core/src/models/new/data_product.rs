@@ -5,6 +5,8 @@ pub struct NewDataProduct {
     pub name: String,
     pub description: Option<String>,
     pub owner_team_id: i64,
+    pub producer: String,
+    pub usage_policy: String,
     pub intended_use: Option<String>,
 }
 
@@ -14,12 +16,16 @@ impl NewDataProduct {
         name: String,
         description: Option<String>,
         owner_team_id: i64,
+        producer: String,
+        usage_policy: String,
         intended_use: Option<String>,
     ) -> Self {
         Self {
             name,
             description,
             owner_team_id,
+            producer,
+            usage_policy,
             intended_use,
         }
     }
@@ -32,11 +38,20 @@ mod tests {
     #[test]
     // Verifies the constructor leaves optional fields unset and preserves input values.
     fn new_data_product_initializes_insert_model_with_optional_fields_to_none() {
-        let product = NewDataProduct::new("Orders".to_string(), None, 5, None);
+        let product = NewDataProduct::new(
+            "Orders".to_string(),
+            None,
+            5,
+            "Finance".to_string(),
+            "Internal use".to_string(),
+            None,
+        );
 
         assert_eq!(product.name, "Orders");
         assert_eq!(product.description, None);
         assert_eq!(product.owner_team_id, 5);
+        assert_eq!(product.producer, "Finance");
+        assert_eq!(product.usage_policy, "Internal use");
         assert_eq!(product.intended_use, None);
     }
 
@@ -47,6 +62,8 @@ mod tests {
             "Orders".to_string(),
             Some("Order facts curated for finance reporting".to_string()),
             5,
+            "Finance".to_string(),
+            "Internal use".to_string(),
             Some("Monthly reconciliations".to_string()),
         );
 

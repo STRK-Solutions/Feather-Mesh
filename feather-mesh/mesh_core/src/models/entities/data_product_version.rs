@@ -9,7 +9,7 @@ pub struct DataProductVersion {
     pub asset_type: String,
     pub source_path: String,
     pub data_quality: String,
-    pub classification: Option<String>,
+    pub classification: String,
     pub created_at: NaiveDateTime,
 }
 
@@ -30,7 +30,7 @@ mod tests {
             asset_type: "test".to_string(),
             source_path: "test/data".to_string(),
             data_quality: "test".to_string(),
-            classification: Some("test".to_string()),
+            classification: "internal".to_string(),
             created_at,
         };
 
@@ -40,6 +40,7 @@ mod tests {
         assert!(json.contains("\"version_id\":8"));
         assert!(json.contains("\"data_product_id\":3"));
         assert!(json.contains("\"version_label\":\"2026.03\""));
+        assert!(json.contains("\"classification\":\"internal\""));
         assert_eq!(round_trip, version);
     }
 }

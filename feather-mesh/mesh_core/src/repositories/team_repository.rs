@@ -24,6 +24,14 @@ impl TeamRepository {
         )
     }
 
+    pub fn get_by_name(conn: &Connection, name: &str) -> Result<Team> {
+        conn.query_row(
+            "SELECT team_id, name, created_at FROM teams WHERE lower(name) = lower(?1)",
+            params![name],
+            Self::from_row,
+        )
+    }
+
     /// Gets all persisted teams ordered by primary key.
     pub fn get_all(conn: &Connection) -> Result<Vec<Team>> {
         let mut query =

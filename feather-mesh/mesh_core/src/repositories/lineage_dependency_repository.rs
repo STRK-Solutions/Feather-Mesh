@@ -45,6 +45,20 @@ impl LineageDependencyRepository {
         rows.collect()
     }
 
+    pub fn get_by_downstream_version(
+        conn: &Connection,
+        downstream_version_id: i64,
+    ) -> Result<Vec<LineageDependency>> {
+        let mut stmt = conn.prepare(
+            "SELECT dependency_id, downstream_version_id, upstream_product_uri, upstream_version
+             FROM lineage_dependencies
+             WHERE downstream_version_id = ?1
+             ORDER BY dependency_id",
+        )?;
+        let rows = stmt.query_map(params![downstream_version_id], Self::from_row)?;
+        rows.collect()
+    }
+
     /// Maps a database row -> LineageDependency struct
     fn from_row(row: &Row<'_>) -> Result<LineageDependency> {
         Ok(LineageDependency {
