@@ -275,7 +275,7 @@ fn parse_lineage(values: Vec<String>) -> Result<Vec<LineageReference>, RegistryE
 }
 
 fn read_metadata(path: PathBuf) -> Result<ServeRequest, RegistryError> {
-    let contents = fs::read_to_string(path)?;
+    let contents = fs::read_to_string(path).map_err(map_io_error)?;
     serde_json::from_str(&contents).map_err(RegistryError::from)
 }
 
@@ -434,10 +434,19 @@ fn print_json<T: Serialize + ?Sized>(value: &T) -> Result<(), RegistryError> {
 }
 
 fn truncate(value: &str, width: usize) -> String {
-    if value.len() <= width {
+    if value.chars().count() <= width {
         value.to_string()
     } else {
-        format!("{}...", &value[..width.saturating_sub(3)])
+        let truncated: String = value.chars().take(width.saturating_sub(3)).collect();
+        format!("{truncated}...")
+    }
+}
+
+fn map_io_error(err: std::io::Error) -> RegistryError {
+    if err.kind() == std::io::ErrorKind::PermissionDenied {
+        RegistryError::Permission(err.to_string())
+    } else {
+        RegistryError::Filesystem(err)
     }
 }
 

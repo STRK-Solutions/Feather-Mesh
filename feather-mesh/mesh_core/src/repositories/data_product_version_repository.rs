@@ -30,10 +30,7 @@ impl DataProductVersionRepository {
     /// Gets a persisted data product version by its primary key.
     pub fn get_by_id(conn: &Connection, version_id: i64) -> Result<DataProductVersion> {
         conn.query_row(
-            "SELECT version_id, data_product_id, version_label, asset_type, source_path,
-                    data_quality, classification, created_at
-             FROM data_product_versions
-             WHERE version_id = ?1",
+            &Self::select_sql("WHERE version_id = ?1"),
             params![version_id],
             Self::from_row,
         )
@@ -45,12 +42,7 @@ impl DataProductVersionRepository {
         version_label: &str,
     ) -> Result<DataProductVersion> {
         conn.query_row(
-            "SELECT version_id, data_product_id, version_label, asset_type, source_path,
-                    data_quality, classification, created_at
-             FROM data_product_versions
-             WHERE data_product_id = ?1 AND version_label = ?2
-             ORDER BY version_id DESC
-             LIMIT 1",
+            &Self::select_sql("WHERE data_product_id = ?1 AND version_label = ?2"),
             params![product_id, version_label],
             Self::from_row,
         )
@@ -61,12 +53,7 @@ impl DataProductVersionRepository {
         product_id: i64,
     ) -> Result<DataProductVersion> {
         conn.query_row(
-            "SELECT version_id, data_product_id, version_label, asset_type, source_path,
-                    data_quality, classification, created_at
-             FROM data_product_versions
-             WHERE data_product_id = ?1
-             ORDER BY version_id DESC
-             LIMIT 1",
+            &Self::select_sql("WHERE data_product_id = ?1 ORDER BY version_id DESC LIMIT 1"),
             params![product_id],
             Self::from_row,
         )
@@ -74,37 +61,23 @@ impl DataProductVersionRepository {
 
     pub fn get_by_source_path(conn: &Connection, source_path: &str) -> Result<DataProductVersion> {
         conn.query_row(
-            "SELECT version_id, data_product_id, version_label, asset_type, source_path,
-                    data_quality, classification, created_at
-             FROM data_product_versions
-             WHERE source_path = ?1
-             ORDER BY version_id DESC
-             LIMIT 1",
+            &Self::select_sql("WHERE source_path = ?1"),
             params![source_path],
             Self::from_row,
         )
     }
 
     pub fn get_for_product(conn: &Connection, product_id: i64) -> Result<Vec<DataProductVersion>> {
-        let mut stmt = conn.prepare(
-            "SELECT version_id, data_product_id, version_label, asset_type, source_path,
-                    data_quality, classification, created_at
-             FROM data_product_versions
-             WHERE data_product_id = ?1
-             ORDER BY version_id",
-        )?;
+        let mut stmt = conn.prepare(&Self::select_sql(
+            "WHERE data_product_id = ?1 ORDER BY version_id",
+        ))?;
         let rows = stmt.query_map(params![product_id], Self::from_row)?;
         rows.collect()
     }
 
     /// Gets all persisted data product versions ordered by primary key.
     pub fn get_all(conn: &Connection) -> Result<Vec<DataProductVersion>> {
-        let mut stmt = conn.prepare(
-            "SELECT version_id, data_product_id, version_label, asset_type, source_path,
-                    data_quality, classification, created_at
-             FROM data_product_versions
-             ORDER BY version_id",
-        )?;
+        let mut stmt = conn.prepare(&Self::select_sql("ORDER BY version_id"))?;
         let rows = stmt.query_map([], Self::from_row)?;
 
         rows.collect()
@@ -114,48 +87,43 @@ impl DataProductVersionRepository {
         conn: &Connection,
         asset_type: &str,
     ) -> Result<Vec<DataProductVersion>> {
-        let mut stmt = conn.prepare(
-            "SELECT version_id, data_product_id, version_label, asset_type, source_path,
-                    data_quality, classification, created_at
-             FROM data_product_versions
-             WHERE LOWER(asset_type) = LOWER(?1)
-             ORDER BY version_id",
-        )?;
-        let rows = stmt.query_map(params![asset_type], Self::from_row)?;
-
-        rows.collect()
+        Self::get_all_by_column(conn, "asset_type", asset_type)
     }
 
     pub fn get_all_by_data_quality(
         conn: &Connection,
         data_quality: &str,
     ) -> Result<Vec<DataProductVersion>> {
-        let mut stmt = conn.prepare(
-            "SELECT version_id, data_product_id, version_label, asset_type, source_path,
-                    data_quality, classification, created_at
-             FROM data_product_versions
-             WHERE LOWER(data_quality) = LOWER(?1)
-             ORDER BY version_id",
-        )?;
-        let rows = stmt.query_map(params![data_quality], Self::from_row)?;
-
-        rows.collect()
+        Self::get_all_by_column(conn, "data_quality", data_quality)
     }
 
     pub fn get_all_by_classification(
         conn: &Connection,
         classification: &str,
     ) -> Result<Vec<DataProductVersion>> {
-        let mut stmt = conn.prepare(
+        Self::get_all_by_column(conn, "classification", classification)
+    }
+
+    fn get_all_by_column(
+        conn: &Connection,
+        column: &str,
+        value: &str,
+    ) -> Result<Vec<DataProductVersion>> {
+        let mut stmt = conn.prepare(&Self::select_sql(&format!(
+            "WHERE LOWER({column}) = LOWER(?1) ORDER BY version_id"
+        )))?;
+        let rows = stmt.query_map(params![value], Self::from_row)?;
+
+        rows.collect()
+    }
+
+    fn select_sql(clause: &str) -> String {
+        format!(
             "SELECT version_id, data_product_id, version_label, asset_type, source_path,
                     data_quality, classification, created_at
              FROM data_product_versions
-             WHERE LOWER(classification) = LOWER(?1)
-             ORDER BY version_id",
-        )?;
-        let rows = stmt.query_map(params![classification], Self::from_row)?;
-
-        rows.collect()
+             {clause}"
+        )
     }
 
     /// Maps database row -> DataProductVersion struct

@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
+
+mod common;
 
 use mesh_core::init_db;
 use mesh_core::models::{
@@ -13,27 +13,11 @@ use mesh_core::repositories::{
 };
 use rusqlite::Connection;
 
-static DB_COUNTER: AtomicU64 = AtomicU64::new(0);
-
-// Builds an isolated temporary database path for each test.
-fn unique_test_db_path() -> PathBuf {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("System time before UNIX EPOCH")
-        .as_nanos();
-    let mut path = std::env::temp_dir();
-    path.push(format!(
-        "mesh_core_repository_{}_{}_{}.db",
-        std::process::id(),
-        timestamp,
-        DB_COUNTER.fetch_add(1, Ordering::Relaxed)
-    ));
-    path
-}
+use common::unique_test_db_path;
 
 // Opens a fresh test database and applies the registry schema.
 fn test_connection() -> (Connection, PathBuf) {
-    let path = unique_test_db_path();
+    let path = unique_test_db_path("mesh_core_repository");
     let conn = init_db(&path).expect("Failed to initialize repository test database");
     (conn, path)
 }

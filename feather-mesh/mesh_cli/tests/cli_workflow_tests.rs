@@ -223,3 +223,43 @@ fn validation_not_found_and_policy_exit_codes_are_stable() {
         .code(5)
         .stderr(predicate::str::contains("destination exists"));
 }
+
+#[test]
+fn table_output_handles_multibyte_text_when_truncating() {
+    let temp = tempdir().unwrap();
+    let registry = temp.path().join("registry.db");
+    let source = temp.path().join("daily.csv");
+    fs::write(&source, "x\n").unwrap();
+
+    feam()
+        .args([
+            "--registry",
+            &registry_arg(&registry),
+            "serve",
+            &registry_arg(&source),
+            "--name",
+            "Daily",
+            "--asset-type",
+            "file",
+            "--version",
+            "v1",
+            "--owner-team",
+            "Equipe Meteo",
+            "--producer",
+            "éééééééééééééééééééé",
+            "--usage-policy",
+            "Internal",
+            "--data-quality",
+            "production",
+            "--classification",
+            "internal",
+        ])
+        .assert()
+        .success();
+
+    feam()
+        .args(["--registry", &registry_arg(&registry), "products"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("ééé"));
+}

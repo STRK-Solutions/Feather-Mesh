@@ -33,8 +33,8 @@ Exit outcomes:
   - `source_path` or source reference
   - `intended_use`
   - `input_dependencies`
-  - `license_or_usage_policy`
-  - `access_classification`
+  - `usage_policy`
+  - version-level `classification`
   - `data_quality`
 - `data_quality` accepts only `production`, `qualified`, and `unverified`.
 - Invalid quality labels such as `gold`, `silver`, or `bronze` are rejected.
@@ -213,4 +213,3 @@ Exit outcomes:
 - Pinned version consumption is demonstrated.
 - Retrieval failures can be categorized by cause class.
 - The project can explain how V1 reduces reliance on ad hoc paths, stale wiki documentation, and producer-to-consumer manual handoff.
-

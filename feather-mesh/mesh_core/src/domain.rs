@@ -44,7 +44,7 @@ impl ValidationError {
 }
 
 macro_rules! domain_enum {
-    ($name:ident { $($variant:ident => $value:literal),+ $(,)? }) => {
+    ($name:ident, $field:literal { $($variant:ident => $value:literal),+ $(,)? }) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
         #[serde(rename_all = "snake_case")]
         pub enum $name {
@@ -56,10 +56,6 @@ macro_rules! domain_enum {
                 match self {
                     $(Self::$variant => $value),+
                 }
-            }
-
-            pub fn parse(value: &str) -> Result<Self, ValidationError> {
-                value.parse()
             }
         }
 
@@ -76,7 +72,7 @@ macro_rules! domain_enum {
                 match normalize_token(value).as_str() {
                     $($value => Ok(Self::$variant),)+
                     _ => Err(ValidationError::new(
-                        stringify!($name),
+                        $field,
                         format!("unsupported value '{value}'"),
                     )),
                 }
@@ -89,7 +85,7 @@ pub(crate) fn normalize_token(input: &str) -> String {
     input.trim().to_ascii_lowercase().replace('-', "_")
 }
 
-domain_enum!(AssetType {
+domain_enum!(AssetType, "asset_type" {
     File => "file",
     Directory => "directory",
     Dataset => "dataset",
@@ -99,13 +95,13 @@ domain_enum!(AssetType {
     ManifestCollection => "manifest_collection",
 });
 
-domain_enum!(DataQuality {
+domain_enum!(DataQuality, "data_quality" {
     Production => "production",
     Qualified => "qualified",
     Unverified => "unverified",
 });
 
-domain_enum!(Classification {
+domain_enum!(Classification, "classification" {
     Public => "public",
     Internal => "internal",
     Restricted => "restricted",

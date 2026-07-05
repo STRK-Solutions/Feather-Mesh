@@ -27,7 +27,7 @@ A data product is a reusable, versioned asset (or asset set) plus keystone metad
 Feather Mesh supports registration of single files, structured directories, logical collections, model artifacts (for example checkpoints or packaged weights), report artifacts (for example PDF/HTML bundles), and manifest-backed virtual assets that reference many underlying objects.
 
 ### 4.3 Keystone metadata
-Keystone metadata is the minimum metadata set required for reliable discovery and safe reuse. Required fields are `product_id`, `name`, `asset_type`, `owner_team`, `producer`, `created_at`, `version`, `source_path` (or source reference), `intended_use`, `input_dependencies` (empty list allowed), `license_or_usage_policy`, `access_classification`, and `data_quality`.
+Keystone metadata is the minimum metadata set required for reliable discovery and safe reuse. Required fields are `product_id`, `name`, `asset_type`, `owner_team`, `producer`, `created_at`, `version`, `source_path` (or source reference), `intended_use`, `input_dependencies` (empty list allowed), `usage_policy`, version-level `classification`, and `data_quality`.
 
 The `data_quality` field uses a fixed three-tier model: `production` (highest confidence), `qualified` (appropriate to use with caveats), and `unverified` (quality cannot be guaranteed).
 

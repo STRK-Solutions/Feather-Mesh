@@ -284,43 +284,60 @@ impl<'a> RegistryService<'a> {
     pub fn serve(&self, request: ServeRequest) -> RegistryResult<ServeResponse> {
         self.validate_serve_request(&request)?;
         let source = SourceReference::unix_path(request.source_path.clone())?.as_display_string();
-        let team = self.get_or_create_team(&request.owner_team)?;
-        let product = DataProductRepository::create(
-            self.conn,
-            NewDataProduct::new(
-                request.name,
-                request.description,
-                team.team_id,
-                request.producer,
-                request.usage_policy,
-                request.intended_use,
-            ),
-        )?;
-        let version = DataProductVersionRepository::create(
-            self.conn,
-            NewDataProductVersion::new(
-                product.product_id,
-                request.version,
-                request.asset_type.to_string(),
-                source.clone(),
-                request.data_quality.to_string(),
-                request.classification.to_string(),
-            ),
-        )?;
-        for lineage in request.lineage {
-            LineageDependencyRepository::create(
+        self.conn.execute_batch("BEGIN IMMEDIATE")?;
+        let result = (|| -> RegistryResult<ServeResponse> {
+            let team = self.get_or_create_team(&request.owner_team)?;
+            let product = DataProductRepository::create(
                 self.conn,
-                NewLineageDependency::new(version.version_id, lineage.source, lineage.version),
+                NewDataProduct::new(
+                    request.name,
+                    request.description,
+                    team.team_id,
+                    request.producer,
+                    request.usage_policy,
+                    request.intended_use,
+                ),
             )?;
+            let version = DataProductVersionRepository::create(
+                self.conn,
+                NewDataProductVersion::new(
+                    product.product_id,
+                    request.version,
+                    request.asset_type.to_string(),
+                    source.clone(),
+                    request.data_quality.to_string(),
+                    request.classification.to_string(),
+                ),
+            )?;
+            for lineage in request.lineage {
+                LineageDependencyRepository::create(
+                    self.conn,
+                    NewLineageDependency::new(version.version_id, lineage.source, lineage.version),
+                )?;
+            }
+            Ok(ServeResponse {
+                product_id: product.product_id,
+                version_id: version.version_id,
+                name: product.name,
+                version: version.version_label,
+                source_reference: source,
+                status: "published".to_string(),
+            })
+        })();
+
+        match result {
+            Ok(response) => {
+                if let Err(err) = self.conn.execute_batch("COMMIT") {
+                    let _ = self.conn.execute_batch("ROLLBACK");
+                    return Err(RegistryError::Database(err));
+                }
+                Ok(response)
+            }
+            Err(err) => {
+                let _ = self.conn.execute_batch("ROLLBACK");
+                Err(err)
+            }
         }
-        Ok(ServeResponse {
-            product_id: product.product_id,
-            version_id: version.version_id,
-            name: product.name,
-            version: version.version_label,
-            source_reference: source,
-            status: "published".to_string(),
-        })
     }
 
     pub fn search_products(&self, request: SearchRequest) -> RegistryResult<Vec<ProductSummary>> {
@@ -622,6 +639,11 @@ fn copy_dir_recursive(source: &Path, out: &Path) -> RegistryResult<()> {
             copy_dir_recursive(&entry.path(), &target)?;
         } else if metadata.is_file() {
             fs::copy(entry.path(), target).map_err(map_io_error)?;
+        } else {
+            return Err(RegistryError::Filesystem(std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                format!("unsupported entry type at '{}'", entry.path().display()),
+            )));
         }
     }
     Ok(())

@@ -1,37 +1,21 @@
 use std::fs;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
 
-use mesh_core::domain::RegistryError;
+mod common;
+
+use mesh_core::domain::{AssetType, Classification, DataQuality, RegistryError};
 use mesh_core::init_db;
 use mesh_core::services::{
     CreateDataProductRequest, CreateDataProductVersionRequest, CreateLineageDependencyRequest,
-    RegistryService,
+    RegistryService, ServeRequest,
 };
 use rusqlite::Connection;
 
-static DB_COUNTER: AtomicU64 = AtomicU64::new(0);
-
-// Builds an isolated temporary database path for each test.
-fn unique_test_db_path() -> PathBuf {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("System time before UNIX EPOCH")
-        .as_nanos();
-    let mut path = std::env::temp_dir();
-    path.push(format!(
-        "mesh_core_service_{}_{}_{}.db",
-        std::process::id(),
-        timestamp,
-        DB_COUNTER.fetch_add(1, Ordering::Relaxed)
-    ));
-    path
-}
+use common::unique_test_db_path;
 
 // Opens a fresh test database and applies the registry schema.
 fn test_connection() -> (Connection, PathBuf) {
-    let path = unique_test_db_path();
+    let path = unique_test_db_path("mesh_core_service");
     let conn = init_db(&path).expect("Failed to initialize service test database");
     (conn, path)
 }
@@ -141,8 +125,65 @@ fn registry_service_compatibility_methods_reject_missing_owner_and_legacy_qualit
         })
         .expect_err("legacy quality should fail");
     assert!(
-        matches!(invalid_quality, RegistryError::Validation(error) if error.field == "DataQuality")
+        matches!(invalid_quality, RegistryError::Validation(error) if error.field == "data_quality")
     );
+
+    fs::remove_file(path).ok();
+}
+
+#[test]
+fn registry_service_serve_rolls_back_product_when_version_insert_fails() {
+    let (conn, path) = test_connection();
+    let service = RegistryService::new(&conn);
+    let source_path = PathBuf::from("/tmp/shared-source.csv");
+
+    service
+        .serve(ServeRequest {
+            source_path: source_path.clone(),
+            name: "Published Product".to_string(),
+            asset_type: AssetType::File,
+            version: "v1".to_string(),
+            owner_team: "Climate".to_string(),
+            producer: "Climate Lab".to_string(),
+            usage_policy: "Internal".to_string(),
+            data_quality: DataQuality::Production,
+            classification: Classification::Internal,
+            description: None,
+            intended_use: None,
+            lineage: vec![],
+        })
+        .expect("initial serve should succeed");
+
+    let duplicate = service
+        .serve(ServeRequest {
+            source_path,
+            name: "Rolled Back Product".to_string(),
+            asset_type: AssetType::File,
+            version: "v1".to_string(),
+            owner_team: "Rollback Team".to_string(),
+            producer: "Climate Lab".to_string(),
+            usage_policy: "Internal".to_string(),
+            data_quality: DataQuality::Production,
+            classification: Classification::Internal,
+            description: None,
+            intended_use: None,
+            lineage: vec![],
+        })
+        .expect_err("duplicate source path should fail");
+    assert!(matches!(duplicate, RegistryError::Database(_)));
+
+    let product_count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM data_products", [], |row| row.get(0))
+        .expect("Failed to count products");
+    let rollback_team_count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM teams WHERE name = 'Rollback Team'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("Failed to count rollback team");
+    assert_eq!(product_count, 1);
+    assert_eq!(rollback_team_count, 0);
 
     fs::remove_file(path).ok();
 }

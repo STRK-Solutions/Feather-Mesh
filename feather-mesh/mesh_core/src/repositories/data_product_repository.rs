@@ -53,49 +53,37 @@ impl DataProductRepository {
     }
 
     pub fn get_all_by_asset_type(conn: &Connection, asset_type: &str) -> Result<Vec<DataProduct>> {
-        let mut query = conn.prepare(
-            "SELECT DISTINCT p.product_id, p.name, p.description, p.owner_team_id, p.producer,
-                    p.usage_policy, p.intended_use, p.created_at
-             FROM data_products p
-             INNER JOIN data_product_versions v ON v.data_product_id = p.product_id
-             WHERE LOWER(v.asset_type) = LOWER(?1)
-             ORDER BY p.product_id",
-        )?;
-        let rows = query.query_map(params![asset_type], Self::from_row)?;
-
-        rows.collect()
+        Self::get_all_by_version_column(conn, "asset_type", asset_type)
     }
 
     pub fn get_all_by_data_quality(
         conn: &Connection,
         data_quality: &str,
     ) -> Result<Vec<DataProduct>> {
-        let mut query = conn.prepare(
-            "SELECT DISTINCT p.product_id, p.name, p.description, p.owner_team_id, p.producer,
-                    p.usage_policy, p.intended_use, p.created_at
-             FROM data_products p
-             INNER JOIN data_product_versions v ON v.data_product_id = p.product_id
-             WHERE LOWER(v.data_quality) = LOWER(?1)
-             ORDER BY p.product_id",
-        )?;
-        let rows = query.query_map(params![data_quality], Self::from_row)?;
-
-        rows.collect()
+        Self::get_all_by_version_column(conn, "data_quality", data_quality)
     }
 
     pub fn get_all_by_classification(
         conn: &Connection,
         classification: &str,
     ) -> Result<Vec<DataProduct>> {
-        let mut query = conn.prepare(
+        Self::get_all_by_version_column(conn, "classification", classification)
+    }
+
+    fn get_all_by_version_column(
+        conn: &Connection,
+        column: &str,
+        value: &str,
+    ) -> Result<Vec<DataProduct>> {
+        let mut query = conn.prepare(&format!(
             "SELECT DISTINCT p.product_id, p.name, p.description, p.owner_team_id, p.producer,
                     p.usage_policy, p.intended_use, p.created_at
              FROM data_products p
              INNER JOIN data_product_versions v ON v.data_product_id = p.product_id
-             WHERE LOWER(v.classification) = LOWER(?1)
-             ORDER BY p.product_id",
-        )?;
-        let rows = query.query_map(params![classification], Self::from_row)?;
+             WHERE LOWER(v.{column}) = LOWER(?1)
+             ORDER BY p.product_id"
+        ))?;
+        let rows = query.query_map(params![value], Self::from_row)?;
 
         rows.collect()
     }
