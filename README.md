@@ -8,6 +8,8 @@ This STRK-Solutions repository contains the capstone work for Feather Mesh, an H
 
 This root README is intentionally high level. For setup, usage, and implementation details, use the README inside each subproject directory.
 
+For agent-specific repository guidance, use [`AGENTS.md`](/AGENTS.md). Keep that file concise and focused on durable project context, crate boundaries, and validation rules.
+
 ## Repository Overview
 
 ### `python_mvp/`
