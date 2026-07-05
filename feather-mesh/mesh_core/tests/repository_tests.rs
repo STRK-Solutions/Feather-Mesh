@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use mesh_core::init_db;
@@ -12,6 +13,8 @@ use mesh_core::repositories::{
 };
 use rusqlite::Connection;
 
+static DB_COUNTER: AtomicU64 = AtomicU64::new(0);
+
 // Builds an isolated temporary database path for each test.
 fn unique_test_db_path() -> PathBuf {
     let timestamp = SystemTime::now()
@@ -19,7 +22,12 @@ fn unique_test_db_path() -> PathBuf {
         .expect("System time before UNIX EPOCH")
         .as_nanos();
     let mut path = std::env::temp_dir();
-    path.push(format!("mesh_core_repository_{}.db", timestamp));
+    path.push(format!(
+        "mesh_core_repository_{}_{}_{}.db",
+        std::process::id(),
+        timestamp,
+        DB_COUNTER.fetch_add(1, Ordering::Relaxed)
+    ));
     path
 }
 
@@ -28,6 +36,47 @@ fn test_connection() -> (Connection, PathBuf) {
     let path = unique_test_db_path();
     let conn = init_db(&path).expect("Failed to initialize repository test database");
     (conn, path)
+}
+
+fn create_product_with_version(
+    conn: &Connection,
+    team_id: i64,
+    name: &str,
+    version_label: &str,
+    asset_type: &str,
+    data_quality: &str,
+    classification: &str,
+) -> (
+    mesh_core::models::DataProduct,
+    mesh_core::models::DataProductVersion,
+) {
+    let product = DataProductRepository::create(
+        conn,
+        NewDataProduct::new(
+            name.to_string(),
+            Some(format!("{name} description")),
+            team_id,
+            "Discovery Lab".to_string(),
+            "Internal use".to_string(),
+            Some(format!("{name} intended use")),
+        ),
+    )
+    .expect("Failed to create data product");
+
+    let version = DataProductVersionRepository::create(
+        conn,
+        NewDataProductVersion::new(
+            product.product_id,
+            version_label.to_string(),
+            asset_type.to_string(),
+            format!("/catalog/{name}/{version_label}"),
+            data_quality.to_string(),
+            classification.to_string(),
+        ),
+    )
+    .expect("Failed to create data product version");
+
+    (product, version)
 }
 
 #[test]
@@ -70,6 +119,8 @@ fn repositories_create_get_by_id_and_get_all_full_registry_graph() {
             "Daily Observations".to_string(),
             Some("Daily climate station observations".to_string()),
             team.team_id,
+            "Climate Lab".to_string(),
+            "Internal research use".to_string(),
             Some("Operational climate analytics".to_string()),
         ),
     )
@@ -78,6 +129,8 @@ fn repositories_create_get_by_id_and_get_all_full_registry_graph() {
     // Validate the persisted product fields, including database-managed ones.
     assert!(product.product_id > 0);
     assert_eq!(product.owner_team_id, team.team_id);
+    assert_eq!(product.producer, "Climate Lab");
+    assert_eq!(product.usage_policy, "Internal research use");
     assert_eq!(
         product.description,
         Some("Daily climate station observations".to_string())
@@ -100,8 +153,8 @@ fn repositories_create_get_by_id_and_get_all_full_registry_graph() {
             "v1.0.0".to_string(),
             "table".to_string(),
             "/project/feather-mesh/climate/daily".to_string(),
-            "gold".to_string(),
-            Some("internal".to_string()),
+            "production".to_string(),
+            "internal".to_string(),
         ),
     )
     .expect("Failed to create data product version");
@@ -109,7 +162,7 @@ fn repositories_create_get_by_id_and_get_all_full_registry_graph() {
     // Validate the persisted version fields, including database-managed ones.
     assert!(version.version_id > 0);
     assert_eq!(version.data_product_id, product.product_id);
-    assert_eq!(version.classification, Some("internal".to_string()));
+    assert_eq!(version.classification, "internal");
 
     // get_by_id returns the same version by primary key.
     let found_version = DataProductVersionRepository::get_by_id(&conn, version.version_id)
@@ -188,7 +241,14 @@ fn repositories_preserve_none_for_nullable_insert_fields() {
         .expect("Failed to create team");
     let product = DataProductRepository::create(
         &conn,
-        NewDataProduct::new("Bare Product".to_string(), None, team.team_id, None),
+        NewDataProduct::new(
+            "Bare Product".to_string(),
+            None,
+            team.team_id,
+            "Minimal Team".to_string(),
+            "Internal use".to_string(),
+            None,
+        ),
     )
     .expect("Failed to create data product");
     let version = DataProductVersionRepository::create(
@@ -198,8 +258,8 @@ fn repositories_preserve_none_for_nullable_insert_fields() {
             "v1".to_string(),
             "file".to_string(),
             "/tmp/data.csv".to_string(),
-            "bronze".to_string(),
-            None,
+            "unverified".to_string(),
+            "internal".to_string(),
         ),
     )
     .expect("Failed to create version");
@@ -217,12 +277,70 @@ fn repositories_preserve_none_for_nullable_insert_fields() {
     // Nullable insert fields should round trip as None when omitted.
     assert_eq!(product.description, None);
     assert_eq!(product.intended_use, None);
-    assert_eq!(version.classification, None);
+    assert_eq!(version.classification, "internal");
     assert_eq!(metadata.namespace, None);
     assert_eq!(metadata.meta_value, None);
     assert_eq!(metadata.value_type, None);
     assert_eq!(dependency.upstream_version, None);
 
     // Remove the temporary database file.
+    fs::remove_file(path).ok();
+}
+
+#[test]
+fn discovery_queries_return_case_insensitive_matches_with_current_metadata_values() {
+    let (conn, path) = test_connection();
+    let team = TeamRepository::create(&conn, NewTeam::new("Discovery".to_string()))
+        .expect("Failed to create team");
+    let (product, version) = create_product_with_version(
+        &conn,
+        team.team_id,
+        "River Gauge Feed",
+        "v1",
+        "Table",
+        "Production",
+        "Internal",
+    );
+    create_product_with_version(
+        &conn,
+        team.team_id,
+        "Weather Alerts",
+        "v1",
+        "report_artifact",
+        "unverified",
+        "public",
+    );
+
+    assert_eq!(
+        DataProductRepository::get_all_by_asset_type(&conn, "table")
+            .expect("Failed asset type discovery"),
+        vec![product.clone()]
+    );
+    assert_eq!(
+        DataProductRepository::get_all_by_data_quality(&conn, "production")
+            .expect("Failed quality discovery"),
+        vec![product.clone()]
+    );
+    assert_eq!(
+        DataProductRepository::get_all_by_classification(&conn, "internal")
+            .expect("Failed classification discovery"),
+        vec![product.clone()]
+    );
+    assert_eq!(
+        DataProductVersionRepository::get_all_by_asset_type(&conn, "table")
+            .expect("Failed version asset type discovery"),
+        vec![version.clone()]
+    );
+    assert_eq!(
+        DataProductVersionRepository::get_all_by_data_quality(&conn, "production")
+            .expect("Failed version quality discovery"),
+        vec![version.clone()]
+    );
+    assert_eq!(
+        DataProductVersionRepository::get_all_by_classification(&conn, "internal")
+            .expect("Failed version classification discovery"),
+        vec![version]
+    );
+
     fs::remove_file(path).ok();
 }

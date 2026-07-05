@@ -88,27 +88,69 @@ target/release/mesh_cli
 
 ---
 
-## Run the Project
+## Run the CLI
 
-### Run in Debug Mode
-
-```bash
-cargo run
-```
-
-### Run in Release Mode
-
-```bash
-cargo run --release
-```
-
-### Run With Arguments
+The package is still named `mesh_cli`, but the command help and user-facing surface are `feam`.
 
 ```bash
 cargo run -p mesh_cli -- --help
 ```
 
-(Note the `--` before arguments.)
+Use `--registry <path>` to select a SQLite registry. If omitted, the CLI uses `registry.db` in the current directory.
+
+### Core Workflow
+
+```bash
+cargo run -p mesh_cli -- --registry /tmp/feam.db init
+
+cargo run -p mesh_cli -- --registry /tmp/feam.db serve ./data.csv \
+  --name "Daily Observations" \
+  --asset-type file \
+  --version v1.0.0 \
+  --owner-team Climate \
+  --producer "Climate Lab" \
+  --usage-policy "Internal research use" \
+  --data-quality production \
+  --classification internal
+
+cargo run -p mesh_cli -- --registry /tmp/feam.db search daily
+cargo run -p mesh_cli -- --registry /tmp/feam.db --format json show 1
+cargo run -p mesh_cli -- --registry /tmp/feam.db lineage 1
+cargo run -p mesh_cli -- --registry /tmp/feam.db consume 1 --version v1.0.0 --out ./copy.csv
+```
+
+### Commands
+
+The implemented command surface is:
+
+- `init`
+- `serve`
+- `search`
+- `show`
+- `consume`
+- `lineage`
+- `validate-metadata`
+- `teams`
+- `products`
+
+Global options:
+
+- `--registry <path>`
+- `--format <table|json>`
+- `--verbose`
+- `--help`
+- `--version`
+
+### Exit Codes
+
+| Code | Meaning |
+| ---- | ------- |
+| `0` | success |
+| `1` | general runtime error |
+| `2` | invalid CLI usage |
+| `3` | validation failure |
+| `4` | not found |
+| `5` | permission or policy failure |
 
 ---
 

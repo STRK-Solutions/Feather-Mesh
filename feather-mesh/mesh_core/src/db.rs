@@ -42,6 +42,8 @@ pub(crate) fn init_schema(conn: &Connection) -> Result<()> {
             name TEXT NOT NULL,
             description TEXT,
             owner_team_id INTEGER NOT NULL,
+            producer TEXT NOT NULL,
+            usage_policy TEXT NOT NULL,
             intended_use TEXT,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY(owner_team_id) REFERENCES teams(team_id) ON DELETE CASCADE
@@ -54,7 +56,7 @@ pub(crate) fn init_schema(conn: &Connection) -> Result<()> {
             asset_type TEXT NOT NULL,
             source_path TEXT NOT NULL,
             data_quality TEXT NOT NULL,
-            classification TEXT,
+            classification TEXT NOT NULL,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY(data_product_id) REFERENCES data_products(product_id) ON DELETE CASCADE
         );
@@ -80,11 +82,45 @@ pub(crate) fn init_schema(conn: &Connection) -> Result<()> {
 
         CREATE INDEX IF NOT EXISTS idx_data_products_owner_team_id ON data_products(owner_team_id);
         CREATE INDEX IF NOT EXISTS idx_data_product_versions_data_product_id ON data_product_versions(data_product_id);
+        CREATE INDEX IF NOT EXISTS idx_data_product_versions_source_path ON data_product_versions(source_path);
         CREATE INDEX IF NOT EXISTS idx_metadata_data_product_version_id ON metadata(data_product_version_id);
         CREATE INDEX IF NOT EXISTS idx_lineage_dependencies_downstream_version_id ON lineage_dependencies(downstream_version_id);
         "#,
     )?;
 
+    add_column_if_missing(
+        conn,
+        "data_products",
+        "producer",
+        "TEXT NOT NULL DEFAULT 'unknown'",
+    )?;
+    add_column_if_missing(
+        conn,
+        "data_products",
+        "usage_policy",
+        "TEXT NOT NULL DEFAULT 'unspecified'",
+    )?;
+
+    Ok(())
+}
+
+fn add_column_if_missing(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+    definition: &str,
+) -> Result<()> {
+    let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+    let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+    for row in rows {
+        if row? == column {
+            return Ok(());
+        }
+    }
+    conn.execute(
+        &format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"),
+        [],
+    )?;
     Ok(())
 }
 
@@ -93,7 +129,10 @@ mod tests {
     use super::*;
     use std::fs;
     use std::path::PathBuf;
+    use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    static DB_COUNTER: AtomicU64 = AtomicU64::new(0);
 
     fn unique_test_db_path() -> PathBuf {
         let timestamp = SystemTime::now()
@@ -101,7 +140,12 @@ mod tests {
             .expect("System time before UNIX EPOCH")
             .as_nanos();
         let mut path = std::env::temp_dir();
-        path.push(format!("mesh_core_registry_{}.db", timestamp));
+        path.push(format!(
+            "mesh_core_registry_{}_{}_{}.db",
+            std::process::id(),
+            timestamp,
+            DB_COUNTER.fetch_add(1, Ordering::Relaxed)
+        ));
         path
     }
 
