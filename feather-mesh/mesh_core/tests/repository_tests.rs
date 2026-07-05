@@ -30,6 +30,45 @@ fn test_connection() -> (Connection, PathBuf) {
     (conn, path)
 }
 
+fn create_product_with_version(
+    conn: &Connection,
+    team_id: i64,
+    name: &str,
+    version_label: &str,
+    asset_type: &str,
+    data_quality: &str,
+    classification: Option<&str>,
+) -> (
+    mesh_core::models::DataProduct,
+    mesh_core::models::DataProductVersion,
+) {
+    let product = DataProductRepository::create(
+        conn,
+        NewDataProduct::new(
+            name.to_string(),
+            Some(format!("{name} description")),
+            team_id,
+            Some(format!("{name} intended use")),
+        ),
+    )
+    .expect("Failed to create data product");
+
+    let version = DataProductVersionRepository::create(
+        conn,
+        NewDataProductVersion::new(
+            product.product_id,
+            version_label.to_string(),
+            asset_type.to_string(),
+            format!("/catalog/{name}/{version_label}"),
+            data_quality.to_string(),
+            classification.map(str::to_string),
+        ),
+    )
+    .expect("Failed to create data product version");
+
+    (product, version)
+}
+
 #[test]
 // Verifies the team repository can create, fetch by ID, and fetch all persisted teams.
 fn team_repository_creates_gets_by_id_and_gets_all_persisted_teams() {
@@ -222,6 +261,177 @@ fn repositories_preserve_none_for_nullable_insert_fields() {
     assert_eq!(metadata.meta_value, None);
     assert_eq!(metadata.value_type, None);
     assert_eq!(dependency.upstream_version, None);
+
+    // Remove the temporary database file.
+    fs::remove_file(path).ok();
+}
+
+#[test]
+// Verifies discovery queries return empty collections when no versions match the requested catalog filters.
+fn discovery_queries_return_empty_results_for_unknown_categories() {
+    let (conn, path) = test_connection();
+    let team = TeamRepository::create(&conn, NewTeam::new("Discovery".to_string()))
+        .expect("Failed to create team");
+    create_product_with_version(
+        &conn,
+        team.team_id,
+        "Climate Daily",
+        "v1",
+        "table",
+        "gold",
+        Some("internal"),
+    );
+
+    assert_eq!(
+        DataProductRepository::get_all_by_asset_type(&conn, "stream")
+            .expect("Failed asset type discovery"),
+        vec![]
+    );
+    assert_eq!(
+        DataProductRepository::get_all_by_data_quality(&conn, "silver")
+            .expect("Failed data quality discovery"),
+        vec![]
+    );
+    assert_eq!(
+        DataProductRepository::get_all_by_classification(&conn, "public")
+            .expect("Failed classification discovery"),
+        vec![]
+    );
+
+    // Remove the temporary database file.
+    fs::remove_file(path).ok();
+}
+
+#[test]
+// Verifies discovery queries return a single matching product and versions when matching categories case-insensitively.
+fn discovery_queries_return_single_case_insensitive_match() {
+    let (conn, path) = test_connection();
+    let team = TeamRepository::create(&conn, NewTeam::new("Discovery".to_string()))
+        .expect("Failed to create team");
+    let (product, version) = create_product_with_version(
+        &conn,
+        team.team_id,
+        "River Gauge Feed",
+        "v1",
+        "Table",
+        "Gold",
+        Some("Internal"),
+    );
+    create_product_with_version(
+        &conn,
+        team.team_id,
+        "Weather Alerts",
+        "v1",
+        "api",
+        "bronze",
+        Some("public"),
+    );
+
+    assert_eq!(
+        DataProductRepository::get_all_by_asset_type(&conn, "table")
+            .expect("Failed asset type discovery"),
+        vec![product.clone()]
+    );
+    assert_eq!(
+        DataProductRepository::get_all_by_data_quality(&conn, "gold")
+            .expect("Failed data quality discovery"),
+        vec![product.clone()]
+    );
+    assert_eq!(
+        DataProductRepository::get_all_by_classification(&conn, "internal")
+            .expect("Failed classification discovery"),
+        vec![product.clone()]
+    );
+
+    assert_eq!(
+        DataProductVersionRepository::get_all_by_asset_type(&conn, "table")
+            .expect("Failed asset type version discovery"),
+        vec![version.clone()]
+    );
+    assert_eq!(
+        DataProductVersionRepository::get_all_by_data_quality(&conn, "gold")
+            .expect("Failed data quality version discovery"),
+        vec![version.clone()]
+    );
+    assert_eq!(
+        DataProductVersionRepository::get_all_by_classification(&conn, "internal")
+            .expect("Failed classification version discovery"),
+        vec![version]
+    );
+
+    // Remove the temporary database file.
+    fs::remove_file(path).ok();
+}
+
+#[test]
+// Verifies discovery queries return multiple distinct products even when multiple versions on one product match the same category.
+fn discovery_queries_return_multiple_distinct_products() {
+    let (conn, path) = test_connection();
+    let team = TeamRepository::create(&conn, NewTeam::new("Discovery".to_string()))
+        .expect("Failed to create team");
+
+    let (climate_product, climate_v1) = create_product_with_version(
+        &conn,
+        team.team_id,
+        "Climate Daily",
+        "v1",
+        "table",
+        "gold",
+        Some("internal"),
+    );
+    let climate_v2 = DataProductVersionRepository::create(
+        &conn,
+        NewDataProductVersion::new(
+            climate_product.product_id,
+            "v2".to_string(),
+            "TABLE".to_string(),
+            "/catalog/Climate Daily/v2".to_string(),
+            "gold".to_string(),
+            Some("INTERNAL".to_string()),
+        ),
+    )
+    .expect("Failed to create second climate version");
+
+    let (hydrology_product, hydrology_v1) = create_product_with_version(
+        &conn,
+        team.team_id,
+        "Hydrology Snapshot",
+        "v1",
+        "table",
+        "silver",
+        Some("internal"),
+    );
+    let (public_dashboard_product, _) = create_product_with_version(
+        &conn,
+        team.team_id,
+        "Public Dashboard Feed",
+        "v1",
+        "api",
+        "gold",
+        Some("public"),
+    );
+
+    assert_eq!(
+        DataProductRepository::get_all_by_asset_type(&conn, "TABLE")
+            .expect("Failed asset type discovery"),
+        vec![climate_product.clone(), hydrology_product.clone()]
+    );
+    assert_eq!(
+        DataProductRepository::get_all_by_classification(&conn, "internal")
+            .expect("Failed classification discovery"),
+        vec![climate_product.clone(), hydrology_product.clone()]
+    );
+    assert_eq!(
+        DataProductRepository::get_all_by_data_quality(&conn, "gold")
+            .expect("Failed data quality discovery"),
+        vec![climate_product.clone(), public_dashboard_product]
+    );
+
+    assert_eq!(
+        DataProductVersionRepository::get_all_by_asset_type(&conn, "table")
+            .expect("Failed asset type version discovery"),
+        vec![climate_v1, climate_v2, hydrology_v1]
+    );
 
     // Remove the temporary database file.
     fs::remove_file(path).ok();

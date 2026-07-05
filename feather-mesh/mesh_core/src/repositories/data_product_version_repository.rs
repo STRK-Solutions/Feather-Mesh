@@ -52,6 +52,58 @@ impl DataProductVersionRepository {
         rows.collect()
     }
 
+    /// Gets all persisted data product versions matching the asset type, case-insensitively.
+    pub fn get_all_by_asset_type(
+        conn: &Connection,
+        asset_type: &str,
+    ) -> Result<Vec<DataProductVersion>> {
+        let mut stmt = conn.prepare(
+            "SELECT version_id, data_product_id, version_label, asset_type, source_path,
+                    data_quality, classification, created_at
+             FROM data_product_versions
+             WHERE LOWER(asset_type) = LOWER(?1)
+             ORDER BY version_id",
+        )?;
+        let rows = stmt.query_map(params![asset_type], Self::from_row)?;
+
+        rows.collect()
+    }
+
+    /// Gets all persisted data product versions matching the data quality, case-insensitively.
+    pub fn get_all_by_data_quality(
+        conn: &Connection,
+        data_quality: &str,
+    ) -> Result<Vec<DataProductVersion>> {
+        let mut stmt = conn.prepare(
+            "SELECT version_id, data_product_id, version_label, asset_type, source_path,
+                    data_quality, classification, created_at
+             FROM data_product_versions
+             WHERE LOWER(data_quality) = LOWER(?1)
+             ORDER BY version_id",
+        )?;
+        let rows = stmt.query_map(params![data_quality], Self::from_row)?;
+
+        rows.collect()
+    }
+
+    /// Gets all persisted data product versions matching the classification, case-insensitively.
+    pub fn get_all_by_classification(
+        conn: &Connection,
+        classification: &str,
+    ) -> Result<Vec<DataProductVersion>> {
+        let mut stmt = conn.prepare(
+            "SELECT version_id, data_product_id, version_label, asset_type, source_path,
+                    data_quality, classification, created_at
+             FROM data_product_versions
+             WHERE classification IS NOT NULL
+               AND LOWER(classification) = LOWER(?1)
+             ORDER BY version_id",
+        )?;
+        let rows = stmt.query_map(params![classification], Self::from_row)?;
+
+        rows.collect()
+    }
+
     /// Maps database row -> DataProductVersion struct
     fn from_row(row: &Row<'_>) -> Result<DataProductVersion> {
         let created_at: String = row.get("created_at")?;
