@@ -43,6 +43,8 @@ pub(crate) fn init_schema(conn: &Connection) -> Result<()> {
             description TEXT,
             owner_team_id INTEGER NOT NULL,
             intended_use TEXT,
+            producer TEXT NOT NULL,
+            usage_policy TEXT NOT NULL,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY(owner_team_id) REFERENCES teams(team_id) ON DELETE CASCADE
         );
@@ -84,7 +86,6 @@ pub(crate) fn init_schema(conn: &Connection) -> Result<()> {
         CREATE INDEX IF NOT EXISTS idx_lineage_dependencies_downstream_version_id ON lineage_dependencies(downstream_version_id);
         "#,
     )?;
-
     Ok(())
 }
 

@@ -8,6 +8,8 @@ pub struct DataProduct {
     pub description: Option<String>,
     pub owner_team_id: i64,
     pub intended_use: Option<String>,
+    pub producer: String,
+    pub usage_policy: String,
     pub created_at: NaiveDateTime,
 }
 
@@ -27,6 +29,8 @@ mod tests {
             description: Some("Order facts curated for finance reporting".to_string()),
             owner_team_id: 2,
             intended_use: Some("Monthly reconciliations".to_string()),
+            producer: "Finance Lab".to_string(),
+            usage_policy: "Internal reporting only".to_string(),
             created_at,
         };
 
@@ -36,6 +40,7 @@ mod tests {
         assert!(json.contains("\"product_id\":11"));
         assert!(json.contains("\"name\":\"Orders\""));
         assert!(json.contains("\"owner_team_id\":2"));
+        assert!(json.contains("\"producer\":\"Finance Lab\""));
         assert_eq!(round_trip, product);
     }
 }

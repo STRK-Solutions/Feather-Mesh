@@ -1,13 +1,15 @@
 use serde::{Deserialize, Serialize};
 
+use crate::models::{AccessClassification, AssetType, DataQuality};
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NewDataProductVersion {
     pub data_product_id: i64,
     pub version_label: String,
-    pub asset_type: String,
+    pub asset_type: AssetType,
     pub source_path: String,
-    pub data_quality: String,
-    pub classification: Option<String>,
+    pub data_quality: DataQuality,
+    pub classification: Option<AccessClassification>,
 }
 
 impl NewDataProductVersion {
@@ -15,10 +17,10 @@ impl NewDataProductVersion {
     pub fn new(
         data_product_id: i64,
         version_label: String,
-        asset_type: String,
+        asset_type: AssetType,
         source_path: String,
-        data_quality: String,
-        classification: Option<String>,
+        data_quality: DataQuality,
+        classification: Option<AccessClassification>,
     ) -> Self {
         Self {
             data_product_id,
@@ -34,6 +36,7 @@ impl NewDataProductVersion {
 #[cfg(test)]
 mod tests {
     use super::NewDataProductVersion;
+    use crate::models::{AccessClassification, AssetType, DataQuality};
 
     #[test]
     // Verifies the constructor leaves optional fields unset and preserves input values.
@@ -41,17 +44,17 @@ mod tests {
         let version = NewDataProductVersion::new(
             12,
             "v1.0.0".to_string(),
-            "test".to_string(),
+            AssetType::File,
             "test/data".to_string(),
-            "test".to_string(),
+            DataQuality::Production,
             None,
         );
 
         assert_eq!(version.data_product_id, 12);
         assert_eq!(version.version_label, "v1.0.0");
-        assert_eq!(version.asset_type, "test");
+        assert_eq!(version.asset_type, AssetType::File);
         assert_eq!(version.source_path, "test/data");
-        assert_eq!(version.data_quality, "test");
+        assert_eq!(version.data_quality, DataQuality::Production);
         assert_eq!(version.classification, None);
     }
 
@@ -61,12 +64,12 @@ mod tests {
         let version = NewDataProductVersion::new(
             12,
             "v1.0.0".to_string(),
-            "test".to_string(),
+            AssetType::File,
             "test/data".to_string(),
-            "test".to_string(),
-            Some("internal".to_string()),
+            DataQuality::Production,
+            Some(AccessClassification::Internal),
         );
 
-        assert_eq!(version.classification, Some("internal".to_string()));
+        assert_eq!(version.classification, Some(AccessClassification::Internal));
     }
 }

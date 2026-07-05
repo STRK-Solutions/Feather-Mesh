@@ -4,7 +4,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use mesh_core::init_db;
 use mesh_core::models::{
-    NewDataProduct, NewDataProductVersion, NewLineageDependency, NewMetadata, NewTeam,
+    AccessClassification, AssetType, DataQuality, NewDataProduct, NewDataProductVersion,
+    NewLineageDependency, NewMetadata, NewTeam,
 };
 use mesh_core::repositories::{
     DataProductRepository, DataProductVersionRepository, LineageDependencyRepository,
@@ -71,6 +72,8 @@ fn repositories_create_get_by_id_and_get_all_full_registry_graph() {
             Some("Daily climate station observations".to_string()),
             team.team_id,
             Some("Operational climate analytics".to_string()),
+            "Climate Lab".to_string(),
+            "Research and operational analytics".to_string(),
         ),
     )
     .expect("Failed to create data product");
@@ -82,6 +85,8 @@ fn repositories_create_get_by_id_and_get_all_full_registry_graph() {
         product.description,
         Some("Daily climate station observations".to_string())
     );
+    assert_eq!(product.producer, "Climate Lab");
+    assert_eq!(product.usage_policy, "Research and operational analytics");
 
     // get_by_id returns the same product by primary key.
     let found_product = DataProductRepository::get_by_id(&conn, product.product_id)
@@ -98,10 +103,10 @@ fn repositories_create_get_by_id_and_get_all_full_registry_graph() {
         NewDataProductVersion::new(
             product.product_id,
             "v1.0.0".to_string(),
-            "table".to_string(),
+            AssetType::Table,
             "/project/feather-mesh/climate/daily".to_string(),
-            "gold".to_string(),
-            Some("internal".to_string()),
+            DataQuality::Production,
+            Some(AccessClassification::Internal),
         ),
     )
     .expect("Failed to create data product version");
@@ -109,7 +114,9 @@ fn repositories_create_get_by_id_and_get_all_full_registry_graph() {
     // Validate the persisted version fields, including database-managed ones.
     assert!(version.version_id > 0);
     assert_eq!(version.data_product_id, product.product_id);
-    assert_eq!(version.classification, Some("internal".to_string()));
+    assert_eq!(version.asset_type, AssetType::Table);
+    assert_eq!(version.data_quality, DataQuality::Production);
+    assert_eq!(version.classification, Some(AccessClassification::Internal));
 
     // get_by_id returns the same version by primary key.
     let found_version = DataProductVersionRepository::get_by_id(&conn, version.version_id)
@@ -188,7 +195,14 @@ fn repositories_preserve_none_for_nullable_insert_fields() {
         .expect("Failed to create team");
     let product = DataProductRepository::create(
         &conn,
-        NewDataProduct::new("Bare Product".to_string(), None, team.team_id, None),
+        NewDataProduct::new(
+            "Bare Product".to_string(),
+            None,
+            team.team_id,
+            None,
+            "Minimal Lab".to_string(),
+            "Internal research use".to_string(),
+        ),
     )
     .expect("Failed to create data product");
     let version = DataProductVersionRepository::create(
@@ -196,9 +210,9 @@ fn repositories_preserve_none_for_nullable_insert_fields() {
         NewDataProductVersion::new(
             product.product_id,
             "v1".to_string(),
-            "file".to_string(),
+            AssetType::File,
             "/tmp/data.csv".to_string(),
-            "bronze".to_string(),
+            DataQuality::Unverified,
             None,
         ),
     )

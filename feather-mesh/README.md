@@ -153,6 +153,7 @@ feather-mesh/
     │   ├── lib.rs         # Library exports
     │   ├── db.rs          # SQLite connection and schema setup
     │   ├── models/        # Domain data structures
+    │   │   ├── metadata/  # Typed metadata values and validation helpers
     │   │   ├── entities/  # Persisted database row models
     │   │   └── new/       # Insertable NewX models
     │   ├── repositories/  # SQL queries and object mapping

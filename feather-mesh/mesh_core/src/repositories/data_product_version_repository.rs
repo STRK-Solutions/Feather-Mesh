@@ -1,6 +1,9 @@
-use rusqlite::{Connection, Result, Row, params};
+use rusqlite::{Connection, Result, Row, params, types::Type};
 
-use crate::models::{DataProductVersion, NewDataProductVersion};
+use crate::models::{
+    AccessClassification, AssetType, DataProductVersion, DataQuality, NewDataProductVersion,
+    ValidationError,
+};
 
 use super::parse_naive_datetime;
 
@@ -9,6 +12,7 @@ pub struct DataProductVersionRepository;
 impl DataProductVersionRepository {
     /// Inserts a new data product version and returns the persisted version row with database-managed fields.
     pub fn create(conn: &Connection, input: NewDataProductVersion) -> Result<DataProductVersion> {
+        let classification = input.classification.map(|value| value.as_str());
         conn.execute(
             "INSERT INTO data_product_versions
                 (data_product_id, version_label, asset_type, source_path, data_quality, classification)
@@ -16,10 +20,10 @@ impl DataProductVersionRepository {
             params![
                 input.data_product_id,
                 input.version_label,
-                input.asset_type,
+                input.asset_type.as_str(),
                 input.source_path,
-                input.data_quality,
-                input.classification
+                input.data_quality.as_str(),
+                classification
             ],
         )?;
 
@@ -55,16 +59,32 @@ impl DataProductVersionRepository {
     /// Maps database row -> DataProductVersion struct
     fn from_row(row: &Row<'_>) -> Result<DataProductVersion> {
         let created_at: String = row.get("created_at")?;
+        let asset_type: String = row.get("asset_type")?;
+        let data_quality: String = row.get("data_quality")?;
+        let classification: Option<String> = row.get("classification")?;
 
         Ok(DataProductVersion {
             version_id: row.get("version_id")?,
             data_product_id: row.get("data_product_id")?,
             version_label: row.get("version_label")?,
-            asset_type: row.get("asset_type")?,
+            asset_type: parse_domain_value(3, &asset_type, AssetType::parse)?,
             source_path: row.get("source_path")?,
-            data_quality: row.get("data_quality")?,
-            classification: row.get("classification")?,
+            data_quality: parse_domain_value(5, &data_quality, DataQuality::parse)?,
+            classification: classification
+                .map(|value| parse_domain_value(6, &value, AccessClassification::parse))
+                .transpose()?,
             created_at: parse_naive_datetime(7, created_at)?,
         })
     }
+}
+
+/// Converts persisted metadata text into a typed domain value.
+fn parse_domain_value<T>(
+    column_index: usize,
+    value: &str,
+    parse: impl FnOnce(&str) -> Result<T, ValidationError>,
+) -> Result<T> {
+    parse(value).map_err(|err| {
+        rusqlite::Error::FromSqlConversionFailure(column_index, Type::Text, Box::new(err))
+    })
 }

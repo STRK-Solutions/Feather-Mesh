@@ -10,13 +10,16 @@ impl DataProductRepository {
     /// Inserts a new data product and returns the persisted data product row with database-managed fields.
     pub fn create(conn: &Connection, input: NewDataProduct) -> Result<DataProduct> {
         conn.execute(
-            "INSERT INTO data_products (name, description, owner_team_id, intended_use)
-             VALUES (?1, ?2, ?3, ?4)",
+            "INSERT INTO data_products
+                (name, description, owner_team_id, intended_use, producer, usage_policy)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
                 input.name,
                 input.description,
                 input.owner_team_id,
-                input.intended_use
+                input.intended_use,
+                input.producer,
+                input.usage_policy
             ],
         )?;
 
@@ -27,7 +30,8 @@ impl DataProductRepository {
     /// Gets a persisted data product by product_id.
     pub fn get_by_id(conn: &Connection, product_id: i64) -> Result<DataProduct> {
         conn.query_row(
-            "SELECT product_id, name, description, owner_team_id, intended_use, created_at
+            "SELECT product_id, name, description, owner_team_id, intended_use,
+                    producer, usage_policy, created_at
              FROM data_products
              WHERE product_id = ?1",
             params![product_id],
@@ -38,7 +42,8 @@ impl DataProductRepository {
     /// Gets all persisted data products ordered by primary key.
     pub fn get_all(conn: &Connection) -> Result<Vec<DataProduct>> {
         let mut query = conn.prepare(
-            "SELECT product_id, name, description, owner_team_id, intended_use, created_at
+            "SELECT product_id, name, description, owner_team_id, intended_use,
+                    producer, usage_policy, created_at
              FROM data_products
              ORDER BY product_id",
         )?;
@@ -57,7 +62,9 @@ impl DataProductRepository {
             description: row.get("description")?,
             owner_team_id: row.get("owner_team_id")?,
             intended_use: row.get("intended_use")?,
-            created_at: parse_naive_datetime(5, created_at)?,
+            producer: row.get("producer")?,
+            usage_policy: row.get("usage_policy")?,
+            created_at: parse_naive_datetime(7, created_at)?,
         })
     }
 }
