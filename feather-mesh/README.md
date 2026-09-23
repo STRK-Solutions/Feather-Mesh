@@ -207,7 +207,7 @@ feather-mesh/
 
 `mesh_core::services` defines API-style functions that expose key Feather Mesh workflows for `mesh_cli` to call, such as publishing, discovering, inspecting, and retrieving data products. Services coordinate `mesh_core::repositories` and `mesh_core::models` while keeping persistence details out of the CLI. Repository modules own SQL queries and database row mapping.
 
-The product source of truth currently remains at the STRK-Solutions repository root as `Feather_Mesh_PDD_Revised.pdf`.
+For general product background, see `Feather_Mesh_PDD_Revised.pdf` at the repository root. For the planned peer data access workflow, [data_access.md](../data_access.md) and the [implementation workplan](../data_access_implementation_workplan.md) govern; once P0 creates `docs/data_access_contract.md`, use it for settled schema/API and migration decisions. These feature requirements extend the older copy-centered product documents. The commands above describe the current SQLite implementation, not the planned SDK or STAC service.
 
 ---
 

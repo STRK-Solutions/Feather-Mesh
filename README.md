@@ -10,6 +10,8 @@ This root README is intentionally high level. For setup, usage, and implementati
 
 For agent-specific repository guidance, use [`AGENTS.md`](/AGENTS.md). Keep that file concise and focused on durable project context, crate boundaries, and validation rules.
 
+For planned peer data access, start with [requirements](data_access.md) and the [implementation workplan](data_access_implementation_workplan.md). They distinguish confirmed requirements from proposed defaults; current implementation behavior remains documented in the Rust workspace README.
+
 ## Repository Overview
 
 ### `feather-mesh/`

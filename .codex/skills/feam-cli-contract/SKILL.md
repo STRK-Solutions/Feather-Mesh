@@ -13,6 +13,8 @@ Use this skill for user-facing `feam` behavior.
 - The Rust package and binary crate remain `mesh_cli`.
 - Keep command parsing, terminal UX, output formatting, and process exit behavior in `feather-mesh/mesh_cli`.
 - Keep business rules and persistence workflows behind `mesh_core::services`.
+- Keep shared result DTOs and domain errors in core; CLI rendering and error-to-exit-code mapping remain in `mesh_cli`.
+- For peer publication, resolution, refresh, staging, or an SDK-facing protocol, also apply [feam-peer-data-access](../feam-peer-data-access/SKILL.md).
 
 Implemented commands:
 
@@ -29,10 +31,23 @@ Implemented commands:
 ## Change Rules
 
 - Preserve command names, flag names, JSON field names, and exit-code meanings unless the user explicitly requests a contract change.
+- Execute an authorized contract change by documenting its version/migration and testing old/new behavior; the preservation rule does not require renewed approval for changes already within the requested scope. Record feature decisions in `docs/data_access_contract.md` once P0 creates it, rather than preserving conversation history in this skill.
 - When changing output, check both table and JSON behavior if both are affected.
 - When changing errors, verify the mapped exit code still matches `feather-mesh/README.md`.
 - Prefer adding CLI workflow coverage in `feather-mesh/mesh_cli/tests/cli_workflow_tests.rs` for externally visible behavior.
 - Add service-level tests when the CLI change exposes new `mesh_core` behavior.
+
+## SDK Protocol and Migration
+
+For the planned subprocess interface, read the [feature requirements](../../../data_access.md) and [workplan](../../../data_access_implementation_workplan.md); use the settled P0 contract when present. Existing JSON success output and plain stderr errors are current behavior, not a complete SDK protocol.
+
+- Define versioned result and error schemas, compatibility/unknown-field rules, and explicit mappings from each domain error to a machine error kind and exit code. Retain documented exit meanings unless an authorized migration changes them.
+- Keep success stdout parseable as one result JSON value. In machine mode, use the documented structured error channel on failure (the proposed default is stderr); diagnostic text must not contaminate either JSON payload. Document how verbose diagnostics are separated.
+- Specify conflicts/precedence for project and legacy registry options. Peer operations require explicit project anchoring and must not silently use a working-directory `registry.db`. Direct reads and staging require pinned product/version references.
+- Keep ordinary `serve` as publication. The proposed `stac serve` starts HTTP; it is not implemented yet. Keep the `feam` user-facing name and configurable `mesh_cli` executable path distinct.
+- For intentional breaks, provide migration examples and compatibility/rejection tests for prior invocations, JSON consumers, relative paths, and registry selection. Legacy inspection/staging must not silently import unregistered entries into peer discovery or bypass the publication metadata gate.
+
+Test success and failure through the actual installed SDK/subprocess boundary when introduced, with argument arrays (no shell), paths containing spaces, changed working directories, a missing executable, incompatible protocol versions, malformed JSON, and every relevant error category. Test stdout/stderr separation and project/registry conflicts. Before the SDK exists, test the CLI boundary and record SDK integration as pending; do not claim that phase complete.
 
 ## Validation
 
