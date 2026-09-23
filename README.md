@@ -48,4 +48,5 @@ The product definition document, outlining an in-depth overview of the Feather M
 ## Where To Go Next
 
 - If you want the Rust implementation, start in [`feather-mesh/README.md`](/feather-mesh/README.md).
+- For the proposed low-cost, browser-accessible development and demo host, see [Ubuntu web development and demo environment](docs/ubuntu_web_dev_demo_design.md).
 - If you want architecture context, browse `diagrams/`, `proposal.md`, `Feather_Mesh_PDD_Revised.pdf`, and [`feather-mesh/README.md`](/feather-mesh/README.md).
