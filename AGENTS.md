@@ -10,9 +10,9 @@ Feather Mesh is an HPC-oriented data catalog and data mesh project. The current 
 
 ## Peer Data Access Routing
 
-Explicit user instructions take precedence. For peer data access, read [requirements](data_access.md) and the [implementation workplan](data_access_implementation_workplan.md). Confirmed requirements govern; the workplan supplies proposed defaults. Once P0 creates `docs/data_access_contract.md`, use it for settled schema/API and migration decisions. Source and tests establish observed current behavior, not the intended feature contract.
+Explicit user instructions take precedence. For peer data access, read [requirements](data_access.md), the settled [contract](docs/data_access_contract.md), and the [implementation workplan](data_access_implementation_workplan.md). Confirmed requirements and the contract govern; source and tests establish observed behavior.
 
-The new workflow requires authoritative registered manifests and first-class direct reads; SQLite/STAC are derived views. The current implementation still uses a SQLite registry. Older PDDs and plans are historical for this feature; see the [older agent-plan notice](feather-mesh/.agents/feather_mesh_workplan.md). Proposed commands, `python_sdk/`, and `mesh_stac` are not implemented.
+Peer publication uses authoritative provider `serving/manifest.json` records and first-class direct reads. Legacy SQLite remains separate and is not a peer authority. `mesh_core::services::peer_access` owns project config, manifests, inspection, refresh, resolution, and staging; `mesh_core::stac`/`stac_http` are derived adapters; `python_sdk/` is the supported subprocess adapter. Older PDDs and plans are historical for this feature; see the [older agent-plan notice](feather-mesh/.agents/feather_mesh_workplan.md).
 
 Use [feam-peer-data-access](.codex/skills/feam-peer-data-access/SKILL.md) for publication/manifests, project/peer resolution, cache refresh, SDK, STAC, and peer staging changes, including adapter-only work. Also use [feam-rust-workflow](.codex/skills/feam-rust-workflow/SKILL.md) for Rust, [feam-cli-contract](.codex/skills/feam-cli-contract/SKILL.md) for CLI/protocol changes, and [feam-agent-context-maintainer](.codex/skills/feam-agent-context-maintainer/SKILL.md) when context or component commands change.
 
@@ -52,6 +52,11 @@ Implemented commands:
 - `validate-metadata`
 - `teams`
 - `products`
+- `refresh`
+- `cache`
+- `resolve`
+- `withdraw`
+- `stac`
 
 Stable exit codes are documented in the [workspace README](feather-mesh/README.md#exit-codes) and tested in [CLI workflow tests](feather-mesh/mesh_cli/tests/cli_workflow_tests.rs).
 

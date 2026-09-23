@@ -6,17 +6,24 @@ use std::str::FromStr;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use mesh_core::domain::{AssetType, Classification, DataQuality, RegistryError};
+use mesh_core::peer::{
+    self, PeerError, PeerResult, Project, cache_status, list_registered, publish,
+    read_publication_request, refresh, resolve, stage, withdraw,
+};
 use mesh_core::services::{
     ConsumeRequest, InitResponse, LineageReference, RegistryService, SearchRequest, ServeRequest,
 };
 use mesh_core::{DEFAULT_DB_FILENAME, init_db};
 use serde::Serialize;
+use thiserror::Error;
 
 #[derive(Debug, Parser)]
 #[command(name = "feam", version, about = "Feather Mesh CLI")]
 struct Cli {
-    #[arg(long, global = true, value_name = "PATH", default_value = DEFAULT_DB_FILENAME)]
-    registry: PathBuf,
+    #[arg(long, global = true, value_name = "PATH")]
+    registry: Option<PathBuf>,
+    #[arg(long, global = true, value_name = "ROOT", conflicts_with = "registry")]
+    project: Option<PathBuf>,
     #[arg(long, global = true, value_enum, default_value_t = OutputFormat::Table)]
     format: OutputFormat,
     #[arg(long, global = true)]
@@ -33,31 +40,40 @@ enum OutputFormat {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    Init,
+    Init {
+        #[arg(long)]
+        namespace: Option<String>,
+        #[arg(long)]
+        serving_dir: Option<PathBuf>,
+        #[arg(long = "owner-team")]
+        owner_teams: Vec<String>,
+    },
     Serve {
         path: PathBuf,
         #[arg(long)]
-        name: String,
+        name: Option<String>,
         #[arg(long, value_enum)]
-        asset_type: CliAssetType,
+        asset_type: Option<CliAssetType>,
         #[arg(long)]
-        version: String,
+        version: Option<String>,
         #[arg(long)]
-        owner_team: String,
+        owner_team: Option<String>,
         #[arg(long)]
-        producer: String,
+        producer: Option<String>,
         #[arg(long)]
-        usage_policy: String,
+        usage_policy: Option<String>,
         #[arg(long, value_enum)]
-        data_quality: CliDataQuality,
+        data_quality: Option<CliDataQuality>,
         #[arg(long, value_enum)]
-        classification: CliClassification,
+        classification: Option<CliClassification>,
         #[arg(long)]
         description: Option<String>,
         #[arg(long)]
         intended_use: Option<String>,
         #[arg(long = "lineage")]
         lineage: Vec<String>,
+        #[arg(long)]
+        metadata: Option<PathBuf>,
     },
     Search {
         query: Option<String>,
@@ -94,6 +110,46 @@ enum Command {
     },
     Teams,
     Products,
+    Refresh,
+    Cache {
+        #[command(subcommand)]
+        command: CacheCommand,
+    },
+    Resolve {
+        reference: String,
+        #[arg(long)]
+        version: String,
+        #[arg(long)]
+        asset: Option<String>,
+        #[arg(long)]
+        verify_integrity: bool,
+    },
+    Withdraw {
+        reference: String,
+        #[arg(long)]
+        version: String,
+        #[arg(long)]
+        reason: String,
+    },
+    Stac {
+        #[command(subcommand)]
+        command: StacCommand,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum CacheCommand {
+    Status,
+}
+
+#[derive(Debug, Subcommand)]
+enum StacCommand {
+    Serve {
+        #[arg(long)]
+        token_file: PathBuf,
+        #[arg(long, default_value = "127.0.0.1:8080")]
+        addr: std::net::SocketAddr,
+    },
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -122,32 +178,77 @@ enum CliClassification {
     Restricted,
 }
 
+#[derive(Debug, Error)]
+enum AppError {
+    #[error(transparent)]
+    Registry(#[from] RegistryError),
+    #[error(transparent)]
+    Peer(#[from] PeerError),
+}
+
 fn main() -> ExitCode {
-    match run() {
+    let cli = Cli::parse();
+    let peer_machine = cli.project.is_some() && matches!(cli.format, OutputFormat::Json);
+    match run(cli) {
         Ok(()) => ExitCode::SUCCESS,
-        Err(err) => {
+        Err(AppError::Peer(err)) => {
+            if peer_machine {
+                let value = serde_json::json!({"protocol": peer::PEER_PROTOCOL_VERSION, "error": {"kind": err.kind(), "message": err.to_string()}});
+                eprintln!(
+                    "{}",
+                    serde_json::to_string(&value).expect("error schema serializes")
+                );
+            } else {
+                eprintln!("{err}");
+            }
+            ExitCode::from(err.exit_code())
+        }
+        Err(AppError::Registry(err)) => {
             eprintln!("{err}");
             ExitCode::from(exit_code(&err))
         }
     }
 }
 
-fn run() -> Result<(), RegistryError> {
-    let cli = Cli::parse();
-
-    if matches!(cli.command, Command::Init) {
-        init_db(&cli.registry)?;
-        let response = InitResponse {
-            registry_path: cli.registry.to_string_lossy().into_owned(),
-            status: "initialized".to_string(),
-        };
-        return print_init(&response, cli.format);
+fn run(cli: Cli) -> Result<(), AppError> {
+    if let Some(project_root) = cli.project.clone() {
+        run_peer(cli, project_root).map_err(AppError::from)
+    } else {
+        run_legacy(cli).map_err(AppError::from)
     }
+}
 
-    let conn = init_db(&cli.registry)?;
+fn run_legacy(cli: Cli) -> Result<(), RegistryError> {
+    let registry = cli
+        .registry
+        .unwrap_or_else(|| PathBuf::from(DEFAULT_DB_FILENAME));
+    if let Command::Init {
+        namespace,
+        serving_dir,
+        owner_teams,
+    } = &cli.command
+    {
+        if namespace.is_some() || serving_dir.is_some() || !owner_teams.is_empty() {
+            return Err(RegistryError::Validation(
+                mesh_core::domain::ValidationError::new(
+                    "init",
+                    "--namespace and --serving-dir require --project",
+                ),
+            ));
+        }
+        init_db(&registry)?;
+        return print_init(
+            &InitResponse {
+                registry_path: registry.to_string_lossy().into_owned(),
+                status: "initialized".into(),
+            },
+            cli.format,
+        );
+    }
+    let conn = init_db(&registry)?;
     let service = RegistryService::new(&conn);
     match cli.command {
-        Command::Init => unreachable!(),
+        Command::Init { .. } => unreachable!(),
         Command::Serve {
             path,
             name,
@@ -161,23 +262,31 @@ fn run() -> Result<(), RegistryError> {
             description,
             intended_use,
             lineage,
+            metadata,
         } => {
+            if metadata.is_some() {
+                return Err(RegistryError::Validation(
+                    mesh_core::domain::ValidationError::new(
+                        "metadata",
+                        "peer publication metadata requires --project",
+                    ),
+                ));
+            }
             let request = ServeRequest {
                 source_path: path,
-                name,
-                asset_type: asset_type.into(),
-                version,
-                owner_team,
-                producer,
-                usage_policy,
-                data_quality: data_quality.into(),
-                classification: classification.into(),
+                name: required_legacy("name", name)?,
+                asset_type: required_legacy("asset_type", asset_type)?.into(),
+                version: required_legacy("version", version)?,
+                owner_team: required_legacy("owner_team", owner_team)?,
+                producer: required_legacy("producer", producer)?,
+                usage_policy: required_legacy("usage_policy", usage_policy)?,
+                data_quality: required_legacy("data_quality", data_quality)?.into(),
+                classification: required_legacy("classification", classification)?.into(),
                 description,
                 intended_use,
                 lineage: parse_lineage(lineage)?,
             };
-            let response = service.serve(request)?;
-            print_serve(&response, cli.format)
+            print_serve(&service.serve(request)?, cli.format)
         }
         Command::Search {
             query,
@@ -185,47 +294,46 @@ fn run() -> Result<(), RegistryError> {
             data_quality,
             classification,
             owner_team,
-        } => {
-            let products = service.search_products(SearchRequest {
+        } => print_products(
+            &service.search_products(SearchRequest {
                 query,
                 asset_type: asset_type.map(Into::into),
                 data_quality: data_quality.map(Into::into),
                 classification: classification.map(Into::into),
                 owner_team,
-            })?;
-            print_products(&products, cli.format)
-        }
+            })?,
+            cli.format,
+        ),
         Command::Show {
             product_id_or_source_path,
             version,
-        } => {
-            let detail = service.show_product(&product_id_or_source_path, version.as_deref())?;
-            print_show(&detail, cli.format)
-        }
+        } => print_show(
+            &service.show_product(&product_id_or_source_path, version.as_deref())?,
+            cli.format,
+        ),
         Command::Consume {
             product_id_or_source_path,
             version,
             out,
             overwrite,
-        } => {
-            let receipt = service.consume(ConsumeRequest {
+        } => print_consume(
+            &service.consume(ConsumeRequest {
                 product_ref: product_id_or_source_path,
                 version,
                 out,
                 overwrite,
-            })?;
-            print_consume(&receipt, cli.format)
-        }
+            })?,
+            cli.format,
+        ),
         Command::Lineage {
             product_id_or_source_path,
             version,
-        } => {
-            let lineage = service.lineage(&product_id_or_source_path, version.as_deref())?;
-            print_lineage(&lineage, cli.format)
-        }
+        } => print_lineage(
+            &service.lineage(&product_id_or_source_path, version.as_deref())?,
+            cli.format,
+        ),
         Command::ValidateMetadata { metadata_file } => {
-            let request = read_metadata(metadata_file)?;
-            service.validate_serve_request(&request)?;
+            service.validate_serve_request(&read_metadata(metadata_file)?)?;
             match cli.format {
                 OutputFormat::Json => print_json(&serde_json::json!({"status": "valid"})),
                 OutputFormat::Table => {
@@ -254,11 +362,226 @@ fn run() -> Result<(), RegistryError> {
                 }
             }
         }
-        Command::Products => {
-            let products = service.list_products()?;
-            print_products(&products, cli.format)
+        Command::Products => print_products(&service.list_products()?, cli.format),
+        Command::Refresh
+        | Command::Cache { .. }
+        | Command::Resolve { .. }
+        | Command::Withdraw { .. }
+        | Command::Stac { .. } => Err(RegistryError::Validation(
+            mesh_core::domain::ValidationError::new(
+                "command",
+                "peer data-access commands require --project",
+            ),
+        )),
+    }
+}
+
+fn run_peer(cli: Cli, project_root: PathBuf) -> PeerResult<()> {
+    let project = match &cli.command {
+        Command::Init {
+            namespace,
+            serving_dir,
+            owner_teams,
+        } => {
+            let namespace = namespace.clone().ok_or_else(|| PeerError::Validation {
+                field: "namespace".into(),
+                message: "--namespace is required with --project init".into(),
+            })?;
+            let initialized = Project::init_with_owner_teams(
+                &project_root,
+                namespace,
+                serving_dir.clone(),
+                owner_teams.clone(),
+            )?;
+            return print_peer(
+                &serde_json::json!({"protocol": peer::PEER_PROTOCOL_VERSION, "project": initialized.root(), "status": "initialized"}),
+                cli.format,
+            );
+        }
+        _ => Project::open(&project_root)?,
+    };
+    match cli.command {
+        Command::Init { .. } => unreachable!(),
+        Command::Serve {
+            path,
+            metadata,
+            name,
+            asset_type,
+            version,
+            owner_team,
+            producer,
+            usage_policy,
+            data_quality,
+            classification,
+            description,
+            intended_use,
+            lineage,
+        } => {
+            if name.is_some()
+                || asset_type.is_some()
+                || version.is_some()
+                || owner_team.is_some()
+                || producer.is_some()
+                || usage_policy.is_some()
+                || data_quality.is_some()
+                || classification.is_some()
+                || description.is_some()
+                || intended_use.is_some()
+                || !lineage.is_empty()
+            {
+                return Err(PeerError::Validation {
+                    field: "serve".into(),
+                    message: "legacy publication flags conflict with --project; use --metadata"
+                        .into(),
+                });
+            }
+            let metadata = metadata.ok_or_else(|| PeerError::Validation {
+                field: "metadata".into(),
+                message: "--metadata is required for project publication".into(),
+            })?;
+            if std::fs::canonicalize(path).map_err(|_| {
+                PeerError::Policy("serve PATH must be the configured serving directory".into())
+            })? != project.serving_root()?
+            {
+                return Err(PeerError::Policy(
+                    "serve PATH must equal the project's configured serving directory".into(),
+                ));
+            }
+            print_peer(
+                &publish(&project, &read_publication_request(metadata)?)?,
+                cli.format,
+            )
+        }
+        Command::ValidateMetadata { metadata_file } => {
+            let descriptor =
+                peer::validate_publication(&project, &read_publication_request(metadata_file)?)?;
+            print_peer(
+                &serde_json::json!({"protocol": peer::PEER_PROTOCOL_VERSION, "status":"valid", "product_id":descriptor.product_id, "version":descriptor.version}),
+                cli.format,
+            )
+        }
+        Command::Refresh => print_peer(&refresh(&project)?, cli.format),
+        Command::Cache {
+            command: CacheCommand::Status,
+        } => print_peer(
+            &serde_json::json!({"protocol": peer::PEER_PROTOCOL_VERSION, "cache_path": project.cache_path(), "snapshot": cache_status(&project)?}),
+            cli.format,
+        ),
+        Command::Resolve {
+            reference,
+            version,
+            asset,
+            verify_integrity,
+        } => print_peer(
+            &resolve(
+                &project,
+                &reference,
+                &version,
+                asset.as_deref(),
+                verify_integrity,
+            )?,
+            cli.format,
+        ),
+        Command::Withdraw {
+            reference,
+            version,
+            reason,
+        } => {
+            let (_, product_id) = peer::parse_reference(&reference)?;
+            print_peer(
+                &withdraw(&project, product_id, &version, &reason)?,
+                cli.format,
+            )
+        }
+        Command::Consume {
+            product_id_or_source_path,
+            version,
+            out,
+            overwrite,
+        } => {
+            let resolved = resolve(&project, &product_id_or_source_path, &version, None, false)?;
+            print_peer(&stage(&resolved, out, overwrite)?, cli.format)
+        }
+        Command::Search { query, .. } => {
+            print_peer_products(&project, query.as_deref(), cli.format)
+        }
+        Command::Products => print_peer_products(&project, None, cli.format),
+        Command::Show {
+            product_id_or_source_path,
+            version,
+        }
+        | Command::Lineage {
+            product_id_or_source_path,
+            version,
+        } => {
+            let version = version.ok_or_else(|| PeerError::Validation {
+                field: "version".into(),
+                message: "--version is required for project show/lineage".into(),
+            })?;
+            print_peer(
+                &resolve(&project, &product_id_or_source_path, &version, None, false)?,
+                cli.format,
+            )
+        }
+        Command::Teams => {
+            let mut teams = std::collections::BTreeSet::new();
+            for (_, product, _) in list_registered(&project)? {
+                for version in product.versions {
+                    teams.insert(version.owner_team);
+                }
+            }
+            print_peer(&teams, cli.format)
+        }
+        Command::Stac {
+            command: StacCommand::Serve { token_file, addr },
+        } => {
+            let token = mesh_core::stac_http::read_bearer_token(token_file)?;
+            mesh_core::stac_http::serve(project, token, addr)
         }
     }
+}
+
+fn required_legacy<T>(field: &str, value: Option<T>) -> Result<T, RegistryError> {
+    value.ok_or_else(|| {
+        RegistryError::Validation(mesh_core::domain::ValidationError::new(
+            field,
+            "is required without --project",
+        ))
+    })
+}
+
+fn print_peer<T: Serialize + ?Sized>(value: &T, format: OutputFormat) -> PeerResult<()> {
+    match format {
+        OutputFormat::Json => println!("{}", serde_json::to_string(value)?),
+        OutputFormat::Table => println!("{}", serde_json::to_string_pretty(value)?),
+    };
+    Ok(())
+}
+
+fn print_peer_products(
+    project: &Project,
+    query: Option<&str>,
+    format: OutputFormat,
+) -> PeerResult<()> {
+    let products: Vec<_> = list_registered(project)?
+        .into_iter()
+        .filter(|(namespace, product, _)| {
+            query.is_none_or(|query| {
+                format!("{namespace} {} {}", product.id, product.name)
+                    .to_ascii_lowercase()
+                    .contains(&query.to_ascii_lowercase())
+            })
+        })
+        .map(|(namespace, product, revision)| {
+            serde_json::json!({
+                "reference":peer::reference(&namespace, &product.id),
+                "name":product.name,
+                "versions":product.versions.into_iter().filter(|version| version.lifecycle == peer::Lifecycle::Active).map(|version| version.version).collect::<Vec<_>>(),
+                "manifest_revision":revision
+            })
+        })
+        .collect();
+    print_peer(&products, format)
 }
 
 fn parse_lineage(values: Vec<String>) -> Result<Vec<LineageReference>, RegistryError> {

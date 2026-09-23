@@ -283,7 +283,11 @@ impl<'a> RegistryService<'a> {
 
     pub fn serve(&self, request: ServeRequest) -> RegistryResult<ServeResponse> {
         self.validate_serve_request(&request)?;
-        let source = SourceReference::unix_path(request.source_path.clone())?.as_display_string();
+        // Legacy records are still supported, but a new registration must not
+        // preserve a path that would later be interpreted from a consumer's
+        // working directory.
+        let source = SourceReference::unix_path(anchor_legacy_source(&request.source_path)?)?
+            .as_display_string();
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let result = (|| -> RegistryResult<ServeResponse> {
             let team = self.get_or_create_team(&request.owner_team)?;
@@ -602,6 +606,22 @@ impl<'a> RegistryService<'a> {
             "unsupported source type '{}'",
             source.display()
         )))
+    }
+}
+
+fn anchor_legacy_source(path: &Path) -> RegistryResult<PathBuf> {
+    let path = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        std::env::current_dir()?.join(path)
+    };
+    match fs::canonicalize(&path) {
+        Ok(canonical) => Ok(canonical),
+        // Legacy registration historically permitted a source that would be
+        // produced later. Preserve that behavior, but record an absolute
+        // publication-time route rather than a consumer-relative path.
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(path),
+        Err(error) => Err(map_io_error(error)),
     }
 }
 

@@ -96,7 +96,9 @@ The package is still named `mesh_cli`, but the command help and user-facing surf
 cargo run -p mesh_cli -- --help
 ```
 
-Use `--registry <path>` to select a SQLite registry. If omitted, the CLI uses `registry.db` in the current directory.
+Use `--registry <path>` to select the legacy SQLite registry. If omitted, its
+legacy commands use `registry.db` in the current directory. Project-scoped peer
+commands always require `--project <root>` and never fall back to that registry.
 
 ### Core Workflow
 
@@ -119,6 +121,52 @@ cargo run -p mesh_cli -- --registry /tmp/feam.db lineage 1
 cargo run -p mesh_cli -- --registry /tmp/feam.db consume 1 --version v1.0.0 --out ./copy.csv
 ```
 
+### Project-scoped peer access
+
+The authoritative peer record is a provider `serving/manifest.json`, not the
+SQLite registry. First create project configuration, arrange peer links
+administratively, and publish an explicitly declared Parquet or GeoTIFF
+inventory with complete metadata:
+
+```bash
+cargo run -p mesh_cli -- --project /work/provider init --namespace climate --serving-dir serving --owner-team Climate
+cargo run -p mesh_cli -- --project /work/provider serve /work/provider/serving \
+  --metadata /work/provider/temperature-v1.json
+
+# The client .feam/project.toml names a peer alias, expected namespace, and link.
+cargo run -p mesh_cli -- --project /work/client refresh
+cargo run -p mesh_cli -- --project /work/client --format json resolve \
+  product://climate/temperature --version v1
+cargo run -p mesh_cli -- --project /work/client consume \
+  product://climate/temperature --version v1 --out /scratch/temperature-v1
+```
+
+Direct `resolve` does not copy data and returns only the registered pinned
+inventory through the configured client route. `consume` is explicit staging;
+it uses a temporary destination and writes a provenance receipt. A withdrawn
+version or removed peer cannot be reopened through a cached provider path.
+
+The full manifest, metadata, lifecycle, cache, protocol, STAC, integrity, and
+staging contract is in [`docs/data_access_contract.md`](../docs/data_access_contract.md).
+The supported subprocess SDK is [`python_sdk/`](python_sdk/README.md).
+[Notebook and batch-job examples](../docs/data_access_examples.md) show bounded
+Rasterio windows, lazy Polars scans, token handling, provenance, and staging.
+
+Run the optional adapter fixtures and integration suite with:
+
+```bash
+python3 -m venv /tmp/feam-peer-venv
+/tmp/feam-peer-venv/bin/python -m pip install ./python_sdk[test]
+/tmp/feam-peer-venv/bin/python mesh_core/tests/data/peer_access/generate_fixtures.py
+cargo build --bin mesh_cli
+FEAM_E2E=1 FEAM_EXECUTABLE="$(pwd)/target/debug/mesh_cli" \
+  /tmp/feam-peer-venv/bin/python -m pytest python_sdk/tests
+```
+
+`feam stac serve --project ROOT --token-file PATH` starts the read-only,
+loopback STAC endpoint. Its token file must be owner-readable only; it returns
+metadata and local file URIs, never raster bytes.
+
 ### Commands
 
 The implemented command surface is:
@@ -132,10 +180,13 @@ The implemented command surface is:
 - `validate-metadata`
 - `teams`
 - `products`
+- `refresh`, `cache status`, `resolve`, and `withdraw` (project-scoped)
+- `stac serve` (project-scoped, authenticated)
 
 Global options:
 
 - `--registry <path>`
+- `--project <root>` (conflicts with `--registry`)
 - `--format <table|json>`
 - `--verbose`
 - `--help`
@@ -207,7 +258,7 @@ feather-mesh/
 
 `mesh_core::services` defines API-style functions that expose key Feather Mesh workflows for `mesh_cli` to call, such as publishing, discovering, inspecting, and retrieving data products. Services coordinate `mesh_core::repositories` and `mesh_core::models` while keeping persistence details out of the CLI. Repository modules own SQL queries and database row mapping.
 
-For general product background, see `Feather_Mesh_PDD_Revised.pdf` at the repository root. For the planned peer data access workflow, [data_access.md](../data_access.md) and the [implementation workplan](../data_access_implementation_workplan.md) govern; once P0 creates `docs/data_access_contract.md`, use it for settled schema/API and migration decisions. These feature requirements extend the older copy-centered product documents. The commands above describe the current SQLite implementation, not the planned SDK or STAC service.
+For general product background, see `Feather_Mesh_PDD_Revised.pdf` at the repository root. For peer data access, [data_access.md](../data_access.md) supplies confirmed requirements and [`docs/data_access_contract.md`](../docs/data_access_contract.md) supplies the settled implementation contract. The legacy SQLite workflow above remains available for migration but does not bypass peer publication or discovery rules.
 
 ---
 
