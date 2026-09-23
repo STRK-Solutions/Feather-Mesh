@@ -1,0 +1,239 @@
+[
+  {
+    "name": "catalog.search",
+    "description": "Search bounded registered catalog records.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "cursor": {
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "product.inspect",
+    "description": "Inspect one explicit registered product version.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "integrity_consent": {
+          "type": "boolean"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "verify_integrity": {
+          "type": "boolean"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reference",
+        "version"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "product.resolve",
+    "description": "Resolve one explicit registered version without copying it.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "integrity_consent": {
+          "type": "boolean"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "verify_integrity": {
+          "type": "boolean"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reference",
+        "version"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "peers.status",
+    "description": "Show configured peer coverage and errors.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "catalog.refresh",
+    "description": "Refresh local peer observation status.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "help.lookup",
+    "description": "Read a bounded local help excerpt.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "topic": {
+          "enum": [
+            "resolve",
+            "stage",
+            "publish",
+            "withdraw"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "topic"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "publication.validate",
+    "description": "Validate a structured publication draft without publishing.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "assets": {
+          "type": "array"
+        },
+        "classification": {
+          "type": "string"
+        },
+        "contact": {
+          "type": "string"
+        },
+        "data_format": {
+          "type": "string"
+        },
+        "data_kind": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "intended_use": {
+          "type": "string"
+        },
+        "limitations": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "owner_team": {
+          "type": "string"
+        },
+        "producer": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "quality": {
+          "type": "string"
+        },
+        "schema_version": {
+          "type": "integer"
+        },
+        "usage_policy": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "namespace",
+        "product_id",
+        "name",
+        "version",
+        "data_kind",
+        "data_format",
+        "assets"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "publication.publish",
+    "description": "Open a local review for a validated publication draft; cannot publish directly.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "handle"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "product.stage",
+    "description": "Open a local review for a user-selected staging destination; cannot copy directly.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "handle"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "product.withdraw",
+    "description": "Open a local review for a local-version withdrawal; cannot withdraw directly.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "handle"
+      ],
+      "type": "object"
+    }
+  }
+]

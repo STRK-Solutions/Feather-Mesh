@@ -5,8 +5,10 @@ use std::sync::Arc;
 
 use mesh_core::peer::{
     DataFormat, DataKind, DeclaredAsset, PeerError, PeerRouteConfig, Project, PublicationRequest,
-    RasterPublication, TablePublication, publish, refresh, resolve, stage, withdraw,
+    RasterPublication, TablePublication, publish, publish_with_precondition, refresh, resolve,
+    stage, withdraw, withdraw_qualified,
 };
+use mesh_core::services::catalog_service::{CatalogQuery, query_catalog};
 use parquet::data_type::Int32Type;
 use parquet::file::writer::SerializedFileWriter;
 use parquet::schema::parser::parse_message_type;
@@ -159,6 +161,21 @@ fn publishes_fixed_inventory_resolves_through_client_route_and_stages_safely() {
     assert_eq!(cache.peers[0].revision, Some(1));
 
     let client = Project::open(client.root()).unwrap();
+    let catalog = query_catalog(
+        &client,
+        CatalogQuery {
+            limit: 10,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(catalog.entries.len(), 1);
+    assert_eq!(catalog.coverage.len(), 1);
+    assert!(catalog.coverage[0].available);
+    assert_eq!(
+        catalog.entries[0].reference,
+        "product://climate/observations"
+    );
     let resolved = resolve(&client, "product://climate/observations", "v1", None, true).unwrap();
     assert_eq!(resolved.assets.len(), 2);
     assert!(resolved.assets.iter().all(|asset| {
@@ -230,6 +247,16 @@ fn publishes_fixed_inventory_resolves_through_client_route_and_stages_safely() {
         ),
         Err(PeerError::Withdrawn(_))
     ));
+    assert!(matches!(
+        withdraw_qualified(
+            &provider,
+            "product://other/observations",
+            "v1",
+            "wrong namespace",
+            None,
+        ),
+        Err(PeerError::Policy(_))
+    ));
 }
 
 #[test]
@@ -298,7 +325,302 @@ fn rejects_fake_parquet_and_accepts_geotiff_with_required_context() {
     };
     let response = publish(&project, &request).unwrap();
     assert_eq!(response.status, "published");
+    let mut changed = request.clone();
+    changed.version = "v2".into();
+    assert!(matches!(
+        publish_with_precondition(&project, &changed, Some(99)),
+        Err(PeerError::Conflict(_))
+    ));
     let manifest: serde_json::Value =
         serde_json::from_slice(&fs::read(serving.join("manifest.json")).unwrap()).unwrap();
     assert_eq!(manifest["revision"], 1);
+}
+
+fn review_fixture() -> (tempfile::TempDir, Project, PublicationRequest) {
+    let temp = tempdir().unwrap();
+    let project = Project::init(
+        temp.path().join("provider"),
+        "climate".into(),
+        Some("serving".into()),
+    )
+    .unwrap();
+    let request = table_request();
+    let data = project
+        .serving_root()
+        .unwrap()
+        .join("datasets/observations/v1");
+    fs::create_dir_all(&data).unwrap();
+    write_parquet(&data.join("part-000.parquet"), &[1, 2]);
+    write_parquet(&data.join("part-001.parquet"), &[3, 4]);
+    (temp, project, request)
+}
+
+#[test]
+fn reviews_reject_changed_drafts_inventory_destinations_and_receipts() {
+    use mesh_core::services::interactive_operations::*;
+    let (temp, project, request) = review_fixture();
+    let prepared = prepare_publication(project.root(), request.clone()).unwrap();
+    let mut edited = prepared.clone();
+    edited.request.description = "changed after review".into();
+    assert_eq!(
+        execute_publication(&edited).state,
+        OperationState::FailedBeforeCommit
+    );
+    let source = project
+        .serving_root()
+        .unwrap()
+        .join(&request.assets[0].path);
+    write_parquet(&source, &[9, 8]);
+    assert_eq!(
+        execute_publication(&prepared).state,
+        OperationState::FailedBeforeCommit
+    );
+    assert!(
+        !project
+            .serving_root()
+            .unwrap()
+            .join("manifest.json")
+            .exists()
+    );
+    let fresh = prepare_publication(project.root(), request).unwrap();
+    assert_eq!(execute_publication(&fresh).state, OperationState::Committed);
+    assert_eq!(
+        reconcile(&RecoveryIdentity::from(&fresh)).unwrap(),
+        OperationState::Committed
+    );
+    assert_eq!(
+        execute_publication(&fresh).state,
+        OperationState::FailedBeforeCommit
+    );
+    let output = temp.path().join("output with spaces");
+    let stage = prepare_stage(
+        project.root(),
+        "product://climate/observations",
+        "v1",
+        &output,
+        true,
+    )
+    .unwrap();
+    fs::write(&output, "new destination").unwrap();
+    assert_eq!(
+        execute_stage(&stage).state,
+        OperationState::FailedBeforeCommit
+    );
+    assert_eq!(fs::read(&output).unwrap(), b"new destination");
+    let stage = prepare_stage(
+        project.root(),
+        "product://climate/observations",
+        "v1",
+        &output,
+        true,
+    )
+    .unwrap();
+    fs::write(&stage.receipt_path, "new receipt").unwrap();
+    assert_eq!(
+        execute_stage(&stage).state,
+        OperationState::FailedBeforeCommit
+    );
+    assert_eq!(fs::read(&stage.receipt_path).unwrap(), b"new receipt");
+    let stage = prepare_stage(
+        project.root(),
+        "product://climate/observations",
+        "v1",
+        &output,
+        true,
+    )
+    .unwrap();
+    let original = fs::read(&source).unwrap();
+    assert_eq!(execute_stage(&stage).state, OperationState::Committed);
+    assert_eq!(fs::read(&source).unwrap(), original);
+    assert_eq!(
+        reconcile(&RecoveryIdentity::from(&stage)).unwrap(),
+        OperationState::Committed
+    );
+    assert_eq!(
+        execute_stage(&stage).state,
+        OperationState::FailedBeforeCommit
+    );
+    let withdrawal = prepare_withdrawal(
+        project.root(),
+        "product://climate/observations",
+        "v1",
+        "superseded",
+    )
+    .unwrap();
+    assert_eq!(
+        execute_withdrawal(&withdrawal).state,
+        OperationState::Committed
+    );
+    assert_eq!(
+        reconcile(&RecoveryIdentity::from(&withdrawal)).unwrap(),
+        OperationState::Committed
+    );
+}
+
+#[test]
+fn catalog_cursors_bind_filters_configuration_and_revisions() {
+    let (_temp, project, request) = review_fixture();
+    publish(&project, &request).unwrap();
+    let mut second = request.clone();
+    second.version = "v2".into();
+    publish(&project, &second).unwrap();
+    let first = query_catalog(
+        &project,
+        CatalogQuery {
+            limit: 1,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let cursor = first.next_cursor.unwrap();
+    let next = query_catalog(
+        &project,
+        CatalogQuery {
+            limit: 1,
+            cursor: Some(cursor.clone()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(next.entries[0].version, "v2");
+    assert!(
+        query_catalog(
+            &project,
+            CatalogQuery {
+                limit: 1,
+                text: Some("different".into()),
+                cursor: Some(cursor.clone()),
+                ..Default::default()
+            }
+        )
+        .is_err()
+    );
+    let mut config = project.config().clone();
+    config.owner_teams.push("new-team".into());
+    fs::write(project.config_path(), toml::to_string(&config).unwrap()).unwrap();
+    assert!(
+        query_catalog(
+            &Project::open(project.root()).unwrap(),
+            CatalogQuery {
+                limit: 1,
+                cursor: Some(cursor),
+                ..Default::default()
+            }
+        )
+        .is_err()
+    );
+    assert!(
+        query_catalog(
+            &project,
+            CatalogQuery {
+                limit: 1,
+                cursor: Some("v1:éé".into()),
+                ..Default::default()
+            }
+        )
+        .is_err()
+    );
+    let page = query_catalog(
+        &project,
+        CatalogQuery {
+            limit: 1,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    second.version = "v3".into();
+    publish(&Project::open(project.root()).unwrap(), &second).unwrap();
+    assert!(
+        query_catalog(
+            &project,
+            CatalogQuery {
+                limit: 1,
+                cursor: page.next_cursor,
+                ..Default::default()
+            }
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn oversized_manifest_reports_failed_coverage_and_stage_preflight_preserves_aliases() {
+    use mesh_core::services::interactive_operations::prepare_stage;
+    let (temp, project, request) = review_fixture();
+    publish(&project, &request).unwrap();
+    let source = project
+        .serving_root()
+        .unwrap()
+        .join(&request.assets[0].path);
+    let source_bytes = fs::read(&source).unwrap();
+    let output = temp.path().join("output");
+    fs::hard_link(&source, &output).unwrap();
+    assert!(
+        prepare_stage(
+            project.root(),
+            "product://climate/observations",
+            "v1",
+            &output,
+            true
+        )
+        .is_err()
+    );
+    fs::remove_file(&output).unwrap();
+    fs::hard_link(&source, output.with_file_name("output.feam-receipt.json")).unwrap();
+    assert!(
+        prepare_stage(
+            project.root(),
+            "product://climate/observations",
+            "v1",
+            &output,
+            true
+        )
+        .is_err()
+    );
+    assert_eq!(fs::read(&source).unwrap(), source_bytes);
+    let manifest = project.serving_root().unwrap().join("manifest.json");
+    File::create(manifest)
+        .unwrap()
+        .set_len(mesh_core::peer::MAX_MANIFEST_BYTES + 1)
+        .unwrap();
+    let page = query_catalog(
+        &project,
+        CatalogQuery {
+            limit: 1,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert!(page.entries.is_empty());
+    assert!(!page.coverage[0].available);
+    assert!(page.coverage[0].error.as_ref().unwrap().contains("exceeds"));
+}
+
+#[test]
+fn changed_route_invalidates_prepared_access_even_at_same_revision() {
+    use mesh_core::services::interactive_operations::*;
+    let (temp, project, request) = review_fixture();
+    publish(&project, &request).unwrap();
+    let client = Project::init(temp.path().join("client"), "consumer".into(), None).unwrap();
+    configure_client(&client, &project.serving_root().unwrap());
+    let output = temp.path().join("output");
+    let prepared = prepare_stage(
+        client.root(),
+        "product://climate/observations",
+        "v1",
+        &output,
+        false,
+    )
+    .unwrap();
+    let route = client.root().join("peers/nearby-climate");
+    fs::remove_file(route).unwrap();
+    assert_ne!(execute_stage(&prepared).state, OperationState::Committed);
+    assert!(!output.exists());
+    assert!(
+        project
+            .serving_root()
+            .unwrap()
+            .join(&request.assets[0].path)
+            .is_file()
+    );
 }

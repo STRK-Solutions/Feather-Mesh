@@ -24,7 +24,8 @@ class ContextCheckerTests(unittest.TestCase):
             shutil.copytree(ROOT / name, self.root / name,
                             ignore=shutil.ignore_patterns("target", "__pycache__", ".DS_Store"))
         for name in ("AGENTS.md", "data_access.md", "data_access_implementation_workplan.md",
-                     "data_access_agent_context_review.md", "map.md"):
+                     "data_access_agent_context_review.md", "map.md",
+                     "tui_agent_harness_design.md", "tui_agent_harness_stage1_workplan.md"):
             shutil.copy2(ROOT / name, self.root / name)
         (self.root / ".agents").mkdir()
         (self.root / ".agents/skills").symlink_to("../.codex/skills", target_is_directory=True)

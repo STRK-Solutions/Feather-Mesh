@@ -7,8 +7,8 @@ use std::str::FromStr;
 use clap::{Parser, Subcommand, ValueEnum};
 use mesh_core::domain::{AssetType, Classification, DataQuality, RegistryError};
 use mesh_core::peer::{
-    self, PeerError, PeerResult, Project, cache_status, list_registered, publish,
-    read_publication_request, refresh, resolve, stage, withdraw,
+    self, PeerError, PeerResult, Project, cache_status, publish, read_publication_request, refresh,
+    resolve, stage,
 };
 use mesh_core::services::{
     ConsumeRequest, InitResponse, LineageReference, RegistryService, SearchRequest, ServeRequest,
@@ -135,6 +135,13 @@ enum Command {
         #[command(subcommand)]
         command: StacCommand,
     },
+    /// Launch the optional interactive project-scoped terminal UI.
+    Tui {
+        #[arg(long, value_enum, default_value_t = AgentMode::Off)]
+        agent: AgentMode,
+        #[arg(long, requires = "agent")]
+        agent_profile: Option<String>,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -150,6 +157,13 @@ enum StacCommand {
         #[arg(long, default_value = "127.0.0.1:8080")]
         addr: std::net::SocketAddr,
     },
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
+enum AgentMode {
+    Off,
+    Hosted,
+    Fake,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -184,6 +198,8 @@ enum AppError {
     Registry(#[from] RegistryError),
     #[error(transparent)]
     Peer(#[from] PeerError),
+    #[error("{0}")]
+    Tui(String),
 }
 
 fn main() -> ExitCode {
@@ -207,14 +223,69 @@ fn main() -> ExitCode {
             eprintln!("{err}");
             ExitCode::from(exit_code(&err))
         }
+        Err(AppError::Tui(err)) => {
+            eprintln!("{err}");
+            ExitCode::from(1)
+        }
     }
 }
 
 fn run(cli: Cli) -> Result<(), AppError> {
+    if let Command::Tui {
+        agent,
+        agent_profile,
+    } = &cli.command
+    {
+        if matches!(cli.format, OutputFormat::Json) {
+            return Err(AppError::Tui(
+                "tui does not support --format json; use the noninteractive CLI".into(),
+            ));
+        }
+        return run_tui(cli.project.clone(), *agent, agent_profile.clone());
+    }
     if let Some(project_root) = cli.project.clone() {
         run_peer(cli, project_root).map_err(AppError::from)
     } else {
         run_legacy(cli).map_err(AppError::from)
+    }
+}
+
+fn run_tui(
+    project_root: Option<PathBuf>,
+    agent: AgentMode,
+    agent_profile: Option<String>,
+) -> Result<(), AppError> {
+    let project_root = project_root.ok_or_else(|| {
+        AppError::Tui("feam tui requires --project ROOT and never falls back to registry.db".into())
+    })?;
+    let profile = match agent {
+        AgentMode::Off => {
+            if agent_profile.is_some() {
+                return Err(AppError::Tui(
+                    "--agent-profile requires --agent hosted".into(),
+                ));
+            }
+            None
+        }
+        // An empty value means "use the configured default profile". `None`
+        // remains distinct: manual mode never reads user agent configuration.
+        AgentMode::Hosted => Some(agent_profile.unwrap_or_default()),
+        AgentMode::Fake => Some("__fake__".into()),
+    };
+    #[cfg(feature = "tui")]
+    {
+        mesh_tui::run(mesh_tui::TuiOptions {
+            project_root,
+            agent_profile: profile,
+        })
+        .map_err(|error| AppError::Tui(error.to_string()))
+    }
+    #[cfg(not(feature = "tui"))]
+    {
+        let _ = (project_root, profile);
+        Err(AppError::Tui(
+            "feam tui is not enabled in this CLI-only build; rebuild with `--features tui`".into(),
+        ))
     }
 }
 
@@ -367,7 +438,8 @@ fn run_legacy(cli: Cli) -> Result<(), RegistryError> {
         | Command::Cache { .. }
         | Command::Resolve { .. }
         | Command::Withdraw { .. }
-        | Command::Stac { .. } => Err(RegistryError::Validation(
+        | Command::Stac { .. }
+        | Command::Tui { .. } => Err(RegistryError::Validation(
             mesh_core::domain::ValidationError::new(
                 "command",
                 "peer data-access commands require --project",
@@ -486,13 +558,10 @@ fn run_peer(cli: Cli, project_root: PathBuf) -> PeerResult<()> {
             reference,
             version,
             reason,
-        } => {
-            let (_, product_id) = peer::parse_reference(&reference)?;
-            print_peer(
-                &withdraw(&project, product_id, &version, &reason)?,
-                cli.format,
-            )
-        }
+        } => print_peer(
+            &peer::withdraw_qualified(&project, &reference, &version, &reason, None)?,
+            cli.format,
+        ),
         Command::Consume {
             product_id_or_source_path,
             version,
@@ -502,8 +571,29 @@ fn run_peer(cli: Cli, project_root: PathBuf) -> PeerResult<()> {
             let resolved = resolve(&project, &product_id_or_source_path, &version, None, false)?;
             print_peer(&stage(&resolved, out, overwrite)?, cli.format)
         }
-        Command::Search { query, .. } => {
-            print_peer_products(&project, query.as_deref(), cli.format)
+        Command::Search {
+            query,
+            asset_type,
+            data_quality,
+            classification,
+            owner_team,
+        } => {
+            use mesh_core::services::catalog_service::{CatalogQuery, query_products};
+            let data_kind = match asset_type {
+                None => None,
+                Some(CliAssetType::Table) => Some(peer::DataKind::Table),
+                Some(_) => return Err(PeerError::Validation { field: "asset_type".into(), message: "project search supports --asset-type table; other legacy asset types have no peer mapping".into() }),
+            };
+            let filter = CatalogQuery {
+                text: query,
+                data_kind,
+                owner_team,
+                quality: data_quality.map(|q| format!("{q:?}").to_ascii_lowercase()),
+                classification: classification.map(|c| format!("{c:?}").to_ascii_lowercase()),
+                limit: 100,
+                ..Default::default()
+            };
+            print_peer(&query_products(&project, &filter)?, cli.format)
         }
         Command::Products => print_peer_products(&project, None, cli.format),
         Command::Show {
@@ -524,12 +614,7 @@ fn run_peer(cli: Cli, project_root: PathBuf) -> PeerResult<()> {
             )
         }
         Command::Teams => {
-            let mut teams = std::collections::BTreeSet::new();
-            for (_, product, _) in list_registered(&project)? {
-                for version in product.versions {
-                    teams.insert(version.owner_team);
-                }
-            }
+            let teams = mesh_core::services::catalog_service::catalog_teams(&project)?;
             print_peer(&teams, cli.format)
         }
         Command::Stac {
@@ -538,6 +623,7 @@ fn run_peer(cli: Cli, project_root: PathBuf) -> PeerResult<()> {
             let token = mesh_core::stac_http::read_bearer_token(token_file)?;
             mesh_core::stac_http::serve(project, token, addr)
         }
+        Command::Tui { .. } => unreachable!("TUI dispatch occurs before project routing"),
     }
 }
 
@@ -563,24 +649,14 @@ fn print_peer_products(
     query: Option<&str>,
     format: OutputFormat,
 ) -> PeerResult<()> {
-    let products: Vec<_> = list_registered(project)?
-        .into_iter()
-        .filter(|(namespace, product, _)| {
-            query.is_none_or(|query| {
-                format!("{namespace} {} {}", product.id, product.name)
-                    .to_ascii_lowercase()
-                    .contains(&query.to_ascii_lowercase())
-            })
-        })
-        .map(|(namespace, product, revision)| {
-            serde_json::json!({
-                "reference":peer::reference(&namespace, &product.id),
-                "name":product.name,
-                "versions":product.versions.into_iter().filter(|version| version.lifecycle == peer::Lifecycle::Active).map(|version| version.version).collect::<Vec<_>>(),
-                "manifest_revision":revision
-            })
-        })
-        .collect();
+    let products = mesh_core::services::catalog_service::query_products(
+        project,
+        &mesh_core::services::catalog_service::CatalogQuery {
+            text: query.map(str::to_owned),
+            limit: 100,
+            ..Default::default()
+        },
+    )?;
     print_peer(&products, format)
 }
 

@@ -1,0 +1,155 @@
+{
+  "mode": "fake",
+  "checks": [
+    "unrelated cwd and spaced path without registry",
+    "discovery, partial coverage, pinned metadata and export",
+    "assistant clarification then explicit pinned resolution",
+    "denied stage produces no output",
+    "confirmed stage receipt and exact two-asset inventory",
+    "changed destination invalidates review",
+    "incomplete draft, supplied contact patch, validated publication",
+    "cross-namespace rejection and local withdrawal"
+  ],
+  "passed": true,
+  "usage": {
+    "consumer": [
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 1,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 2,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 3,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 4,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 5,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      }
+    ],
+    "producer": [
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 1,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 2,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 3,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      }
+    ]
+  },
+  "outcomes": [
+    {
+      "operation_id": "feam-op-18d7db164ed6ec48-2",
+      "operation": "withdrawal",
+      "state": "committed",
+      "reference": "product://climate/observations",
+      "version": "v3"
+    },
+    {
+      "operation_id": "feam-op-18d7db1612895ca8-1",
+      "operation": "publication",
+      "state": "committed",
+      "reference": "product://climate/observations",
+      "version": "v3"
+    },
+    {
+      "operation_id": "feam-op-18d7db1574fdba38-3",
+      "operation": "staging",
+      "state": "failed_before_commit",
+      "reference": null,
+      "version": null
+    },
+    {
+      "operation_id": "feam-op-18d7db152ce8d4d0-2",
+      "operation": "staging",
+      "state": "committed",
+      "reference": "product://climate/observations",
+      "version": "v1"
+    }
+  ],
+  "elapsed_seconds": 9.316431541999918
+}

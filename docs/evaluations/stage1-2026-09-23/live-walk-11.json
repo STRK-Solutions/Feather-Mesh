@@ -1,0 +1,156 @@
+{
+  "mode": "live",
+  "checks": [
+    "unrelated cwd and spaced path without registry",
+    "discovery, partial coverage, pinned metadata and export",
+    "exported SDK examples execute externally with native Polars and known Rasterio pixels",
+    "assistant clarification then explicit pinned resolution",
+    "denied stage produces no output",
+    "confirmed stage receipt and exact two-asset inventory",
+    "changed destination invalidates review",
+    "incomplete draft, supplied contact patch, validated publication",
+    "cross-namespace rejection and local withdrawal"
+  ],
+  "passed": true,
+  "usage": {
+    "consumer": [
+      {
+        "cancelled": false,
+        "cost_usd": 0.0001355256,
+        "run_id": 1,
+        "usage": {
+          "cost_usd": 0.0001355256,
+          "generation_id": "gen-1790141351-XZNdkPPwTIQZK1uUMJ6g",
+          "input_tokens": 4274,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 181,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0001562736,
+        "run_id": 2,
+        "usage": {
+          "cost_usd": 0.0001562736,
+          "generation_id": "gen-1790141353-xOvBXG1FrsRZXn7YR0VB",
+          "input_tokens": 5064,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 174,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.00042588,
+        "run_id": 3,
+        "usage": {
+          "cost_usd": 0.00042588,
+          "generation_id": "gen-1790141356-2eUf44pv77KX9VMif2lp",
+          "input_tokens": 2880,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 54,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.00044436,
+        "run_id": 4,
+        "usage": {
+          "cost_usd": 0.00044436,
+          "generation_id": "gen-1790141358-B8OLUz8XBqM2STZkbXX4",
+          "input_tokens": 3012,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 54,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.00047208,
+        "run_id": 5,
+        "usage": {
+          "cost_usd": 0.00047208,
+          "generation_id": "gen-1790141360-8pv8Iaghhc2lT8ByPqGC",
+          "input_tokens": 3213,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 53,
+          "provider": "DeepInfra"
+        }
+      }
+    ],
+    "producer": [
+      {
+        "cancelled": false,
+        "cost_usd": 4.8944e-05,
+        "run_id": 1,
+        "usage": {
+          "cost_usd": 4.8944e-05,
+          "generation_id": "gen-1790141362-PtGNQ0AmFlzoFiGo75Hn",
+          "input_tokens": 2014,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 66,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.00033222,
+        "run_id": 2,
+        "usage": {
+          "cost_usd": 0.00033222,
+          "generation_id": "gen-1790141364-QsE8dlnO4F87WHRB8LJA",
+          "input_tokens": 2211,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 54,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0003493,
+        "run_id": 3,
+        "usage": {
+          "cost_usd": 0.0003493,
+          "generation_id": "gen-1790141366-TWIxbP8yS2qeeolUj2Vv",
+          "input_tokens": 2330,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 55,
+          "provider": "DeepInfra"
+        }
+      }
+    ]
+  },
+  "outcomes": [
+    {
+      "operation_id": "feam-op-18d7dc1489d569d8-2",
+      "operation": "staging",
+      "state": "committed",
+      "reference": "product://climate/observations",
+      "version": "v1"
+    },
+    {
+      "operation_id": "feam-op-18d7dc15007c3710-3",
+      "operation": "staging",
+      "state": "failed_before_commit",
+      "reference": null,
+      "version": null
+    },
+    {
+      "operation_id": "feam-op-18d7dc160773a480-1",
+      "operation": "publication",
+      "state": "committed",
+      "reference": "product://climate/observations",
+      "version": "v3"
+    },
+    {
+      "operation_id": "feam-op-18d7dc1676f92c30-2",
+      "operation": "withdrawal",
+      "state": "committed",
+      "reference": "product://climate/observations",
+      "version": "v3"
+    }
+  ],
+  "elapsed_seconds": 21.32990354100184
+}

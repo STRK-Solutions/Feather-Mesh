@@ -12,6 +12,7 @@ Use this skill for Rust work in the `feather-mesh/` workspace.
 - Work from `feather-mesh/` for Cargo commands.
 - `mesh_core` owns domain types, SQLite setup, repositories, services, and reusable workflow behavior.
 - `mesh_cli` owns CLI parsing, terminal output, JSON/table formatting, and process exit behavior.
+- Optional `mesh_tui` owns local terminal lifecycle, input/reviews and worker coordination; optional `mesh_agent` owns provider transport, disclosure and bounded tools, with no confirmation or mutation authority.
 
 ## Change Workflow
 
@@ -48,3 +49,15 @@ For optional format inspectors, test the documented supported feature combinatio
 Changes to shared DTOs, errors, publication, or resolution also need the affected CLI, installed SDK, and HTTP integration evidence described in the peer-access skill. Cargo success alone does not establish adapter behavior.
 
 If a command cannot be run, report the missing tool/dependency, reason, and unverified behavior. Keep local automated results separate from target-HPC evidence; an unavailable cluster leaves HPC acceptance pending while independent work proceeds.
+
+## Optional TUI and Agent Checks
+
+For TUI/harness changes also run `cargo test --workspace --all-features` and
+`cargo clippy --workspace --all-targets --all-features -- -D warnings`. Verify
+CLI feature modes with `cargo test -p mesh_cli --no-default-features`, then with
+`--features tui` and `--features agent-hosted`. See the
+[demo runbook](../../../docs/tui_agent_stage1_demo.md) for PTY restoration,
+manual/fake walkthroughs and the offline evaluation driver. Live router traffic
+requires explicit model/provider/context/budget authorization; fake transport
+success is not evidence of live model quality. Keep every failed live attempt
+and unknown usage in the acceptance report.

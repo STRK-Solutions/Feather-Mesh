@@ -1,0 +1,8 @@
+{
+  "mesh_agent/evaluations/held-out-v1.json": "b523337e7417ea42a8b418fb5f7368116d6cb3ddeb5c00480347d363f11a7a01",
+  "mesh_agent/examples/stage1_eval.rs": "fa3d00feac0a1b462256b2dbf5f415914cc54ba9f5c6f5c0e718bd06f15dc3bf",
+  "mesh_agent/src/harness.rs": "2b78a9a228b0465c771dab31b1f51c2c65ddcd7ab21b067fb0b3ec205ca4265b",
+  "mesh_agent/src/tools.rs": "8598581bbed0f320b9dd85f455080c63480c55629ec86f40f0fceddcf5370aee",
+  "mesh_agent/src/provider.rs": "23bc28a98239c8ecb87c845c63386853933cb924ee4657cc365b4d06243360dc",
+  "mesh_agent/src/disclosure.rs": "5b62f8a63c08a5f8fef7a5c9e6f53743dd3b8c15922e48e26b0420a0e4abbc59"
+}

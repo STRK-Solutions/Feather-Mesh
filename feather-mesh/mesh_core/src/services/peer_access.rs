@@ -22,6 +22,22 @@ use tiff::tags::Tag;
 pub const PROJECT_SCHEMA_VERSION: u32 = 1;
 pub const MANIFEST_SCHEMA_VERSION: u32 = 1;
 pub const PEER_PROTOCOL_VERSION: &str = "feam.peer.v1";
+/// Explicit limits for the initial manifest reader (before any allocation).
+pub const MAX_MANIFEST_BYTES: u64 = 8 * 1024 * 1024;
+pub const MAX_CATALOG_INPUT_BYTES: u64 = 32 * 1024 * 1024;
+pub const MAX_PROJECT_BYTES: u64 = 256 * 1024;
+
+pub(crate) fn read_bounded(path: &Path, limit: u64) -> PeerResult<Vec<u8>> {
+    let mut bytes = Vec::new();
+    File::open(path)?.take(limit + 1).read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > limit {
+        return Err(validation(
+            "input_size",
+            format!("input exceeds {limit} bytes"),
+        ));
+    }
+    Ok(bytes)
+}
 
 #[derive(Debug, Error)]
 pub enum PeerError {
@@ -207,8 +223,13 @@ impl Project {
 
     pub fn open(root: impl AsRef<Path>) -> PeerResult<Self> {
         let root = absolute_path(root.as_ref())?;
-        let text = fs::read_to_string(root.join(".feam/project.toml"))?;
-        let mut config: ProjectConfig = toml::from_str(&text)?;
+        let bytes = read_bounded(&root.join(".feam/project.toml"), MAX_PROJECT_BYTES)?;
+        let text =
+            std::str::from_utf8(&bytes).map_err(|_| validation("project", "invalid UTF-8"))?;
+        let mut config: ProjectConfig = toml::from_str(text)?;
+        if config.peers.len() > 64 {
+            return Err(validation("peers", "at most 64 peer routes are supported"));
+        }
         if config.owner_teams.is_empty() {
             // Schema-v1 projects created before owner-team authorization use
             // their namespace as the single explicit provider authority.
@@ -490,7 +511,10 @@ pub struct PublicationResponse {
 }
 
 pub fn read_publication_request(path: impl AsRef<Path>) -> PeerResult<PublicationRequest> {
-    Ok(serde_json::from_slice(&fs::read(path)?)?)
+    Ok(serde_json::from_slice(&read_bounded(
+        path.as_ref(),
+        MAX_MANIFEST_BYTES,
+    )?)?)
 }
 
 pub fn validate_publication(
@@ -593,16 +617,60 @@ pub fn validate_publication(
 }
 
 pub fn publish(project: &Project, request: &PublicationRequest) -> PeerResult<PublicationResponse> {
+    publish_with_precondition(project, request, None)
+}
+
+/// Publishes only when the provider manifest is still at the revision reviewed
+/// by an interactive caller.  The revision comparison deliberately happens
+/// while holding the existing manifest lock; a UI-only comparison would race a
+/// concurrent publisher.
+pub fn publish_with_precondition(
+    project: &Project,
+    request: &PublicationRequest,
+    expected_manifest_revision: Option<u64>,
+) -> PeerResult<PublicationResponse> {
+    publish_reviewed(project, request, expected_manifest_revision, None)
+}
+
+pub(crate) fn publication_fingerprint(candidate: &PublishedVersion) -> PeerResult<String> {
+    let mut candidate = candidate.clone();
+    candidate.published_at.clear();
+    Ok(format!(
+        "{:x}",
+        Sha256::digest(serde_json::to_vec(&candidate)?)
+    ))
+}
+
+pub(crate) fn publish_reviewed(
+    project: &Project,
+    request: &PublicationRequest,
+    expected_manifest_revision: Option<u64>,
+    expected_candidate: Option<&str>,
+) -> PeerResult<PublicationResponse> {
     let candidate = validate_publication(project, request)?;
     let serving_root = project.serving_root()?;
     let manifest_path = serving_root.join("manifest.json");
     let _lock = ManifestLock::acquire(&manifest_path, Duration::from_secs(30))?;
+    if let Some(expected) = expected_candidate
+        && publication_fingerprint(&candidate)? != expected
+    {
+        return Err(PeerError::Conflict(
+            "validated publication inventory changed; review again".into(),
+        ));
+    }
     let mut manifest = read_or_empty_manifest(&manifest_path, project.namespace())?;
     if manifest.namespace != project.namespace() {
         return Err(PeerError::Policy(format!(
             "manifest namespace '{}' does not match project namespace '{}'",
             manifest.namespace,
             project.namespace()
+        )));
+    }
+    if expected_manifest_revision.is_some_and(|expected| expected != manifest.revision) {
+        return Err(PeerError::Conflict(format!(
+            "manifest revision changed from {} to {} while publication awaited confirmation",
+            expected_manifest_revision.expect("checked above"),
+            manifest.revision
         )));
     }
     recheck_candidate(&serving_root, &candidate)?;
@@ -647,6 +715,18 @@ pub fn withdraw(
     version: &str,
     reason: &str,
 ) -> PeerResult<PublicationResponse> {
+    withdraw_with_precondition(project, product_id, version, reason, None)
+}
+
+/// Withdraws a local product only after checking an optional reviewed manifest
+/// revision while holding the provider mutation lock.
+pub fn withdraw_with_precondition(
+    project: &Project,
+    product_id: &str,
+    version: &str,
+    reason: &str,
+    expected_manifest_revision: Option<u64>,
+) -> PeerResult<PublicationResponse> {
     validate_product_id(product_id)?;
     validate_version(version)?;
     non_blank("reason", reason)?;
@@ -654,6 +734,13 @@ pub fn withdraw(
     let manifest_path = serving_root.join("manifest.json");
     let _lock = ManifestLock::acquire(&manifest_path, Duration::from_secs(30))?;
     let mut manifest = read_manifest_at(&manifest_path, project.namespace())?;
+    if expected_manifest_revision.is_some_and(|expected| expected != manifest.revision) {
+        return Err(PeerError::Conflict(format!(
+            "manifest revision changed from {} to {} while withdrawal awaited confirmation",
+            expected_manifest_revision.expect("checked above"),
+            manifest.revision
+        )));
+    }
     let record = manifest
         .products
         .iter_mut()
@@ -684,6 +771,33 @@ pub fn withdraw(
         manifest_revision: manifest.revision,
         status: "withdrawn".into(),
     })
+}
+
+/// Parses a qualified reference and rejects a withdrawal through a consumer
+/// alias before any mutation lock or manifest write is attempted.
+pub fn withdraw_qualified(
+    project: &Project,
+    qualified_reference: &str,
+    version: &str,
+    reason: &str,
+    expected_manifest_revision: Option<u64>,
+) -> PeerResult<PublicationResponse> {
+    let (namespace, product_id) = parse_reference(qualified_reference)?;
+    if namespace != project.namespace() {
+        return Err(PeerError::Policy(format!(
+            "only local namespace '{}' may withdraw; '{}' belongs to '{}',",
+            project.namespace(),
+            product_id,
+            namespace
+        )));
+    }
+    withdraw_with_precondition(
+        project,
+        product_id,
+        version,
+        reason,
+        expected_manifest_revision,
+    )
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -956,9 +1070,33 @@ fn read_cache(project: &Project) -> PeerResult<CacheSnapshot> {
     Ok(serde_json::from_slice(&fs::read(project.cache_path())?)?)
 }
 
-pub fn list_registered(project: &Project) -> PeerResult<Vec<(String, ManifestProduct, u64)>> {
-    let mut results = Vec::new();
-    let mut namespaces = vec![project.namespace().to_string()];
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PeerCoverage {
+    pub namespace: String,
+    pub revision: Option<u64>,
+    pub observed_at: String,
+    pub available: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RegisteredListing {
+    pub entries: Vec<(String, ManifestProduct, u64)>,
+    pub coverage: Vec<PeerCoverage>,
+}
+
+/// Reads each currently configured manifest once and reports failed routes in
+/// band with successful records.  Callers must not mistake an empty result for
+/// complete coverage.
+pub fn list_registered_with_coverage(project: &Project) -> PeerResult<RegisteredListing> {
+    let mut entries = Vec::new();
+    let mut coverage = Vec::new();
+    let mut namespaces = Vec::new();
+    let mut input_bytes = 0u64;
+    if project.config.serving_dir.is_some() {
+        namespaces.push(project.namespace().to_string());
+    }
     namespaces.extend(
         project
             .config
@@ -967,23 +1105,109 @@ pub fn list_registered(project: &Project) -> PeerResult<Vec<(String, ManifestPro
             .map(|peer| peer.namespace.clone()),
     );
     for namespace in namespaces {
+        let observed_at = Utc::now().to_rfc3339();
         let route = match project.route_for_namespace(&namespace) {
             Ok(route) => route,
-            Err(_) => continue,
+            Err(error) => {
+                coverage.push(PeerCoverage {
+                    namespace,
+                    revision: None,
+                    observed_at,
+                    available: false,
+                    error: Some(error.to_string()),
+                });
+                continue;
+            }
         };
-        let manifest =
-            match read_manifest_at(&route.displayed_root.join("manifest.json"), &namespace) {
-                Ok(manifest) => manifest,
-                Err(_) => continue,
-            };
-        if manifest.namespace != namespace {
-            continue;
+        let manifest_path = route.displayed_root.join("manifest.json");
+        let remaining = MAX_CATALOG_INPUT_BYTES.saturating_sub(input_bytes);
+        if fs::metadata(&manifest_path).is_ok_and(|m| m.len() > remaining) {
+            return Err(validation(
+                "catalog_input",
+                "configured manifests exceed 32 MiB; narrow the project routes",
+            ));
         }
+        let loaded =
+            read_bounded(&manifest_path, remaining.min(MAX_MANIFEST_BYTES)).and_then(|bytes| {
+                input_bytes += bytes.len() as u64;
+                parse_manifest(&bytes)
+            });
+        let manifest = match loaded {
+            Ok(manifest) if manifest.namespace == namespace => manifest,
+            Ok(manifest) => {
+                coverage.push(PeerCoverage {
+                    namespace,
+                    revision: Some(manifest.revision),
+                    observed_at,
+                    available: false,
+                    error: Some(format!(
+                        "configured namespace does not match manifest namespace '{}'",
+                        manifest.namespace
+                    )),
+                });
+                continue;
+            }
+            Err(error) => {
+                coverage.push(PeerCoverage {
+                    namespace,
+                    revision: None,
+                    observed_at,
+                    available: false,
+                    error: Some(error.to_string()),
+                });
+                continue;
+            }
+        };
+        coverage.push(PeerCoverage {
+            namespace: namespace.clone(),
+            revision: Some(manifest.revision),
+            observed_at,
+            available: true,
+            error: None,
+        });
         for product in manifest.products {
-            results.push((namespace.clone(), product, manifest.revision));
+            entries.push((namespace.clone(), product, manifest.revision));
         }
     }
-    Ok(results)
+    Ok(RegisteredListing { entries, coverage })
+}
+
+pub fn list_registered(project: &Project) -> PeerResult<Vec<(String, ManifestProduct, u64)>> {
+    Ok(list_registered_with_coverage(project)?.entries)
+}
+
+/// Returns the revision that an interactive provider operation can bind to a
+/// review.  A missing manifest has revision zero, matching publication's first
+/// commit behavior.
+pub fn local_manifest_revision(project: &Project) -> PeerResult<u64> {
+    let manifest_path = project.serving_root()?.join("manifest.json");
+    if !manifest_path.exists() {
+        return Ok(0);
+    }
+    Ok(read_manifest_at(&manifest_path, project.namespace())?.revision)
+}
+
+/// A project configuration fingerprint is intentionally based on the actual
+/// strict configuration file, not a model or UI-supplied root string.
+pub fn configuration_fingerprint(project: &Project) -> PeerResult<String> {
+    let mut hash = Sha256::new();
+    hash.update(read_bounded(&project.config_path(), MAX_PROJECT_BYTES)?);
+    for path in project
+        .config
+        .peers
+        .iter()
+        .map(|p| project.root.join(&p.path))
+        .chain(
+            project
+                .config
+                .serving_dir
+                .iter()
+                .map(|p| project.root.join(p)),
+        )
+    {
+        hash.update(format!("{:?}", fs::canonicalize(path)).as_bytes());
+    }
+    Ok(format!("{:x}", hash.finalize()))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1316,7 +1540,11 @@ fn read_manifest_at(path: &Path, _expected_namespace: &str) -> PeerResult<Servin
             path.display()
         )));
     }
-    let manifest: ServingManifest = serde_json::from_slice(&fs::read(path)?)?;
+    parse_manifest(&read_bounded(path, MAX_MANIFEST_BYTES)?)
+}
+
+fn parse_manifest(bytes: &[u8]) -> PeerResult<ServingManifest> {
+    let manifest: ServingManifest = serde_json::from_slice(bytes)?;
     if manifest.schema_version != MANIFEST_SCHEMA_VERSION {
         return Err(validation(
             "manifest.schema_version",
@@ -1336,7 +1564,14 @@ fn read_or_empty_manifest(path: &Path, namespace: &str) -> PeerResult<ServingMan
 }
 
 fn write_manifest_atomic(path: &Path, manifest: &ServingManifest) -> PeerResult<()> {
-    write_atomic_text(path, &serde_json::to_vec_pretty(manifest)?)
+    let bytes = serde_json::to_vec_pretty(manifest)?;
+    if bytes.len() as u64 > MAX_MANIFEST_BYTES {
+        return Err(validation(
+            "manifest",
+            "publication would exceed the 8 MiB manifest limit",
+        ));
+    }
+    write_atomic_text(path, &bytes)
 }
 
 struct ManifestLock {
@@ -1403,7 +1638,31 @@ fn checked_asset_path(
     Ok((displayed, canonical))
 }
 
-fn preflight_stage(resolved: &ResolvedProduct, out: &Path, overwrite: bool) -> PeerResult<()> {
+pub(crate) fn preflight_stage(
+    resolved: &ResolvedProduct,
+    out: &Path,
+    overwrite: bool,
+) -> PeerResult<()> {
+    let parent = out
+        .parent()
+        .ok_or_else(|| PeerError::Policy("output has no parent".into()))?;
+    let parent = fs::canonicalize(parent)?;
+    let effective_out = parent.join(
+        out.file_name()
+            .ok_or_else(|| PeerError::Policy("output needs a filename".into()))?,
+    );
+    let receipt = receipt_path(&effective_out);
+    // Never follow output/receipt links, including dangling links. Existing
+    // receipts must be regular files; a directory cannot be replaced atomically.
+    for path in [out, receipt.as_path()] {
+        if let Ok(metadata) = fs::symlink_metadata(path)
+            && (metadata.file_type().is_symlink() || (path == receipt && !metadata.is_file()))
+        {
+            return Err(PeerError::Policy(
+                "output/receipt link or non-file receipt is not supported".into(),
+            ));
+        }
+    }
     if fs::symlink_metadata(out)
         .map(|metadata| metadata.file_type().is_symlink())
         .unwrap_or(false)
@@ -1421,7 +1680,6 @@ fn preflight_stage(resolved: &ResolvedProduct, out: &Path, overwrite: bool) -> P
         )));
     }
     let out_canonical = fs::canonicalize(out).ok();
-    let receipt = receipt_path(out);
     for asset in &resolved.assets {
         let source = fs::canonicalize(&asset.project_access_path)
             .map_err(|_| PeerError::PeerUnavailable(format!("registered asset '{}'", asset.id)))?;
@@ -1430,10 +1688,22 @@ fn preflight_stage(resolved: &ResolvedProduct, out: &Path, overwrite: bool) -> P
                 "source/output or receipt/source collision".into(),
             ));
         }
-        if out.exists() && (source.starts_with(out) || out.starts_with(&source)) {
+        if source.starts_with(&effective_out) || effective_out.starts_with(&source) {
             return Err(PeerError::Policy(
                 "source/output ancestor or descendant overlap".into(),
             ));
+        }
+        if let Ok(receipt_metadata) = fs::metadata(&receipt) {
+            let source_metadata = fs::metadata(&source)?;
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::MetadataExt;
+                if source_metadata.dev() == receipt_metadata.dev()
+                    && source_metadata.ino() == receipt_metadata.ino()
+                {
+                    return Err(PeerError::Policy("receipt/source hard-link alias".into()));
+                }
+            }
         }
         if let Ok(output_metadata) = fs::metadata(out) {
             let source_metadata = fs::metadata(&source)?;
@@ -1451,7 +1721,7 @@ fn preflight_stage(resolved: &ResolvedProduct, out: &Path, overwrite: bool) -> P
     Ok(())
 }
 
-fn receipt_path(out: &Path) -> PathBuf {
+pub(crate) fn receipt_path(out: &Path) -> PathBuf {
     out.with_file_name(format!(
         "{}.feam-receipt.json",
         out.file_name().unwrap_or_default().to_string_lossy()
@@ -1466,7 +1736,7 @@ fn remove_any(path: &Path) -> std::io::Result<()> {
         Ok(())
     }
 }
-fn sha256_file(path: &Path) -> PeerResult<String> {
+pub(crate) fn sha256_file(path: &Path) -> PeerResult<String> {
     let mut file = File::open(path)?;
     let mut hash = Sha256::new();
     let mut buffer = [0_u8; 32 * 1024];
@@ -1509,7 +1779,7 @@ fn unique_nonce() -> String {
         .as_nanos()
         .to_string()
 }
-fn absolute_path(path: &Path) -> PeerResult<PathBuf> {
+pub(crate) fn absolute_path(path: &Path) -> PeerResult<PathBuf> {
     if path.is_absolute() {
         Ok(path.to_path_buf())
     } else {

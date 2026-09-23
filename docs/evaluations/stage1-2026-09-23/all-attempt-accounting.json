@@ -1,0 +1,179 @@
+{
+  "authorization_usd": 20,
+  "initial_screen_and_probe_known_usd": 0.0116721174,
+  "evaluation_reports": [
+    {
+      "report": "live-20260923-1.json",
+      "corpus": "held-out-v1",
+      "attempted": 1,
+      "correct": 0,
+      "known_cost_usd": 0.0,
+      "usage_unknown_attempts": 1
+    },
+    {
+      "report": "live-20260923-2.json",
+      "corpus": "held-out-v1",
+      "attempted": 1,
+      "correct": 0,
+      "known_cost_usd": 0.0,
+      "usage_unknown_attempts": 1
+    },
+    {
+      "report": "live-20260923-3.json",
+      "corpus": "held-out-v1",
+      "attempted": 16,
+      "correct": 13,
+      "known_cost_usd": 0.0021861336,
+      "usage_unknown_attempts": 1
+    },
+    {
+      "report": "live-20260923-4.json",
+      "corpus": "held-out-v1",
+      "attempted": 46,
+      "correct": 36,
+      "known_cost_usd": 0.004831696800000001,
+      "usage_unknown_attempts": 0
+    },
+    {
+      "report": "live-20260923-5.json",
+      "corpus": "held-out-v1",
+      "attempted": 37,
+      "correct": 32,
+      "known_cost_usd": 0.0040181512,
+      "usage_unknown_attempts": 0
+    },
+    {
+      "report": "live-20260923-final.json",
+      "corpus": "held-out-v1",
+      "attempted": 100,
+      "correct": 88,
+      "known_cost_usd": 0.012106875199999997,
+      "usage_unknown_attempts": 0
+    },
+    {
+      "report": "live-candidate.json",
+      "corpus": "held-out-v1",
+      "attempted": 100,
+      "correct": 84,
+      "known_cost_usd": 0.0159156088,
+      "usage_unknown_attempts": 0
+    },
+    {
+      "report": "live-candidate-2.json",
+      "corpus": "held-out-v2",
+      "attempted": 100,
+      "correct": 98,
+      "known_cost_usd": 0.016216328800000002,
+      "usage_unknown_attempts": 0
+    },
+    {
+      "report": "live-heldout-v3.json",
+      "corpus": "held-out-v3",
+      "attempted": 100,
+      "correct": 97,
+      "known_cost_usd": 0.0163681504,
+      "usage_unknown_attempts": 0
+    },
+    {
+      "report": "live-heldout-v31-correction.json",
+      "corpus": "held-out-v3.1",
+      "attempted": 1,
+      "correct": 1,
+      "known_cost_usd": 5.2024e-05,
+      "usage_unknown_attempts": 0
+    }
+  ],
+  "unrecorded_runner_panic_attempts": 1,
+  "evaluation_attempts_including_panic": 503,
+  "evaluation_correct": 449,
+  "walkthroughs": [
+    {
+      "report": "live-walk-1.json",
+      "passed": false,
+      "known_cost_usd": 0,
+      "exported_run_count": 0,
+      "reserved_usd": 0.2
+    },
+    {
+      "report": "live-walk-2.json",
+      "passed": false,
+      "known_cost_usd": 0,
+      "exported_run_count": 0,
+      "reserved_usd": 0.2
+    },
+    {
+      "report": "live-walk-3.json",
+      "passed": false,
+      "known_cost_usd": 0,
+      "exported_run_count": 0,
+      "reserved_usd": 0.2
+    },
+    {
+      "report": "live-walk-4.json",
+      "passed": false,
+      "known_cost_usd": 0,
+      "exported_run_count": 0,
+      "reserved_usd": 0.2
+    },
+    {
+      "report": "live-walk-5.json",
+      "passed": false,
+      "known_cost_usd": 0,
+      "exported_run_count": 0,
+      "reserved_usd": 0.2
+    },
+    {
+      "report": "live-walk-6.json",
+      "passed": false,
+      "known_cost_usd": 0,
+      "exported_run_count": 0,
+      "reserved_usd": 0.2
+    },
+    {
+      "report": "live-walk-7.json",
+      "passed": false,
+      "known_cost_usd": 0,
+      "exported_run_count": 0,
+      "reserved_usd": 0.2
+    },
+    {
+      "report": "live-walk-8.json",
+      "passed": false,
+      "known_cost_usd": 0.0015057784,
+      "exported_run_count": 5,
+      "reserved_usd": 0.2
+    },
+    {
+      "report": "live-walk-9.json",
+      "passed": true,
+      "known_cost_usd": 0.0021930272,
+      "exported_run_count": 8,
+      "reserved_usd": 0
+    },
+    {
+      "report": "live-walk-10.json",
+      "passed": false,
+      "known_cost_usd": 0.0016443616,
+      "exported_run_count": 5,
+      "reserved_usd": 0.2
+    },
+    {
+      "report": "live-walk-11.json",
+      "passed": true,
+      "known_cost_usd": 0.0023645832,
+      "exported_run_count": 8,
+      "reserved_usd": 0
+    }
+  ],
+  "known_cost_usd": 0.09107483660000001,
+  "reserved_unknown_cost_usd": 2.0,
+  "known_plus_reserve_usd": 2.0910748366,
+  "remaining_after_reserve_usd": 17.9089251634,
+  "notes": [
+    "Every attempted evaluation and terminal run is retained.",
+    "Historical mixed-version aggregate is not the final-candidate score.",
+    "Four evaluation attempts have unknown/incomplete cost; reserve $0.05 each.",
+    "Each failed walkthrough reserves its full $0.20 session envelope in addition to any partial known usage.",
+    "Reserves are conservative application accounting, not measured charges or a router billing guarantee."
+  ]
+}

@@ -1,7 +1,9 @@
 [workspace]
 members = [
   "mesh_cli",
-  "mesh_core"
+  "mesh_core",
+  "mesh_tui",
+  "mesh_agent"
 ]
 resolver = "2"
 
@@ -16,6 +18,12 @@ toml = "0.8.23"
 sha2 = "0.10.9"
 tiff = "0.10.3"
 parquet = { version = "60.0.0", default-features = false }
+ratatui = "0.29.0"
+crossterm = "0.28.1"
+futures-util = "0.3.31"
+reqwest = { version = "0.12.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+tokio = { version = "1.43.0", features = ["rt-multi-thread", "time", "sync"] }
+url = "2.5.4"
 
 assert_cmd = "2.1.1"
 predicates = "3.1.3"

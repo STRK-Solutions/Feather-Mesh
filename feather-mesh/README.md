@@ -167,6 +167,43 @@ FEAM_E2E=1 FEAM_EXECUTABLE="$(pwd)/target/debug/mesh_cli" \
 loopback STAC endpoint. Its token file must be owner-readable only; it returns
 metadata and local file URIs, never raster bytes.
 
+### Optional project TUI and hosted assistant
+
+The optional keyboard-driven TUI always requires a project root and never
+falls back to a legacy `registry.db`:
+
+```bash
+cargo run -p mesh_cli --features tui -- tui --project /work/client --agent off
+```
+
+It supports manifest-backed catalog browsing with per-peer coverage, pinned
+details/lineage/inventory, direct-resolution CLI/SDK examples, peer refresh,
+and reviewed publication/staging/withdrawal. A missing project is initialized
+only through its explicit TUI action. Normal noninteractive CLI JSON is not
+used or contaminated by TUI rendering.
+
+The hosted router is separately opt-in and uses a profile outside the project:
+
+```bash
+cargo run -p mesh_cli --features agent-hosted -- tui \
+  --project /work/client --agent hosted --agent-profile demo-router
+```
+
+Profiles, disclosure policy, API-key environment references, bounded tools,
+review semantics, and recovery outcomes are defined in
+[the Stage-1 contract](../docs/tui_agent_stage1_contract.md). See the
+[demo runbook](../docs/tui_agent_stage1_demo.md) for a synthetic provider/client
+fixture and the [acceptance record](../docs/tui_agent_stage1_acceptance.md) for
+separate local/live/HPC evidence. Drafts are editable with `:draft` commands;
+`:recover` reconciles pending journal records without replay. The runbook includes
+PTY restoration tests, complete manual/fake walkthroughs and the fixture-backed
+100-task evaluation runner.
+
+For hosted model comparison, see the [synthetic screening runbook and results](../docs/tui_agent_model_screening.md).
+The screen exports the Rust tool schemas and simulates results; it does not
+execute peer operations or establish Stage-1 acceptance. Its offline checks are
+`python3 -m unittest discover -s scripts -p test_router_model_screen.py`.
+
 ### Commands
 
 The implemented command surface is:
@@ -182,6 +219,7 @@ The implemented command surface is:
 - `products`
 - `refresh`, `cache status`, `resolve`, and `withdraw` (project-scoped)
 - `stac serve` (project-scoped, authenticated)
+- `tui` (optional feature, project-scoped)
 
 Global options:
 
@@ -240,6 +278,8 @@ feather-mesh/
 │   ├── Cargo.toml
 │   └── src/
 │       └── main.rs        # CLI parsing, terminal UX, and process behavior
+├── mesh_tui/              # Optional interactive terminal application
+├── mesh_agent/            # Optional hosted router and typed agent harness
 └── mesh_core/
     ├── Cargo.toml
     ├── src/

@@ -6,6 +6,8 @@ Feather Mesh is an HPC-oriented data catalog and data mesh project. The current 
 
 - [mesh_core](feather-mesh/mesh_core/Cargo.toml): shared Rust library for domain types, SQLite setup, repositories, and service workflows.
 - [mesh_cli](feather-mesh/mesh_cli/Cargo.toml): `feam` command-line interface built on `mesh_core`.
+- [mesh_tui](feather-mesh/mesh_tui/Cargo.toml): optional Ratatui/Crossterm interactive project UI; it calls shared services directly and owns terminal lifecycle/reviews.
+- [mesh_agent](feather-mesh/mesh_agent/Cargo.toml): optional provider-neutral router/harness and typed tool schemas; it has no terminal or peer-mutation authority.
 - Run Rust commands from `feather-mesh/`.
 
 ## Peer Data Access Routing
@@ -15,6 +17,14 @@ Explicit user instructions take precedence. For peer data access, read [requirem
 Peer publication uses authoritative provider `serving/manifest.json` records and first-class direct reads. Legacy SQLite remains separate and is not a peer authority. `mesh_core::services::peer_access` owns project config, manifests, inspection, refresh, resolution, and staging; `mesh_core::stac`/`stac_http` are derived adapters; `python_sdk/` is the supported subprocess adapter. Older PDDs and plans are historical for this feature; see the [older agent-plan notice](feather-mesh/.agents/feather_mesh_workplan.md).
 
 Use [feam-peer-data-access](.codex/skills/feam-peer-data-access/SKILL.md) for publication/manifests, project/peer resolution, cache refresh, SDK, STAC, and peer staging changes, including adapter-only work. Also use [feam-rust-workflow](.codex/skills/feam-rust-workflow/SKILL.md) for Rust, [feam-cli-contract](.codex/skills/feam-cli-contract/SKILL.md) for CLI/protocol changes, and [feam-agent-context-maintainer](.codex/skills/feam-agent-context-maintainer/SKILL.md) when context or component commands change.
+
+## TUI and Agent Harness Routing
+
+For planned TUI and agent-harness work, read the [design](tui_agent_harness_design.md) and [stage-1 implementation workplan](tui_agent_harness_stage1_workplan.md). They distinguish planned components from existing behavior and define implementation scope and required evidence. Apply the Rust, CLI, peer-access, and context-maintenance skills above as appropriate.
+
+The [demo runbook](docs/tui_agent_stage1_demo.md) gives manual/fake/live commands and PTY/evaluation checks; the [acceptance record](docs/tui_agent_stage1_acceptance.md) distinguishes measured results from remaining gates.
+
+The [router model screening runbook](docs/tui_agent_model_screening.md) documents the synthetic development screen, schema export, and offline Python checks. Keep its development tasks separate from held-out acceptance; live runs require explicit opt-in.
 
 ## Validation
 
@@ -57,6 +67,9 @@ Implemented commands:
 - `resolve`
 - `withdraw`
 - `stac`
+- `tui`
+
+`tui` is an optional feature, always requires `--project ROOT`, and never uses legacy `registry.db`.
 
 Stable exit codes are documented in the [workspace README](feather-mesh/README.md#exit-codes) and tested in [CLI workflow tests](feather-mesh/mesh_cli/tests/cli_workflow_tests.rs).
 
@@ -65,6 +78,8 @@ Stable exit codes are documented in the [workspace README](feather-mesh/README.m
 | Owner | Responsibility |
 | --- | --- |
 | mesh_cli | CLI parsing, terminal output, process exit behavior, and user-facing formatting. |
+| mesh_tui | Interactive rendering, local input, review confirmation, and terminal restoration; never peer business rules. |
+| mesh_agent | Router/config translation, bounded agent loop, and provider-facing tool validation; never confirmation or direct mutation. |
 | mesh_core::services | Shared business workflows, publication, validation, and resolution; SDK/HTTP adapters call these rules. |
 | mesh_core::repositories | SQL and row mapping. |
 | mesh_core shared types | Reusable DTOs and domain errors; adapters translate them without duplicating visibility rules. |

@@ -5,11 +5,17 @@ edition = "2024"
 
 [dependencies]
 mesh_core = { path = "../mesh_core" }
+mesh_tui = { path = "../mesh_tui", optional = true }
 chrono = { workspace = true }
 clap = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+
+[features]
+default = []
+tui = ["dep:mesh_tui"]
+agent-hosted = ["tui", "mesh_tui/agent-hosted"]
 
 [dev-dependencies]
 assert_cmd = { workspace = true }

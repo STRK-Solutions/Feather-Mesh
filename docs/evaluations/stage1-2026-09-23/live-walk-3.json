@@ -1,0 +1,12 @@
+{
+  "mode": "live",
+  "checks": [
+    "unrelated cwd and spaced path without registry",
+    "discovery, partial coverage, pinned metadata and export",
+    "assistant clarification then explicit pinned resolution"
+  ],
+  "passed": false,
+  "elapsed_seconds": 45.6390594580007,
+  "failure_summary": "Expected screen marker 'y confirm'",
+  "failure_screen_sha256": "0d164fd46fbf1a8f83fd0ac09f6b2091d7b12301d2c6327f0bec2ba2724b3a88"
+}

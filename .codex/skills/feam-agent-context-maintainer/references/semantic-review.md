@@ -2,7 +2,7 @@
 
 Run this review after the structural checker. It is an agent/human decision checklist, not a natural-language regex specification. A structurally valid document can still give wrong instructions.
 
-- Route a direct peer-read task from `AGENTS.md` to `data_access.md`, the workplan, and the shared peer-access skill. Confirmed requirements require provider registration, manifests as intended authority, and first-class direct reads. SQLite is the observed current implementation. The future P0 contract settles schemas/defaults; older PDDs/plans cannot override the feature requirements or explicit user instructions.
+- Route a direct peer-read task from `AGENTS.md` to `data_access.md`, the workplan, and the shared peer-access skill. Confirmed requirements require provider registration, manifests as authority, and first-class direct reads. Legacy SQLite remains separate from authoritative peer manifests. The existing data-access contract settles schemas/defaults; older PDDs/plans cannot override the feature requirements or explicit user instructions.
 - Review proposed `**/*.parquet` discovery: reject it for pinned access and require a test proving an added unregistered shard never enters the result. Inventory preparation by a provider is distinct from publication.
 - Review resolving an unregistered but readable TIFF: reject it, including explicit path lookup, and require a public-boundary not-registered failure test.
 - Review reopening a removed peer via its saved physical path: reject it and require a test where the physical file remains readable but new access through Feather Mesh fails.

@@ -1,0 +1,28 @@
+[package]
+name = "mesh_agent"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = []
+hosted = ["dep:reqwest", "dep:tokio", "dep:futures-util", "dep:url"]
+
+[dependencies]
+futures-util = { workspace = true, optional = true }
+mesh_core = { path = "../mesh_core" }
+reqwest = { workspace = true, optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, optional = true }
+toml = { workspace = true }
+url = { workspace = true, optional = true }
+
+[dev-dependencies]
+parquet = { workspace = true }
+tiff = { workspace = true }
+tempfile = { workspace = true }
+
+[[example]]
+name = "router_connectivity"
+required-features = ["hosted"]

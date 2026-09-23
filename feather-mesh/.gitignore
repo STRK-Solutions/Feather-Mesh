@@ -19,3 +19,9 @@ Thumbs.db
 # Backup files
 *.swp
 *.bak
+
+# Python build and test artifacts
+__pycache__/
+*.pyc
+/python_sdk/build/
+/python_sdk/src/*.egg-info/
