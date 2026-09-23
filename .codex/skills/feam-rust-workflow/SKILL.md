@@ -12,7 +12,6 @@ Use this skill for Rust work in the `feather-mesh/` workspace.
 - Work from `feather-mesh/` for Cargo commands.
 - `mesh_core` owns domain types, SQLite setup, repositories, services, and reusable workflow behavior.
 - `mesh_cli` owns CLI parsing, terminal output, JSON/table formatting, and process exit behavior.
-- The root-level `python_mvp/` is historical prototype context unless the user explicitly asks for Python MVP work.
 
 ## Change Workflow
 

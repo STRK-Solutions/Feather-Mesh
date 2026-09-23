@@ -18,7 +18,7 @@ Read only the high-signal files needed for the drift being investigated:
 - `.github/workflows/rust.yml`
 - Changed files relevant to the current task
 
-Do not load long project artifacts, PDFs, generated outputs, or the Python MVP unless the task specifically targets them.
+Do not load long project artifacts, PDFs, or generated outputs unless the task specifically targets them.
 
 ## Self-Healing Rules
 
@@ -28,7 +28,6 @@ Do not load long project artifacts, PDFs, generated outputs, or the Python MVP u
 - Remove stale statements instead of adding caveats around them.
 - Keep the file concise; target under 120 lines.
 - Do not include temporary branch status, implementation plans, sprint notes, or speculative roadmap.
-- Keep Python MVP context explicitly secondary unless it becomes the active implementation source of truth.
 
 ## Drift Check
 
@@ -46,5 +45,5 @@ After updating context, verify that a future agent could answer:
 
 - Where should a CLI behavior change go?
 - What tests should run after service logic changes?
-- Is `python_mvp/` the source of truth?
+- Which workspace owns the implementation?
 - Where are stable CLI exit codes documented and tested?

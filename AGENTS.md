@@ -1,6 +1,6 @@
 # Agent Context
 
-Feather Mesh is an HPC-oriented data catalog and data mesh project. The current implementation lives in `feather-mesh/` as a Rust workspace. `python_mvp/` is an earlier prototype and should not be treated as the primary implementation unless the task explicitly targets it.
+Feather Mesh is an HPC-oriented data catalog and data mesh project. The current implementation lives in `feather-mesh/` as a Rust workspace.
 
 ## Primary Implementation
 
@@ -42,4 +42,3 @@ Stable exit codes are documented in `feather-mesh/README.md` and tested in `feat
 - Keep business workflows in `mesh_core::services`.
 - Keep SQL and row mapping in `mesh_core::repositories`.
 - Add or update tests for CLI behavior, service behavior, validation, persistence, or exit-code changes.
-- Do not use the Python MVP as source of truth for Rust behavior.

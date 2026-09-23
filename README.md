@@ -4,25 +4,13 @@
 
 # Feather Mesh
 
-This STRK-Solutions repository contains the capstone work for Feather Mesh, an HPC-oriented data catalog / data mesh project. The repo includes an MVP Python CLI, a Rust workspace for the Feather Mesh implementation, supporting diagrams, and project documentation.
+This STRK-Solutions repository contains the capstone work for Feather Mesh, an HPC-oriented data catalog / data mesh project. The repo includes the Rust workspace for the Feather Mesh implementation, supporting diagrams, and project documentation.
 
 This root README is intentionally high level. For setup, usage, and implementation details, use the README inside each subproject directory.
 
 For agent-specific repository guidance, use [`AGENTS.md`](/AGENTS.md). Keep that file concise and focused on durable project context, crate boundaries, and validation rules.
 
 ## Repository Overview
-
-### `python_mvp/`
-
-Contains the Python MVP for the data registry CLI. This is the lighter-weight prototype used to model registry behavior such as serving, searching, and inspecting mock data products.
-
-Start here if you want to:
-
-- run the MVP CLI quickly
-- inspect the mock registry data and Python packaging setup
-- understand the early prototype workflow
-
-See [`python_mvp/README.md`](/python_mvp/README.md) for installation, commands, and usage examples.
 
 ### `feather-mesh/`
 
@@ -57,6 +45,5 @@ The product definition document, outlining an in-depth overview of the Feather M
 
 ## Where To Go Next
 
-- If you want the Python prototype, start in [`python_mvp/README.md`](/python_mvp/README.md).
 - If you want the Rust implementation, start in [`feather-mesh/README.md`](/feather-mesh/README.md).
 - If you want architecture context, browse `diagrams/`, `proposal.md`, `Feather_Mesh_PDD_Revised.pdf`, and [`feather-mesh/README.md`](/feather-mesh/README.md).
