@@ -1,0 +1,7 @@
+[
+  {"label":"qwen35-27b","model":"qwen/qwen3.5-27b","provider":"alibaba","max_price":{"prompt":0.195,"completion":1.56,"request":0}},
+  {"label":"qwen38-27b","model":"qwen/qwen3.8-27b","provider":"deepinfra/bf16","max_price":{"prompt":0.15,"completion":1.875,"request":0}},
+  {"label":"deepseek-v4-flash","model":"deepseek/deepseek-v4-flash-0731","provider":"deepinfra/fp8","max_price":{"prompt":0.06,"completion":0.18,"request":0}},
+  {"label":"deepseek-v41-flash","model":"deepseek/deepseek-v4.1-flash","provider":"deepinfra/fp8","max_price":{"prompt":0.14,"completion":0.42,"request":0}},
+  {"label":"nemotron-ultra-free","model":"nvidia/nemotron-3-ultra-550b-a55b:free","provider":"nvidia","max_price":{"prompt":0,"completion":0,"request":0}}
+]

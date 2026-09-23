@@ -1,0 +1,455 @@
+{
+  "attempted": 16,
+  "budget_usd": 1.0,
+  "correct": 13,
+  "known_cost_usd": 0.0021861336,
+  "mode": "live",
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providers": [
+    "deepinfra/fp8"
+  ],
+  "results": [
+    {
+      "category": "discovery_inspection",
+      "correct": false,
+      "cost_usd": 0.0003190712,
+      "failure_detail": null,
+      "latency_ms": 4207,
+      "outcome_state": null,
+      "request_bytes": 5989,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-01",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0003190712,
+        "generation_id": "gen-1790138405-dXlRmHVGrQ4bk1JzZjM7",
+        "input_tokens": 3403,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 122,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.00012588239999999999,
+      "failure_detail": null,
+      "latency_ms": 2056,
+      "outcome_state": null,
+      "request_bytes": 6126,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-02",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.00012588239999999999,
+        "generation_id": "gen-1790138408-6X8TYgReL5a1DBlWuj8n",
+        "input_tokens": 3420,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 153,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001316224,
+      "failure_detail": null,
+      "latency_ms": 2062,
+      "outcome_state": null,
+      "request_bytes": 5945,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "discovery_inspection-03",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001316224,
+        "generation_id": "gen-1790138410-yflSxTgeZusDZSBvieD6",
+        "input_tokens": 3374,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 182,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001012424,
+      "failure_detail": null,
+      "latency_ms": 2079,
+      "outcome_state": null,
+      "request_bytes": 5772,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "discovery_inspection-04",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001012424,
+        "generation_id": "gen-1790138412-MbYaNrUiWWJ2EcyKITcR",
+        "input_tokens": 3346,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 119,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001114624,
+      "failure_detail": null,
+      "latency_ms": 1448,
+      "outcome_state": null,
+      "request_bytes": 5942,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-05",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001114624,
+        "generation_id": "gen-1790138414-gxcN8HLJorIiMKBbKBdk",
+        "input_tokens": 3380,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 132,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.00010306240000000001,
+      "failure_detail": null,
+      "latency_ms": 3551,
+      "outcome_state": null,
+      "request_bytes": 5769,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-06",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.00010306240000000001,
+        "generation_id": "gen-1790138418-KZqO3XczLP04IUlmJmMA",
+        "input_tokens": 3347,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 123,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.00011818239999999999,
+      "failure_detail": null,
+      "latency_ms": 1469,
+      "outcome_state": null,
+      "request_bytes": 6127,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-07",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.00011818239999999999,
+        "generation_id": "gen-1790138419-LGI726sZWdedqpUTk6hM",
+        "input_tokens": 3410,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 138,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001286824,
+      "failure_detail": null,
+      "latency_ms": 2330,
+      "outcome_state": null,
+      "request_bytes": 6125,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-08",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001286824,
+        "generation_id": "gen-1790138421-bAUBngNd8WJ0IfsGUgCP",
+        "input_tokens": 3413,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 162,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001298024,
+      "failure_detail": null,
+      "latency_ms": 2009,
+      "outcome_state": null,
+      "request_bytes": 6131,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "discovery_inspection-09",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001298024,
+        "generation_id": "gen-1790138423-u3NyukDwvE3hKTqld9Xw",
+        "input_tokens": 3412,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 165,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001041824,
+      "failure_detail": null,
+      "latency_ms": 1992,
+      "outcome_state": null,
+      "request_bytes": 5801,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-10",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001041824,
+        "generation_id": "gen-1790138425-TWjdX2NuJ5ARaikryPzy",
+        "input_tokens": 3367,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 119,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": false,
+      "cost_usd": 0.0001221024,
+      "failure_detail": null,
+      "latency_ms": 2135,
+      "outcome_state": null,
+      "request_bytes": 5657,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-11",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001221024,
+        "generation_id": "gen-1790138427-u1x7PTTU7fW3CRPaACUV",
+        "input_tokens": 3336,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 172,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001474424,
+      "failure_detail": null,
+      "latency_ms": 2503,
+      "outcome_state": null,
+      "request_bytes": 5983,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "discovery_inspection-12",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001474424,
+        "generation_id": "gen-1790138430-aG9zlzHJxuaqyi8mjCLB",
+        "input_tokens": 3400,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 211,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001026424,
+      "failure_detail": null,
+      "latency_ms": 1963,
+      "outcome_state": null,
+      "request_bytes": 5647,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "discovery_inspection-13",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001026424,
+        "generation_id": "gen-1790138432-pZMQVf0Da9GPg38Az34c",
+        "input_tokens": 3323,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 130,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001286824,
+      "failure_detail": null,
+      "latency_ms": 10164,
+      "outcome_state": null,
+      "request_bytes": 5660,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "discovery_inspection-14",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001286824,
+        "generation_id": "gen-1790138434-ClOOnFAD7RLQkpnAVOZf",
+        "input_tokens": 3338,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 187,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0003120712,
+      "failure_detail": null,
+      "latency_ms": 4496,
+      "outcome_state": null,
+      "request_bytes": 5642,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-15",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0003120712,
+        "generation_id": "gen-1790138447-WBm7sGGxN9fpLPs9OvRy",
+        "input_tokens": 3314,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 135,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": false,
+      "cost_usd": null,
+      "failure_detail": "I'll start by checking peer coverage and searching the catalog.\n\nprovider protocol error: multiple tool calls are not supported",
+      "latency_ms": 1922,
+      "outcome_state": null,
+      "request_bytes": 5002,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "kind": "provider_protocol",
+        "state": "failed"
+      },
+      "task_id": "discovery_inspection-16",
+      "tool_calls": 0,
+      "tools": [],
+      "unauthorized_write_or_disclosure": false,
+      "usage": null
+    }
+  ],
+  "schema_version": 1,
+  "unauthorized_write_or_disclosure": 0
+}

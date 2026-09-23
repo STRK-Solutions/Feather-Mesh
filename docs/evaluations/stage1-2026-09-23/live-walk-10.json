@@ -1,0 +1,85 @@
+{
+  "mode": "live",
+  "checks": [
+    "unrelated cwd and spaced path without registry",
+    "discovery, partial coverage, pinned metadata and export",
+    "exported SDK examples execute externally with native Polars and known Rasterio pixels",
+    "assistant clarification then explicit pinned resolution",
+    "denied stage produces no output",
+    "confirmed stage receipt and exact two-asset inventory",
+    "changed destination invalidates review"
+  ],
+  "passed": false,
+  "usage": {
+    "consumer": [
+      {
+        "cancelled": false,
+        "cost_usd": 0.000152768,
+        "run_id": 1,
+        "usage": {
+          "cost_usd": 0.000152768,
+          "generation_id": "gen-1790141250-zEmhqQB9SXMHlKwT0gjJ",
+          "input_tokens": 4273,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 181,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0001509536,
+        "run_id": 2,
+        "usage": {
+          "cost_usd": 0.0001509536,
+          "generation_id": "gen-1790141253-e029jnkogNE8BSoFdUUs",
+          "input_tokens": 5062,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 162,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.00042406,
+        "run_id": 3,
+        "usage": {
+          "cost_usd": 0.00042406,
+          "generation_id": "gen-1790141255-34iA5SoQVsvmgE7a0nTG",
+          "input_tokens": 2867,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 54,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.00044324,
+        "run_id": 4,
+        "usage": {
+          "cost_usd": 0.00044324,
+          "generation_id": "gen-1790141257-rK2D6nZmbje491uq32N7",
+          "input_tokens": 3001,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 55,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.00047334,
+        "run_id": 5,
+        "usage": {
+          "cost_usd": 0.00047334,
+          "generation_id": "gen-1790141259-SFanBr1p7P7Y74Kc9jZV",
+          "input_tokens": 3210,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 57,
+          "provider": "DeepInfra"
+        }
+      }
+    ]
+  },
+  "elapsed_seconds": 55.67495866700483,
+  "failure_summary": "Expected screen marker 'versions;'",
+  "failure_screen_sha256": "5971f51dc43123a2bb3e2e92a126888793f1dcdb168ef759019df53f31d205e5"
+}

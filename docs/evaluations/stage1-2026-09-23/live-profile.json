@@ -1,0 +1,24 @@
+{
+  "backend": "router",
+  "base_url": "https://openrouter.ai/api/v1",
+  "model": "deepseek/deepseek-v4.1-flash",
+  "api_key_env": "FEAM_ROUTER_API_KEY",
+  "context_policy": "synthetic-demo",
+  "allow_user_text": true,
+  "max_tool_calls": 8,
+  "max_request_seconds": 120,
+  "max_context_chars": 48000,
+  "max_response_chars": 16000,
+  "max_request_bytes": 131072,
+  "max_response_bytes": 131072,
+  "max_output_tokens": 1024,
+  "max_cost_usd": 1.0,
+  "allowed_providers": [
+    "deepinfra/fp8"
+  ],
+  "allow_provider_fallbacks": false,
+  "allowed_metadata_fields": [],
+  "max_input_price": 0.14,
+  "max_output_price": 0.42,
+  "reasoning_enabled": false
+}

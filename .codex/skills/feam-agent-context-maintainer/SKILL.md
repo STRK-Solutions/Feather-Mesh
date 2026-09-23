@@ -17,7 +17,7 @@ Read only the high-signal files needed for the drift being investigated:
 - `feather-mesh/Cargo.toml`
 - [CI workflows](../../../.github/workflows), including Rust and agent-context checks
 - Changed files relevant to the current task
-- For peer data access, [requirements](../../../data_access.md), the [workplan](../../../data_access_implementation_workplan.md), and [feam-peer-data-access](../feam-peer-data-access/SKILL.md). Once P0 creates `docs/data_access_contract.md`, read its settled decisions. Confirmed requirements govern over proposed defaults; source/tests describe observed behavior. Explicit user instructions take precedence. Older plans are historical for this feature.
+- For peer data access, [requirements](../../../data_access.md), the [workplan](../../../data_access_implementation_workplan.md), and [feam-peer-data-access](../feam-peer-data-access/SKILL.md). Read the existing [contract](../../../docs/data_access_contract.md) for settled decisions. Confirmed requirements govern over proposed defaults; source/tests describe observed behavior. Explicit user instructions take precedence. Older plans are historical for this feature.
 
 Do not load long project artifacts, PDFs, or generated outputs unless the task specifically targets them.
 
@@ -47,7 +47,7 @@ python3 .codex/skills/feam-agent-context-maintainer/scripts/test_check_agents_co
 
 From the Cargo workspace use `../.codex/skills/feam-agent-context-maintainer/scripts/check_agents_context.sh`. From any other directory invoke the script by absolute path. The default root is relative to the script; `--root /path/to/fixture` selects an explicit root and must fail when that root lacks `AGENTS.md`.
 
-The checker checks local inline Markdown link targets, required routing links, skill YAML/name/body structure, Cargo members, current CLI source anchors, ownership/affected-surface table rows, and the three mandatory Rust commands. Table keys are structural IDs; prose may change freely. Keep those checks/tests aligned when the documented structure changes. Python is tooling for this context check, not evidence that the planned SDK exists.
+The checker checks local inline Markdown link targets, required routing links, skill YAML/name/body structure, Cargo members, current CLI source anchors, ownership/affected-surface table rows, and the three mandatory Rust commands. Table keys are structural IDs; prose may change freely. Keep those checks/tests aligned when the documented structure changes. The context checker is structural tooling; installed SDK/runtime evidence is recorded separately.
 
 A pass reports **structural checks only**. It does not interpret contradictory prose, prove feature readiness, or run runtime tests. Review [references/semantic-review.md](references/semantic-review.md) separately; regressions deliberately show that contradictory appended prose can pass structural checks.
 

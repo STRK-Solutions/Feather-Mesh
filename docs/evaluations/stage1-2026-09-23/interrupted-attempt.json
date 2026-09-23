@@ -1,0 +1,8 @@
+{
+  "task_id": "staging-08",
+  "after_report": "live-20260923-4.json",
+  "correct": false,
+  "assertions_complete": false,
+  "cost_usd": null,
+  "reason": "runner panicked while checking absent destination after the model declined; charged attempt counted, no pass inferred"
+}

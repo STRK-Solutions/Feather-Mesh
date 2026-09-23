@@ -1,0 +1,84 @@
+{
+  "mode": "live",
+  "checks": [
+    "unrelated cwd and spaced path without registry",
+    "discovery, partial coverage, pinned metadata and export",
+    "assistant clarification then explicit pinned resolution",
+    "denied stage produces no output",
+    "confirmed stage receipt and exact two-asset inventory",
+    "changed destination invalidates review"
+  ],
+  "passed": false,
+  "usage": {
+    "consumer": [
+      {
+        "cancelled": false,
+        "cost_usd": 0.0001388352,
+        "run_id": 1,
+        "usage": {
+          "cost_usd": 0.0001388352,
+          "generation_id": "gen-1790140616-fKqm9yiMTHjQWlUPC9m2",
+          "input_tokens": 3753,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 197,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.00014600319999999998,
+        "run_id": 2,
+        "usage": {
+          "cost_usd": 0.00014600319999999998,
+          "generation_id": "gen-1790140620-9XFfIiWcT485yzO7kcuD",
+          "input_tokens": 4548,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 156,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.00038472,
+        "run_id": 3,
+        "usage": {
+          "cost_usd": 0.00038472,
+          "generation_id": "gen-1790140625-UIADojNUMrb2Xxr1GYUR",
+          "input_tokens": 2586,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 54,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0004032,
+        "run_id": 4,
+        "usage": {
+          "cost_usd": 0.0004032,
+          "generation_id": "gen-1790140631-GGzQivvTlULz61gY0aYf",
+          "input_tokens": 2718,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 54,
+          "provider": "DeepInfra"
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.00043302,
+        "run_id": 5,
+        "usage": {
+          "cost_usd": 0.00043302,
+          "generation_id": "gen-1790140634-T3i7EpqRcNHG5h6pA5mu",
+          "input_tokens": 2925,
+          "model": "deepseek/deepseek-v4.1-flash",
+          "output_tokens": 56,
+          "provider": "DeepInfra"
+        }
+      }
+    ]
+  },
+  "elapsed_seconds": 67.6167858330009,
+  "failure_summary": "Expected screen marker 'y confirm'",
+  "failure_screen_sha256": "513d3a6d2a3540911b83c8e48c8d99ea8f101babce9271290e19cf873c1feac5"
+}

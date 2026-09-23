@@ -1,0 +1,29 @@
+[package]
+name = "mesh_tui"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = []
+test-driver = []
+agent-hosted = ["dep:mesh_agent", "mesh_agent/hosted"]
+
+[dependencies]
+signal-hook = "0.3.18"
+crossterm = { workspace = true }
+mesh_agent = { path = "../mesh_agent", optional = true }
+mesh_core = { path = "../mesh_core" }
+ratatui = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+toml = { workspace = true }
+parquet = { workspace = true }
+tiff = { workspace = true }
+tempfile = { workspace = true }
+
+[[example]]
+name = "terminal_probe"
+required-features = ["test-driver"]

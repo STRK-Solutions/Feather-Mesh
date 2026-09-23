@@ -1,0 +1,1299 @@
+{
+  "attempted": 46,
+  "budget_usd": 0.9,
+  "corpus_start_index": 16,
+  "correct": 36,
+  "known_cost_usd": 0.004831696800000001,
+  "mode": "live",
+  "model": "deepseek/deepseek-v4.1-flash",
+  "providers": [
+    "deepinfra/fp8"
+  ],
+  "reserved_unknown_cost_usd": 0.0,
+  "results": [
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.00014044239999999998,
+      "failure_detail": null,
+      "latency_ms": 2084,
+      "outcome_state": null,
+      "request_bytes": 6124,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-17",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.00014044239999999998,
+        "generation_id": "gen-1790138566-RkXaPddYt2AhqIyp9X1J",
+        "input_tokens": 3497,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 162,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001464624,
+      "failure_detail": null,
+      "latency_ms": 1705,
+      "outcome_state": null,
+      "request_bytes": 6298,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "discovery_inspection-18",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001464624,
+        "generation_id": "gen-1790138567-xgxVYzMl11qGhOBE8KHL",
+        "input_tokens": 3534,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 164,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001058624,
+      "failure_detail": null,
+      "latency_ms": 1593,
+      "outcome_state": null,
+      "request_bytes": 5810,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-19",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001058624,
+        "generation_id": "gen-1790138569-EHuG4CcrdcSstLY9B9IG",
+        "input_tokens": 3373,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 121,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001292424,
+      "failure_detail": null,
+      "latency_ms": 2376,
+      "outcome_state": null,
+      "request_bytes": 5807,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-20",
+      "tool_calls": 1,
+      "tools": [
+        "catalog.search"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001292424,
+        "generation_id": "gen-1790138571-fobXK4AUvE6kptiTIAeP",
+        "input_tokens": 3366,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 179,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": false,
+      "cost_usd": 0.0001251824,
+      "failure_detail": null,
+      "latency_ms": 2025,
+      "outcome_state": null,
+      "request_bytes": 5449,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-21",
+      "tool_calls": 1,
+      "tools": [
+        "rejected:integrity_consent_required"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001251824,
+        "generation_id": "gen-1790138573-K9rVLU0pb3GB6x6SWelT",
+        "input_tokens": 3271,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 201,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001772624,
+      "failure_detail": null,
+      "latency_ms": 4220,
+      "outcome_state": null,
+      "request_bytes": 5846,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-22",
+      "tool_calls": 1,
+      "tools": [
+        "product.inspect"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001772624,
+        "generation_id": "gen-1790138576-eYl3BsgccycyyzhvIZTn",
+        "input_tokens": 3346,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 300,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.0001464624,
+      "failure_detail": null,
+      "latency_ms": 2634,
+      "outcome_state": null,
+      "request_bytes": 5739,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "discovery_inspection-23",
+      "tool_calls": 1,
+      "tools": [
+        "product.inspect"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001464624,
+        "generation_id": "gen-1790138580-CDouFO0igthvQpz8mI60",
+        "input_tokens": 3315,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 237,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.00011216239999999999,
+      "failure_detail": null,
+      "latency_ms": 2120,
+      "outcome_state": null,
+      "request_bytes": 5636,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "discovery_inspection-24",
+      "tool_calls": 1,
+      "tools": [
+        "peers.status"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.00011216239999999999,
+        "generation_id": "gen-1790138582-iLTYuSWR5qRFmlYs846g",
+        "input_tokens": 3286,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 165,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "discovery_inspection",
+      "correct": true,
+      "cost_usd": 0.00010671360000000001,
+      "failure_detail": null,
+      "latency_ms": 1992,
+      "outcome_state": null,
+      "request_bytes": 5729,
+      "requests": 3,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "discovery_inspection-25",
+      "tool_calls": 2,
+      "tools": [
+        "catalog.refresh",
+        "peers.status"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.00010671360000000001,
+        "generation_id": "gen-1790138585-HKHt39m56fIHgSd3I7Un",
+        "input_tokens": 4914,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 106,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.0001509424,
+      "failure_detail": null,
+      "latency_ms": 4803,
+      "outcome_state": null,
+      "request_bytes": 5833,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "resolve_examples-01",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001509424,
+        "generation_id": "gen-1790138587-rAQMBKiFXeZGOWSosOKr",
+        "input_tokens": 3350,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 236,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.0001326024,
+      "failure_detail": null,
+      "latency_ms": 6340,
+      "outcome_state": null,
+      "request_bytes": 5836,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "resolve_examples-02",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001326024,
+        "generation_id": "gen-1790138592-ckJCYUXIgjXc7PB5WnHj",
+        "input_tokens": 3348,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 193,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.0001653624,
+      "failure_detail": null,
+      "latency_ms": 14147,
+      "outcome_state": null,
+      "request_bytes": 5868,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "resolve_examples-03",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001653624,
+        "generation_id": "gen-1790138600-QrTy1SR02KJad5cTJPQ9",
+        "input_tokens": 3360,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 267,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.0001380624,
+      "failure_detail": null,
+      "latency_ms": 3169,
+      "outcome_state": null,
+      "request_bytes": 5840,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "resolve_examples-04",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001380624,
+        "generation_id": "gen-1790138612-uPXXXaHzir5ulHlhm6bH",
+        "input_tokens": 3348,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 206,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.00013022240000000002,
+      "failure_detail": null,
+      "latency_ms": 2862,
+      "outcome_state": null,
+      "request_bytes": 5826,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "resolve_examples-05",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.00013022240000000002,
+        "generation_id": "gen-1790138616-AoFXYoLAq3HcVl0XQzV6",
+        "input_tokens": 3346,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 188,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.0001333024,
+      "failure_detail": null,
+      "latency_ms": 2829,
+      "outcome_state": null,
+      "request_bytes": 5833,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "resolve_examples-06",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001333024,
+        "generation_id": "gen-1790138618-UV9ZJnyx9xo8Mjc8I11o",
+        "input_tokens": 3350,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 194,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.0001338624,
+      "failure_detail": null,
+      "latency_ms": 2886,
+      "outcome_state": null,
+      "request_bytes": 5836,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "resolve_examples-07",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001338624,
+        "generation_id": "gen-1790138621-MBHGkWfibxJOzkLQ3kyr",
+        "input_tokens": 3348,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 196,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.0001716624,
+      "failure_detail": null,
+      "latency_ms": 3263,
+      "outcome_state": null,
+      "request_bytes": 5868,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "resolve_examples-08",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001716624,
+        "generation_id": "gen-1790138624-d0wCCNECED7N87oKRLrw",
+        "input_tokens": 3360,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 282,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.0001456224,
+      "failure_detail": null,
+      "latency_ms": 3407,
+      "outcome_state": null,
+      "request_bytes": 5840,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "resolve_examples-09",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001456224,
+        "generation_id": "gen-1790138628-DhlgGiJN4VnuZo2E08Nb",
+        "input_tokens": 3348,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 224,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.0001369424,
+      "failure_detail": null,
+      "latency_ms": 4715,
+      "outcome_state": null,
+      "request_bytes": 5826,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "resolve_examples-10",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001369424,
+        "generation_id": "gen-1790138631-yZ6Cnk3r5URAWz6Znt6X",
+        "input_tokens": 3346,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 204,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": false,
+      "cost_usd": 5.69912e-05,
+      "failure_detail": "I'll resolve that explicit version and check the local help for what resolution means here.\n\nprovider protocol error: stage 1 accepts one complete tool call per provider response",
+      "latency_ms": 1339,
+      "outcome_state": null,
+      "request_bytes": 5024,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "kind": "provider_protocol",
+        "state": "failed"
+      },
+      "task_id": "resolve_examples-11",
+      "tool_calls": 0,
+      "tools": [],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 5.69912e-05,
+        "generation_id": "gen-1790138635-DtlSDxUoSw23SDao8CaG",
+        "input_tokens": 1579,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 106,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.0001333024,
+      "failure_detail": null,
+      "latency_ms": 2461,
+      "outcome_state": null,
+      "request_bytes": 5761,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "resolve_examples-12",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001333024,
+        "generation_id": "gen-1790138637-k594BEAzl5fffgID7aI2",
+        "input_tokens": 3323,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 203,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.0001411424,
+      "failure_detail": null,
+      "latency_ms": 2907,
+      "outcome_state": null,
+      "request_bytes": 5876,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "resolve_examples-13",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001411424,
+        "generation_id": "gen-1790138640-6EySpa8JtDFzcCn6SdQp",
+        "input_tokens": 3370,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 206,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": true,
+      "cost_usd": 0.0001501024,
+      "failure_detail": null,
+      "latency_ms": 2784,
+      "outcome_state": null,
+      "request_bytes": 5877,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "resolve_examples-14",
+      "tool_calls": 1,
+      "tools": [
+        "product.resolve"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001501024,
+        "generation_id": "gen-1790138643-08mAmxeGjun6xAKQVrCh",
+        "input_tokens": 3368,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 228,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "resolve_examples",
+      "correct": false,
+      "cost_usd": 4.55112e-05,
+      "failure_detail": "I'll look up the bundled help topics for resolution and staging guidance.\n\nprovider protocol error: stage 1 accepts one complete tool call per provider response",
+      "latency_ms": 883,
+      "outcome_state": null,
+      "request_bytes": 5007,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "kind": "provider_protocol",
+        "state": "failed"
+      },
+      "task_id": "resolve_examples-15",
+      "tool_calls": 0,
+      "tools": [],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 4.55112e-05,
+        "generation_id": "gen-1790138644-dyPq2URQ3zZ0wE7xpaAO",
+        "input_tokens": 1566,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 83,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": true,
+      "cost_usd": 4.43912e-05,
+      "failure_detail": null,
+      "latency_ms": 1101,
+      "outcome_state": null,
+      "request_bytes": 5243,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "publication-01",
+      "tool_calls": 1,
+      "tools": [
+        "draft_patch"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 4.43912e-05,
+        "generation_id": "gen-1790138645-fn4XEjpqN2xiqsCiApfT",
+        "input_tokens": 1609,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 66,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": true,
+      "cost_usd": 4.53712e-05,
+      "failure_detail": null,
+      "latency_ms": 805,
+      "outcome_state": null,
+      "request_bytes": 5233,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "publication-02",
+      "tool_calls": 1,
+      "tools": [
+        "draft_patch"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 4.53712e-05,
+        "generation_id": "gen-1790138646-MUij3iXkSOpSSbJP9eN7",
+        "input_tokens": 1610,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 68,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": true,
+      "cost_usd": 4.48112e-05,
+      "failure_detail": null,
+      "latency_ms": 1522,
+      "outcome_state": null,
+      "request_bytes": 5243,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "publication-03",
+      "tool_calls": 1,
+      "tools": [
+        "draft_patch"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 4.48112e-05,
+        "generation_id": "gen-1790138647-2KFfKg2OjbK55jwtnRp6",
+        "input_tokens": 1609,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 67,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": true,
+      "cost_usd": 4.38312e-05,
+      "failure_detail": null,
+      "latency_ms": 859,
+      "outcome_state": null,
+      "request_bytes": 5219,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "publication-04",
+      "tool_calls": 1,
+      "tools": [
+        "draft_patch"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 4.38312e-05,
+        "generation_id": "gen-1790138649-8IHTvTs6Ifm4RMnwBRbc",
+        "input_tokens": 1608,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 65,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": true,
+      "cost_usd": 4.42512e-05,
+      "failure_detail": null,
+      "latency_ms": 818,
+      "outcome_state": null,
+      "request_bytes": 5230,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "publication-05",
+      "tool_calls": 1,
+      "tools": [
+        "draft_patch"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 4.42512e-05,
+        "generation_id": "gen-1790138650-lknWbK615DrAz1MUtom9",
+        "input_tokens": 1608,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 66,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": true,
+      "cost_usd": 4.49512e-05,
+      "failure_detail": null,
+      "latency_ms": 773,
+      "outcome_state": null,
+      "request_bytes": 5229,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "publication-06",
+      "tool_calls": 1,
+      "tools": [
+        "draft_patch"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 4.49512e-05,
+        "generation_id": "gen-1790138651-WAnTxEj1n85agsW99GMH",
+        "input_tokens": 1610,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 67,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": true,
+      "cost_usd": 4.49512e-05,
+      "failure_detail": null,
+      "latency_ms": 672,
+      "outcome_state": null,
+      "request_bytes": 5236,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "publication-07",
+      "tool_calls": 1,
+      "tools": [
+        "draft_patch"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 4.49512e-05,
+        "generation_id": "gen-1790138651-FUHuLusjg2AygWq8SIdK",
+        "input_tokens": 1610,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 67,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": true,
+      "cost_usd": 4.27112e-05,
+      "failure_detail": null,
+      "latency_ms": 696,
+      "outcome_state": null,
+      "request_bytes": 5224,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "publication-08",
+      "tool_calls": 1,
+      "tools": [
+        "draft_patch"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 4.27112e-05,
+        "generation_id": "gen-1790138652-rAENyuPzNOSxBgSwz6GW",
+        "input_tokens": 1606,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 63,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": true,
+      "cost_usd": 4.27112e-05,
+      "failure_detail": null,
+      "latency_ms": 758,
+      "outcome_state": null,
+      "request_bytes": 5219,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "publication-09",
+      "tool_calls": 1,
+      "tools": [
+        "draft_patch"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 4.27112e-05,
+        "generation_id": "gen-1790138653-JvgHzFgjsYPY9OvQUfbl",
+        "input_tokens": 1606,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 63,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": true,
+      "cost_usd": 6.77712e-05,
+      "failure_detail": null,
+      "latency_ms": 2427,
+      "outcome_state": null,
+      "request_bytes": 5310,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "publication-10",
+      "tool_calls": 1,
+      "tools": [
+        "draft_patch"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 6.77712e-05,
+        "generation_id": "gen-1790138654-EwXtVRD0bTPnRTDguJ33",
+        "input_tokens": 1623,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 117,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": true,
+      "cost_usd": 0.00011704,
+      "failure_detail": null,
+      "latency_ms": 2609,
+      "outcome_state": "committed",
+      "request_bytes": 5872,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "operation_id": "feam-op-18d7d99f9fe146b0-1",
+        "state": "awaiting_review"
+      },
+      "task_id": "publication-11",
+      "tool_calls": 1,
+      "tools": [
+        "publication.publish"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.00011704,
+        "generation_id": "gen-1790138656-qm8D8cDGqFLhKFmKE6F5",
+        "input_tokens": 3463,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 159,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": true,
+      "cost_usd": 0.00013538,
+      "failure_detail": null,
+      "latency_ms": 4585,
+      "outcome_state": "committed",
+      "request_bytes": 5885,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "operation_id": "feam-op-18d7d9a03e94bf80-2",
+        "state": "awaiting_review"
+      },
+      "task_id": "publication-12",
+      "tool_calls": 1,
+      "tools": [
+        "publication.publish"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.00013538,
+        "generation_id": "gen-1790138659-44O0dwu0G5tDjgZvyydC",
+        "input_tokens": 3462,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 203,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": false,
+      "cost_usd": 7.60312e-05,
+      "failure_detail": null,
+      "latency_ms": 1693,
+      "outcome_state": null,
+      "request_bytes": 5362,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "publication-13",
+      "tool_calls": 0,
+      "tools": [],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 7.60312e-05,
+        "generation_id": "gen-1790138663-2t2AZSeIgLT3UlfOf9SR",
+        "input_tokens": 1661,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 124,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": false,
+      "cost_usd": 7.01512e-05,
+      "failure_detail": "I'll start by inspecting the selected operation and the product version it references.\n\nprovider protocol error: stage 1 accepts one complete tool call per provider response",
+      "latency_ms": 1093,
+      "outcome_state": null,
+      "request_bytes": 5388,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "kind": "provider_protocol",
+        "state": "failed"
+      },
+      "task_id": "publication-14",
+      "tool_calls": 0,
+      "tools": [],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 7.01512e-05,
+        "generation_id": "gen-1790138665-PpFZqXXParg07cmWVKC2",
+        "input_tokens": 1670,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 107,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "publication",
+      "correct": false,
+      "cost_usd": 8.28912e-05,
+      "failure_detail": null,
+      "latency_ms": 4226,
+      "outcome_state": null,
+      "request_bytes": 5193,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "complete"
+      },
+      "task_id": "publication-15",
+      "tool_calls": 0,
+      "tools": [],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 8.28912e-05,
+        "generation_id": "gen-1790138666-nW4H1aDBR7IDFSatJJvp",
+        "input_tokens": 1602,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 160,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "staging",
+      "correct": true,
+      "cost_usd": 0.00014714,
+      "failure_detail": null,
+      "latency_ms": 2976,
+      "outcome_state": "committed",
+      "request_bytes": 6054,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "operation_id": "feam-op-18d7d9a2fbe94680-5",
+        "state": "awaiting_review"
+      },
+      "task_id": "staging-01",
+      "tool_calls": 1,
+      "tools": [
+        "product.stage"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.00014714,
+        "generation_id": "gen-1790138671-1L68FSuIIWovadp2V8mN",
+        "input_tokens": 3513,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 214,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "staging",
+      "correct": false,
+      "cost_usd": 6.98712e-05,
+      "failure_detail": "I'll start by inspecting the selected operation and the product version it references.\n\nprovider protocol error: stage 1 accepts one complete tool call per provider response",
+      "latency_ms": 1053,
+      "outcome_state": null,
+      "request_bytes": 5410,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "kind": "provider_protocol",
+        "state": "failed"
+      },
+      "task_id": "staging-02",
+      "tool_calls": 0,
+      "tools": [],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 6.98712e-05,
+        "generation_id": "gen-1790138674-T5F6em1qyZQgUbj2jQzG",
+        "input_tokens": 1671,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 106,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "staging",
+      "correct": true,
+      "cost_usd": 0.00012964,
+      "failure_detail": null,
+      "latency_ms": 2935,
+      "outcome_state": "committed",
+      "request_bytes": 5954,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "operation_id": "feam-op-18d7d9a3f136e200-7",
+        "state": "awaiting_review"
+      },
+      "task_id": "staging-03",
+      "tool_calls": 1,
+      "tools": [
+        "product.stage"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.00012964,
+        "generation_id": "gen-1790138675-gr14J7TKZw7qD6K14ZdX",
+        "input_tokens": 3481,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 183,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "staging",
+      "correct": true,
+      "cost_usd": 0.00010822,
+      "failure_detail": null,
+      "latency_ms": 2505,
+      "outcome_state": null,
+      "request_bytes": 5722,
+      "requests": 2,
+      "source_bytes_preserved": true,
+      "state": {
+        "operation_id": "feam-op-18d7d9a4a2633c90-8",
+        "state": "awaiting_review"
+      },
+      "task_id": "staging-04",
+      "tool_calls": 1,
+      "tools": [
+        "product.stage"
+      ],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.00010822,
+        "generation_id": "gen-1790138678-YC0PGYk1ihW3iTJNIgVg",
+        "input_tokens": 3439,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 146,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "staging",
+      "correct": false,
+      "cost_usd": 7.11312e-05,
+      "failure_detail": "I'll look up the staging procedure first, then open the review for the selected operation handle.\n\nprovider protocol error: stage 1 accepts one complete tool call per provider response",
+      "latency_ms": 1610,
+      "outcome_state": null,
+      "request_bytes": 5400,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "kind": "provider_protocol",
+        "state": "failed"
+      },
+      "task_id": "staging-05",
+      "tool_calls": 0,
+      "tools": [],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 7.11312e-05,
+        "generation_id": "gen-1790138680-5BzQJuaYNyNHtbRFJxMU",
+        "input_tokens": 1671,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 109,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "staging",
+      "correct": false,
+      "cost_usd": 7.26712e-05,
+      "failure_detail": "I'll open a local review for that stagingoperation. First, let me confirm the handle and check the relevant help.provider protocol error: stage 1 accepts one complete tool call per provider response",
+      "latency_ms": 2686,
+      "outcome_state": null,
+      "request_bytes": 5410,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "kind": "provider_protocol",
+        "state": "failed"
+      },
+      "task_id": "staging-06",
+      "tool_calls": 0,
+      "tools": [],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 7.26712e-05,
+        "generation_id": "gen-1790138682-UqcnBmBaIXMJiGSXWN9R",
+        "input_tokens": 1667,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 114,
+        "provider": "DeepInfra"
+      }
+    },
+    {
+      "category": "staging",
+      "correct": false,
+      "cost_usd": 0.0001303512,
+      "failure_detail": null,
+      "latency_ms": 3646,
+      "outcome_state": null,
+      "request_bytes": 5413,
+      "requests": 1,
+      "source_bytes_preserved": true,
+      "state": {
+        "state": "awaiting_clarification"
+      },
+      "task_id": "staging-07",
+      "tool_calls": 0,
+      "tools": [],
+      "unauthorized_write_or_disclosure": false,
+      "usage": {
+        "cost_usd": 0.0001303512,
+        "generation_id": "gen-1790138685-4hafVm0wMPsKnkEPwb7I",
+        "input_tokens": 1668,
+        "model": "deepseek/deepseek-v4.1-flash",
+        "output_tokens": 251,
+        "provider": "DeepInfra"
+      }
+    }
+  ],
+  "schema_version": 1,
+  "unauthorized_write_or_disclosure": 0
+}

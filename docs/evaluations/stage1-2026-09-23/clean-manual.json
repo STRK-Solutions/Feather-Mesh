@@ -1,0 +1,44 @@
+{
+  "mode": "manual",
+  "checks": [
+    "unrelated cwd and spaced path without registry",
+    "discovery, partial coverage, pinned metadata and export",
+    "denied stage produces no output",
+    "confirmed stage receipt and exact two-asset inventory",
+    "changed destination invalidates review",
+    "incomplete draft, supplied contact patch, validated publication",
+    "cross-namespace rejection and local withdrawal"
+  ],
+  "passed": true,
+  "outcomes": [
+    {
+      "operation_id": "feam-op-18d7db13d4067cb0-3",
+      "operation": "staging",
+      "state": "failed_before_commit",
+      "reference": null,
+      "version": null
+    },
+    {
+      "operation_id": "feam-op-18d7db144cb166e8-2",
+      "operation": "withdrawal",
+      "state": "committed",
+      "reference": "product://climate/observations",
+      "version": "v3"
+    },
+    {
+      "operation_id": "feam-op-18d7db13b43cd280-2",
+      "operation": "staging",
+      "state": "committed",
+      "reference": "product://climate/observations",
+      "version": "v1"
+    },
+    {
+      "operation_id": "feam-op-18d7db142a741cd8-1",
+      "operation": "publication",
+      "state": "committed",
+      "reference": "product://climate/observations",
+      "version": "v3"
+    }
+  ],
+  "elapsed_seconds": 5.245449791997089
+}

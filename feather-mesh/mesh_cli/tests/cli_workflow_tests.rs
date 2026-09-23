@@ -61,6 +61,28 @@ fn help_shows_canonical_commands() {
 }
 
 #[test]
+fn tui_requires_an_explicit_project_and_never_creates_a_legacy_registry() {
+    let temp = tempdir().unwrap();
+    feam()
+        .current_dir(temp.path())
+        .args(["tui"])
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("requires --project"));
+    assert!(!temp.path().join("registry.db").exists());
+
+    let assertion = feam()
+        .args(["--project", &registry_arg(temp.path()), "tui"])
+        .assert()
+        .code(1);
+    #[cfg(feature = "tui")]
+    let assertion = assertion.stderr(predicate::str::contains("interactive terminal"));
+    #[cfg(not(feature = "tui"))]
+    let assertion = assertion.stderr(predicate::str::contains("not enabled"));
+    let _ = assertion;
+}
+
+#[test]
 fn primary_demo_workflow_works_with_json_outputs_and_receipt() {
     let temp = tempdir().unwrap();
     let registry = temp.path().join("registry.db");
@@ -398,6 +420,46 @@ fn project_cli_publishes_resolves_stages_and_withdraws_registered_inventory() {
         .args(["--project", &registry_arg(&client), "refresh"])
         .assert()
         .success();
+    for (flag, value, expected_count) in [
+        ("--asset-type", "table", 1),
+        ("--classification", "public", 0),
+        ("--data-quality", "qualified", 0),
+        ("--owner-team", "nobody", 0),
+    ] {
+        let output = feam()
+            .args([
+                "--project",
+                &registry_arg(&client),
+                "--format",
+                "json",
+                "search",
+                flag,
+                value,
+            ])
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone();
+        assert_eq!(
+            serde_json::from_slice::<Value>(&output)
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .len(),
+            expected_count
+        );
+    }
+    feam()
+        .args([
+            "--project",
+            &registry_arg(&client),
+            "search",
+            "--asset-type",
+            "directory",
+        ])
+        .assert()
+        .code(3);
     let output = temp.path().join("stage");
     let response = feam()
         .args([
@@ -460,4 +522,22 @@ fn project_cli_publishes_resolves_stages_and_withdraws_registered_inventory() {
         .assert()
         .code(5)
         .stderr(predicate::str::contains("withdrawn_version"));
+}
+
+#[test]
+fn tui_rejects_machine_format_before_terminal_setup() {
+    let temp = tempdir().unwrap();
+    feam()
+        .args([
+            "--project",
+            &registry_arg(temp.path()),
+            "--format",
+            "json",
+            "tui",
+        ])
+        .assert()
+        .failure()
+        .stdout("")
+        .stderr(predicate::str::contains("does not support --format json"));
+    assert!(!temp.path().join("registry.db").exists());
 }

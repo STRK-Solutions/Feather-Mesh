@@ -1,3 +1,6 @@
+pub mod catalog_service;
+pub mod interactive_operations;
+pub mod operation_journal;
 pub mod peer_access;
 pub mod registry_service;
 pub mod requests;

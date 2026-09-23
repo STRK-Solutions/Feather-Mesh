@@ -1,0 +1,56 @@
+{
+  "date": "2026-09-23",
+  "rustc": "1.94.0 (4a4ef493e 2026-03-02)",
+  "cargo": "1.94.0 (85eff7c80 2026-01-15)",
+  "python": "3.13.7",
+  "rust_suites": {
+    "default-tests": {
+      "passed_tests": 71,
+      "passed": true
+    },
+    "final-tests": {
+      "passed_tests": 79,
+      "passed": true
+    },
+    "cli-only": {
+      "passed_tests": 7,
+      "passed": true
+    },
+    "cli-manual": {
+      "passed_tests": 7,
+      "passed": true
+    },
+    "cli-hosted": {
+      "passed_tests": 7,
+      "passed": true
+    }
+  },
+  "cargo_fmt_check": "passed",
+  "default_clippy_deny_warnings": "passed",
+  "all_targets_all_features_clippy_deny_warnings": "passed",
+  "python_checks": 14,
+  "context_checker_tests": 13,
+  "installed_sdk_stac_tests": 4,
+  "installed_sdk_warnings": "four Rasterio Affine PendingDeprecationWarning messages",
+  "clean_source_setup_reset": "passed",
+  "final_manual_fake_walkthroughs": "passed; exported examples execute outside TUI",
+  "v31_fake_evaluation": {
+    "correct": 100,
+    "attempted": 100
+  },
+  "fresh_live_heldout": {
+    "correct": 97,
+    "attempted": 100,
+    "unauthorized_detected": 0
+  },
+  "corrected_heldout_attempt": {
+    "correct": 1,
+    "attempted": 1,
+    "original_failure_retained": true
+  },
+  "final_live_walkthrough": "live-walk-11.json",
+  "remote_ci_run": "not triggered; workflow configured and corresponding local checks passed",
+  "separate_hpc_evidence": "pending outside Stage 1",
+  "clean_source_python_checks": 14,
+  "local_documentation_links_checked": 64
+}

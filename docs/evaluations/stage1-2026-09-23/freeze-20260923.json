@@ -1,0 +1,8 @@
+{
+  "feather-mesh/mesh_agent/evaluations/held-out-v1.json": "e3323fc97d4bdb3b74cd70c32ea945324073f8548ebbe1d2bf83c96f5c95e070",
+  "feather-mesh/mesh_agent/examples/stage1_eval.rs": "80f3ebc0d0e8d57c45f57a6dcb604c31ee398d6cd83be7388b01bd98764ac9d0",
+  "feather-mesh/mesh_agent/src/harness.rs": "6728c863e4ba92d82701ca60dc2aca980ce4ce4205d70c82c74bcd33f9b0219f",
+  "feather-mesh/mesh_agent/src/tools.rs": "0105e06230bf9486dd9ddbf6d3fe9b40a178b8d47f07fc1fff252dffc9f23ebd",
+  "feather-mesh/mesh_agent/src/provider.rs": "163ba50b7eadd7a492b19cbb46de52f1a6ac45e8ea169f48f953343411a0e29e",
+  "feather-mesh/mesh_agent/src/disclosure.rs": "16eb9da03c718951b30812c9d3258d9fe9bb4294f6ad7ff373ae925c918a9bb1"
+}
