@@ -1,3 +1,4 @@
+pub mod peer_access;
 pub mod registry_service;
 pub mod requests;
 

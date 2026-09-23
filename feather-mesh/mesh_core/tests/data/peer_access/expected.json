@@ -1,0 +1,15 @@
+{
+  "table": {
+    "columns": {"station_id": "int32", "temperature": "int32"},
+    "rows": 4,
+    "registered_shards": ["part-000.parquet", "part-001.parquet"],
+    "unregistered_shard": "unregistered.parquet"
+  },
+  "raster": {
+    "shape": [2, 2],
+    "pixels": [[7, 8], [9, 10]],
+    "crs": "EPSG:4326",
+    "bbox": [-76, 45, -75, 46],
+    "nodata": 255
+  }
+}

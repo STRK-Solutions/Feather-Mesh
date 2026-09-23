@@ -1,7 +1,11 @@
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 
 use assert_cmd::Command;
+use parquet::data_type::Int32Type;
+use parquet::file::writer::SerializedFileWriter;
+use parquet::schema::parser::parse_message_type;
 use predicates::prelude::*;
 use serde_json::Value;
 use tempfile::tempdir;
@@ -12,6 +16,37 @@ fn feam() -> Command {
 
 fn registry_arg(path: &Path) -> String {
     path.to_string_lossy().into_owned()
+}
+
+fn write_parquet(path: &Path, values: &[i32]) {
+    let schema = Arc::new(
+        parse_message_type(
+            "message observations { REQUIRED INT32 station_id; REQUIRED INT32 temperature; }",
+        )
+        .unwrap(),
+    );
+    let mut writer =
+        SerializedFileWriter::new(fs::File::create(path).unwrap(), schema, Default::default())
+            .unwrap();
+    let mut group = writer.next_row_group().unwrap();
+    let mut station = group.next_column().unwrap().unwrap();
+    station
+        .typed::<Int32Type>()
+        .write_batch(values, None, None)
+        .unwrap();
+    station.close().unwrap();
+    let mut temperature = group.next_column().unwrap().unwrap();
+    temperature
+        .typed::<Int32Type>()
+        .write_batch(
+            &values.iter().map(|value| value + 10).collect::<Vec<_>>(),
+            None,
+            None,
+        )
+        .unwrap();
+    temperature.close().unwrap();
+    group.close().unwrap();
+    writer.close().unwrap();
 }
 
 #[test]
@@ -262,4 +297,167 @@ fn table_output_handles_multibyte_text_when_truncating() {
         .assert()
         .success()
         .stdout(predicate::str::contains("ééé"));
+}
+
+#[test]
+fn project_cli_publishes_resolves_stages_and_withdraws_registered_inventory() {
+    let temp = tempdir().unwrap();
+    let provider = temp.path().join("provider");
+    let client = temp.path().join("client with spaces");
+    feam()
+        .args([
+            "--project",
+            &registry_arg(&provider),
+            "--format",
+            "json",
+            "init",
+            "--namespace",
+            "climate",
+            "--serving-dir",
+            "serving",
+            "--owner-team",
+            "Climate",
+        ])
+        .assert()
+        .success();
+    let serving = provider.join("serving");
+    let data = serving.join("datasets/observations/v1");
+    fs::create_dir_all(&data).unwrap();
+    write_parquet(&data.join("part-000.parquet"), &[1, 2]);
+    write_parquet(&data.join("part-001.parquet"), &[3, 4]);
+    write_parquet(&data.join("unregistered.parquet"), &[99]);
+    let metadata = provider.join("metadata.json");
+    fs::write(
+        &metadata,
+        serde_json::json!({
+            "schema_version": 1,
+            "namespace": "climate",
+            "product_id": "observations",
+            "name": "Observations",
+            "version": "v1",
+            "data_kind": "table",
+            "data_format": "parquet",
+            "description": "known values",
+            "intended_use": "CLI test",
+            "limitations": "none",
+            "owner_team": "Climate",
+            "producer": "Climate Lab",
+            "contact": "climate@example.test",
+            "usage_policy": "internal",
+            "classification": "internal",
+            "quality": "production",
+            "assets": [
+                {"id":"part-000", "path":"datasets/observations/v1/part-000.parquet", "role":"data", "media_type":"application/vnd.apache.parquet"},
+                {"id":"part-001", "path":"datasets/observations/v1/part-001.parquet", "role":"data", "media_type":"application/vnd.apache.parquet"}
+            ],
+            "lineage": [],
+            "table": {
+                "column_meanings": {"station_id":"identifier", "temperature":"daily temperature"},
+                "column_units": {"station_id":"not_applicable", "temperature":"celsius"},
+                "partition_columns": []
+            }
+        })
+        .to_string(),
+    )
+    .unwrap();
+    feam()
+        .args([
+            "--project",
+            &registry_arg(&provider),
+            "--format",
+            "json",
+            "serve",
+            &registry_arg(&serving),
+            "--metadata",
+            &registry_arg(&metadata),
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"protocol\":\"feam.peer.v1\""));
+
+    feam()
+        .args([
+            "--project",
+            &registry_arg(&client),
+            "init",
+            "--namespace",
+            "consumer",
+        ])
+        .assert()
+        .success();
+    let peers = client.join("peers");
+    fs::create_dir_all(&peers).unwrap();
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&serving, peers.join("local-climate")).unwrap();
+    fs::write(
+        client.join(".feam/project.toml"),
+        "schema_version = 1\nnamespace = 'consumer'\n\n[[peers]]\nalias = 'local-climate'\nnamespace = 'climate'\npath = 'peers/local-climate'\n",
+    )
+    .unwrap();
+    feam()
+        .args(["--project", &registry_arg(&client), "refresh"])
+        .assert()
+        .success();
+    let output = temp.path().join("stage");
+    let response = feam()
+        .args([
+            "--project",
+            &registry_arg(&client),
+            "--format",
+            "json",
+            "resolve",
+            "product://climate/observations",
+            "--version",
+            "v1",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let value: Value = serde_json::from_slice(&response).unwrap();
+    assert_eq!(value["assets"].as_array().unwrap().len(), 2);
+    assert!(!String::from_utf8_lossy(&response).contains("unregistered.parquet"));
+    feam()
+        .args([
+            "--project",
+            &registry_arg(&client),
+            "consume",
+            "product://climate/observations",
+            "--version",
+            "v1",
+            "--out",
+            &registry_arg(&output),
+        ])
+        .assert()
+        .success();
+    assert!(output.join("part-000").exists());
+    assert!(output.with_file_name("stage.feam-receipt.json").exists());
+    feam()
+        .args([
+            "--project",
+            &registry_arg(&provider),
+            "withdraw",
+            "product://climate/observations",
+            "--version",
+            "v1",
+            "--reason",
+            "superseded",
+        ])
+        .assert()
+        .success();
+    feam()
+        .args([
+            "--project",
+            &registry_arg(&client),
+            "--format",
+            "json",
+            "resolve",
+            "product://climate/observations",
+            "--version",
+            "v1",
+        ])
+        .assert()
+        .code(5)
+        .stderr(predicate::str::contains("withdrawn_version"));
 }

@@ -9,3 +9,10 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 rusqlite = { workspace = true }
 thiserror = { workspace = true }
+toml = { workspace = true }
+sha2 = { workspace = true }
+tiff = { workspace = true }
+parquet = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

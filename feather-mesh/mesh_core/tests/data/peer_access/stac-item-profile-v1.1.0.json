@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Feather Mesh pinned STAC Item profile (STAC 1.1.0)",
+  "type": "object",
+  "required": ["stac_version", "type", "id", "collection", "bbox", "geometry", "properties", "assets"],
+  "properties": {
+    "stac_version": {"const": "1.1.0"},
+    "type": {"const": "Feature"},
+    "bbox": {"type": "array", "minItems": 4, "maxItems": 4},
+    "geometry": {"type": "object"},
+    "properties": {"type": "object", "required": ["datetime"]},
+    "assets": {"type": "object", "minProperties": 1}
+  }
+}
