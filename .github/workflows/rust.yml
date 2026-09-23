@@ -20,8 +20,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install Rust components
-      run: rustup component add rustfmt clippy
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
     
     - name: Build
       run: cargo build --verbose
@@ -47,6 +48,8 @@ jobs:
       with:
         python-version: '3.11'
     - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
     - name: Build the CLI used by the installed SDK
       run: cargo build --bin mesh_cli
     - name: Install the SDK with table, raster, and STAC test dependencies

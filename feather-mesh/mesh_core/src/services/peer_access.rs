@@ -1218,7 +1218,8 @@ fn inspect_geotiff(path: &Path, profile: &RasterPublication) -> PeerResult<Raste
 
 fn epsg_from_geo_keys(keys: &[u16]) -> Option<u16> {
     // GeoKeyDirectory entries are key id, TIFF tag location, count, value.
-    keys.get(4..)?.chunks_exact(4).find_map(|entry| {
+    let (entries, _) = keys.get(4..)?.as_chunks::<4>();
+    entries.iter().find_map(|entry| {
         (matches!(entry[0], 2048 | 3072) && entry[1] == 0 && entry[2] == 1).then_some(entry[3])
     })
 }
