@@ -1,8 +1,8 @@
 # Ubuntu web demo environment
 
-Status: proposed design; no services have been installed or exposed.
+Status: proposed design, including the IaC evaluation and deployment contract; deployment artifacts and services remain unimplemented.
 
-Updated: 2026-09-24. Machine baseline inspected on 2026-09-23 at repository revision `eceddcc`; this revision updates the design in `d093c47`.
+Updated: 2026-09-24. Machine baseline inspected on 2026-09-23 at repository revision `eceddcc`; this revision extends the design in `d093c47` with reproducible Ubuntu provisioning, restart recovery, and an optional cloud fallback. The IaC assessment uses that recorded baseline, the owner's confirmation of a 2 TB SSD, and current upstream documentation, not a fresh inspection of the Ubuntu host.
 
 ## Recommendation
 
@@ -10,7 +10,9 @@ Use this Ubuntu machine to run a small, invite-only FEAM service: **Cloudflare T
 
 Keep infrastructure inexpensive while reserving model spending for the purpose of the demo. Cloudflare lists a **$0 Zero Trust plan for up to 50 users**, enough for 10 demo users and a small number of admins. The host software is open source; the baseline needs no paid VM, managed database, email service, analytics service, or managed pipeline service. **Hosted inference is a separate, expected usage cost**, alongside domain, electricity, internet, and backup storage. External plan prices and limits below were checked on 2026-09-23 and must be rechecked before deployment. [Cloudflare pricing](https://www.cloudflare.com/plans/)
 
-Email PIN login is close to the requested allowlist/sign-in-link experience, but it requires entering a code. If a clickable magic link is essential, use the alternative in [Authentication](#authentication). Do not deploy both authentication stacks initially.
+Make the installation reproducible with **Ansible for Ubuntu configuration, systemd for supervision and reboot recovery, and Terraform CLI for Cloudflare and optional cloud resources**. Build and retain approved artifacts outside demo sessions. Keep encrypted recovery copies off the Ubuntu machine and support operator-controlled promotion of a cloud replacement. The default cloud fallback stores recovery material and creates compute when needed; an always-running standby is a separate cost/recovery-time choice. See [IaC evaluation and ownership](#iac-evaluation-and-ownership).
+
+Email PIN login is close to the requested allowlist/sign-in-link experience, but it requires entering a code. Clickable magic links would require revisiting the [authentication design](#authentication); the deployment baseline uses Access email PINs.
 
 ## Requirements and scope
 
@@ -22,6 +24,7 @@ Confirmed requirements:
 - A dataset-loading pipeline prepares datasets on the demo host and makes them accessible to selected sandboxes.
 - Phase 1 provides powerful hosted model assistance as the normal demo experience, captures user usage patterns, and produces evidence and reusable, eligible examples for Phase 2 SLM development.
 - Prefer free and low-cost options. Email allowlisting with passwordless login is a suitable authentication direction.
+- Reproduce the Ubuntu installation through IaC, recover automatically from routine service/host restarts, and make the same deployment usable as a low-cost cloud fallback.
 
 Proposed operating defaults:
 
@@ -31,7 +34,7 @@ Proposed operating defaults:
 - Idle workspaces stop after 30 minutes; data remains for 30 days after last use, with advance notice before deletion. Explicit reset requires confirmation.
 - Hosted assistance is on by default. Sandboxes have no general internet access; model traffic passes through a private, authenticated inference broker with server-side budgets.
 - Structured interaction capture is part of Phase 1. Explain collection and obtain participant consent before a recorded session; keep account/billing records separate from the pseudonymous research corpus.
-- This is a single-machine demo service with scheduled maintenance and no high-availability promise. It does not establish HPC deployment acceptance.
+- One host is active at a time, with scheduled maintenance and an optional cloud recovery host. Persistent files survive routine restarts; a host reboot requires a new terminal/TUI process. There is no uninterrupted-session or high-availability promise. This does not establish HPC deployment acceptance.
 
 ## Existing machine and FEAM implementation
 
@@ -43,13 +46,14 @@ Read-only inspection produced the following snapshot; it is not a load test.
 | CPU | Ryzen 5 3600, 6 physical cores / 12 threads | Suitable candidate for interactive demos; bound dataset-processing concurrency. |
 | RAM | About 16 GiB total; about 12 GiB available during inspection | Budget sandboxes and the dataset pipeline separately. |
 | Swap | 4 GiB | Emergency margin; exclude it from capacity calculations. |
+| Physical storage | Owner confirms a 2 TB SSD on 2026-09-24 | Ample nominal capacity for the initial allocation; map the device to mounted filesystems and measure current free space during preflight. |
 | Root disk | 183 GiB filesystem, 136 GiB available | Keep bounded system logs and image caches. |
 | Home disk | ext4, about 1.7 TiB total / 1.5 TiB available | Put FEAM service storage on this disk, in its own service directory. |
 | Resource controls | cgroup v2 | Verify actual CPU/memory/PID delegation before admitting users. |
 | Existing runtime | Docker and containerd services active; Docker executable present | A dedicated rootless runtime remains to be configured and tested. |
 | Web tooling | No `cloudflared`, `ttyd`, Caddy, or nginx found on the inspected PATH; checked web service units inactive | Plan the tunnel, terminal, and portal as new deployment components. |
 
-The current shell sandbox failed to start with a network-namespace permission error. Inspection therefore used approved read-only commands outside that sandbox. This is a deployment preflight concern, not proof that Docker containers cannot run. Test the intended runtime and namespace policy explicitly; do not globally disable host protections to make the service work.
+During the recorded Ubuntu inspection, the shell sandbox failed to start with a network-namespace permission error. Inspection therefore used approved read-only commands outside that sandbox. This is a deployment preflight concern, not proof that Docker containers cannot run. Test the intended runtime and namespace policy explicitly; do not globally disable host protections to make the service work.
 
 The [workspace README](../feather-mesh/README.md), [peer-access contract](data_access_contract.md), and [TUI demo runbook](tui_agent_stage1_demo.md) establish these integration constraints:
 
@@ -60,6 +64,92 @@ The [workspace README](../feather-mesh/README.md), [peer-access contract](data_a
 - STAC is a loopback, bearer-token-protected metadata service returning local file URIs. It is not an internet dataset-download service.
 - The [Stage-1 assistant contract](tui_agent_stage1_contract.md) already defines a hosted router, bounded tools, local mutation reviews, outbound filtering, and per-session usage. A shared inference broker, durable multi-user telemetry, and SLM export pipeline are new components; the existing recovery journal is not a training corpus.
 - Existing [footprint measurements](tui_agent_stage1_acceptance.md#footprint-and-conditions) are small, sampled, single-user macOS measurements. They do not prove Ubuntu peak memory or 10-user capacity.
+
+## IaC evaluation and ownership
+
+The original tool split is suitable after separating resource provisioning, host configuration, application state, and process recovery. IaC can recreate the environment; the controller and durable stores must recover interrupted application work. Rerunning an infrastructure apply is not the routine restart mechanism.
+
+| Option | Assessment for this demo | Decision |
+| --- | --- | --- |
+| Ansible + systemd | Fits an existing Ubuntu installation: packages, service identities, fixed storage, unit files, and repeatable configuration. systemd can recover services without an operator laptop or provisioning runner. | Primary host implementation. Use the same roles for local and cloud inventories. |
+| Terraform CLI | Fits API-managed DNS, tunnels, Access applications/policy structure, backup storage, and cloud VM/volume/firewall resources. Host package installation through shell provisioners would duplicate Ansible's job. | Use for external resources; no Terraform Docker provider for users' live containers and no host setup through `remote-exec`. |
+| OpenTofu | An alternative with an MPL-2.0 open-source license. Its licensing/governance is a reason to choose it, but it does not save a Terraform CLI fee for this deployment. | Keep as an alternative, not a second supported engine. A future switch requires state/provider compatibility tests. |
+| Docker Compose | Useful for a fixed local development stack. It does not replace host mounts, cgroup delegation, application recovery, or the grant-aware workspace controller. | Optional engineering convenience; systemd and the controller own the deployed lifecycle. |
+| cloud-init / image baking | Useful for initial access to a new cloud VM and, later, reducing provisioning time. It adds little to an already installed physical machine. | Use minimal cloud bootstrap to establish the operator connection, then apply Ansible. Add baked VM images only if restore measurements justify them. |
+| Kubernetes / a multi-host scheduler | Adds a control plane while persistent workspaces, authorization, and billing still need a recovery design. | Defer; ten terminals on one active host do not require it. |
+
+**Terraform cost:** running Terraform CLI to manage this demo does not require a paid Terraform subscription. HCP Terraform and Terraform Enterprise are separate offerings; HCP is optional for this plan. Current Terraform uses the Business Source License, whose restrictions concern specified competitive offerings; OpenTofu uses MPL-2.0. Select Terraform here because no requirement calls for the alternative license. Cloud resources, storage, network usage, and hosted inference remain chargeable independently of the IaC engine. [HashiCorp licensing FAQ](https://www.hashicorp.com/en/license-faq), [Terraform editions](https://developer.hashicorp.com/terraform/intro/terraform-editions), [OpenTofu FAQ](https://opentofu.org/faq/)
+
+Assign each changing resource one writer:
+
+| Owner | Managed state | Boundary |
+| --- | --- | --- |
+| Terraform, run by the operator | Dedicated DNS records, separate local/cloud tunnels and routes, Access applications and static policy structure; optional cloud infrastructure | Import existing resources before managing them. Preserve application audiences and unrelated domain resources. No live workspace rows, email memberships, data bytes, or budget balances in configuration. |
+| Ansible, run by the operator | FEAM service accounts, package versions, subordinate UID/GID assignments, storage pool and mount definitions, unit files, configuration, approved artifacts | Mutations stay within recorded FEAM resources. A normal converge cannot reset workspaces, restore databases, reformat existing storage, or replace the host's existing Docker service. |
+| Application services | Accounts, mutable edge allowlists, grants, lifecycle jobs, container generations, dataset publication, consent, traces, and spending | Database state and application recovery rules govern; the gateway cannot run Ansible/Terraform or obtain operator credentials. |
+| systemd | Service start/stop, restart backoff, mount ordering, timers | Boot uses installed configuration and pinned local artifacts. No source builds, migrations, dataset imports, or IaC applies on every boot. |
+
+Resolve the Access-policy ownership conflict before implementing either writer. Terraform owns applications and policies that reference dedicated user/admin Access group IDs. The account reconciler owns those groups and their exact-email membership through the API; Terraform must not also declare the same group resources. Bootstrap creates the groups under the operator's control while public routing is disabled, records their IDs in private configuration, and then creates the referencing policies. Only the active deployment runs the reconciler. Represent zero members with a tested denying group configuration if the API rejects an empty include list; never broaden admission to make an empty group valid. Verify that removing a user followed by a Terraform apply does not restore access. Cloudflare supports reusable groups and programmatic policies; validate the selected provider schema and account permissions in the implementation. [Access policies](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/), [Cloudflare Access group schema](https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_access_group)
+
+Keep Terraform state outside the demo host, with separate state for edge configuration, recovery storage, and replaceable cloud compute. Use an encrypted, versioned backend with a tested locking mechanism and recoverable operator credentials. Document how to bootstrap/recover the backend independently of the infrastructure it stores. Restrict deletes of backup storage and retained volumes through provider permissions as well as plan review. Marking a value `sensitive` suppresses output but does not itself encrypt state or saved plans. Exclude state, plans, real inventories, and secrets from the public repository and ordinary CI artifacts. [Terraform sensitive data](https://developer.hashicorp.com/terraform/language/manage-sensitive-data)
+
+Use a private encrypted Ansible inventory/vault for host addresses, identity mappings, deployment IDs, and secret material; keep the decryption credential separately recoverable off-host. Install runtime secrets only for the service that consumes them, suppress secret task logs/diffs, and issue separate credentials for the pipeline, broker, tunnel, backup worker, and policy reconciler. Provisioning credentials stay with the operator. Exact tools, providers, collections, packages, host binaries, and image digests are recorded in a release manifest and lockfiles; updates are reviewed releases.
+
+## IaC on the existing Ubuntu machine
+
+**Assessment: a good fit for in-place Ansible provisioning, conditional on a fresh preflight and runtime proof.** The owner-confirmed 2 TB SSD and recorded 16 GiB RAM, cgroup v2, and large ext4 home filesystem support the proposed layout. No reinstall, repartition, hypervisor, or new VM is needed for the local host. The recorded 136 GiB of free root storage cannot hold the full proposed service allocation; use the larger filesystem after verifying its mapping to the SSD. Nominal SSD capacity is not the same as currently available filesystem capacity. The design-editing session is on macOS and has not verified Ubuntu connectivity, sudo, mount identities, or runtime enforcement.
+
+| Recorded condition | Ubuntu provisioning decision | Evidence required before deployment |
+| --- | --- | --- |
+| Ubuntu 24.04.x, x86-64 | Target this OS family and `linux/amd64` artifacts; read actual release/kernel/package facts before selecting versions. | Python/Ansible compatibility, package origins, package conflicts, kernel, systemd, and rootless prerequisites recorded. |
+| Existing Docker/containerd services | Create a dedicated `feam-runner` rootless daemon, private socket, and data root. Inspect current packages before adding compatible rootless tools. | Existing containers/services remain unaffected; controller inspection proves it addresses only the dedicated daemon. |
+| Restricted user namespaces | Use supported RootlessKit packaging and its applicable host AppArmor policy. | An actual container starts under the dedicated identity; no host-wide namespace/AppArmor relaxation. |
+| cgroup v2 | Enable lingering for the runner's systemd user manager and delegate required controllers to that identity. | Boot without interactive login works; measured memory/CPU/PID limits and aggregate ceilings hold. |
+| 2 TB SSD; recorded large ext4 home filesystem | Record the filesystem UUID and mountpoint; create only the dedicated service directory and fixed backing images there. Put Docker's data root there too. | Available bytes/inodes, filesystem identity, loop-device support, mount behavior, ownership/ACLs, and non-overlapping subordinate ID ranges pass. |
+| 16 GiB RAM, shared physical host | Retain the documented admission budgets; build artifacts elsewhere and run backups outside busy demo periods. | Measure existing load plus the actual cohort; a historical free-memory sample is insufficient. |
+| Physical host and home internet | Supervise services at boot; configure advertised uptime with the machine operator. | Reboot/login independence, sleep behavior, external reachability, and power-return behavior are tested; firmware or network recovery may need manual setup. |
+
+Docker documents that rootless resource controls require cgroup v2 **and** systemd; accepted CLI flags alone do not prove limits. Install the daemon as a systemd **user** service with lingering, rather than a system service carrying `User=feam-runner`. Constrain the runner's user slice and verify container processes land beneath it; a separate slice for gateway/broker/collector/pipeline does not automatically constrain rootless containers. Ubuntu's RootlessKit AppArmor allowance concerns creating user namespaces; it must not be described as proof of per-container AppArmor confinement, which rootless Docker lists as unsupported. Retain supported seccomp and other sandbox controls and measure the resulting boundary. [Rootless Docker operation and cgroups](https://docs.docker.com/engine/security/rootless/tips/), [Ubuntu prerequisites and rootless limitations](https://docs.docker.com/engine/security/rootless/troubleshoot/)
+
+The read-only preflight should collect `/etc/os-release`, kernel/systemd versions, filesystem UUIDs/mounts and free bytes/inodes, current Docker services/package sources, service-account/subordinate-ID collisions, cgroup controllers, AppArmor/user-namespace state, time synchronization, operator access, and required egress. Useful existing commands on Ubuntu include `uname -r`, `systemd --version`, `lsblk -f`, `findmnt -T /home`, `df -hT / /home`, and `df -i / /home`. Record evidence without dumping credentials or personal files. The first runtime test is a separate, bounded provisioning step.
+
+### Storage provisioning contract
+
+Parameterize the host storage root; `/home/feam-service-data` is the local proposal. Keep paths **inside** containers unchanged when moving to a cloud block volume. Fixed recorded identities and subordinate ID mappings make owned files restorable; where a replacement host has a collision, use an explicit ownership migration for restored service files. Never recursively change ownership of the personal home or an existing Docker data root.
+
+Provision a fixed pool of ten 2 GiB workspace files and two 2 GiB reset spares on the dedicated service path. Track each pool slot, backing-file identity, filesystem UUID, and assigned generation. Format only a newly allocated, unassigned file whose ownership is proven; an existing or unexpected filesystem stops provisioning. The operator mounts this finite pool; the controller only assigns/recycles recorded slots after stopped generations meet retention rules. Normal deployment preserves assignments and bytes. If retained generations consume both spares, reset queues until a slot is eligible; it never creates unbounded extra volumes.
+
+Use a proposed 200 GiB dataset filesystem for the 50 GiB staging and 100 GiB retained-release budgets, including headroom for filesystem overhead and admission thresholds. Those logical limits remain subject to actual free-space and complete-candidate reservation checks. The previous 150 GiB filesystem proposal left no margin at the configured maxima. Ten workspaces plus two spares reserve 24 GiB; adding the dataset filesystem, 5 GiB operations, 20 GiB traces, and a proposed 20 GiB image/runtime allowance gives approximately **269 GiB before additional backup scratch and underlying-filesystem reserve**. Final physical allocations must also cover metadata and the chosen enforcement method. This fits comfortably within the stated 2 TB SSD and recorded home free space, subject to preflight; do not reserve seven uncompressed local copies of the dataset pool.
+
+Mount staging and releases on the same dataset filesystem so promotion remains an atomic rename. System mount units identify storage explicitly and order it before consumers; verify required paths are the expected mounted filesystems, not just existing directories. Order the runner's system user-manager instance after its required host storage, then start its rootless user service. Cross-manager dependencies need a tested bridge: a user unit cannot simply require a system mount unit. Mount loss closes admission and stops affected workloads without writing into underlying empty mountpoint directories. Boot-time socket tmpfs mounts and ACLs are recreated from the finite workspace inventory.
+
+### Proposed repository artifacts and operator workflow
+
+The following paths are deliverables to implement, **not existing deployment entrypoints**:
+
+```text
+infra/demo/
+  README.md                         operator workflow, recovery, and evidence
+  terraform/
+    edge/                           DNS, tunnels, Access applications/policies
+    recovery-storage/               encrypted backup/state storage, separate lifecycle
+    cloud-host/                     provider-specific VM, data volume, firewall
+  ansible/
+    inventories/                    sanitized local/cloud inventory examples
+    roles/                          preflight, accounts, runtime, storage, services, backup
+    preflight.yml                   read-only host assessment
+    host.yml                        converge recorded host resources
+    deploy.yml                      install approved release, migrate, health-check
+    restore.yml                     explicit recovery into stopped/new service storage
+  images/                           FEAM terminal image build and artifact manifest
+  tests/                            disposable Ubuntu provision/reboot/restore checks
+```
+
+The control machine is the operator's workstation or a trusted runner with the same locked toolchain. Ansible reaches Ubuntu over verified SSH on a private/limited management path, or through a local operator invocation on Ubuntu. Public demo routing is not the sole recovery connection. Separate preflight, host converge, release deployment, and restore so repeating setup cannot accidentally replay a data restore. Bootstrap the account/database only when intentionally creating a new installation; missing state in an established installation is a recovery error.
+
+Before exposure: review the host preflight, converge service accounts/storage/runtime, install approved artifacts and private configuration, initialize local control state/groups, apply the Terraform edge plan, validate identity and application readiness, and enable public routing last. Plan/apply jobs run outside the user-facing service. Import existing edge resources and retain the same audience IDs on subsequent applies. Protect cloud data independently of compute replacement and keep cloud deployment disabled by default.
+
+Implementation CI must add Terraform format/validation and provider-lock checks, Ansible syntax/lint checks, secret scanning, and unit-file validation when the artifacts arrive. Test a disposable Ubuntu VM with real systemd/cgroups/loop mounts; container-only CI does not establish those behaviors. Require an initial converge, a second converge with no unintended changes, reboot without a login, and restore into a fresh host. Ansible check mode is only a preview: unsupported tasks can be skipped and tasks can override it. Restrict overrides to audited read-only probes and use `no_log`/disabled diffs for secret-bearing tasks. [Ansible check/diff mode](https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_checkmode.html)
 
 ## Architecture
 
@@ -104,7 +194,7 @@ Cloudflare Tunnel connects outward from the machine and does not require a publi
 | Shared provider storage | Hold versioned dataset releases and their authoritative `serving/manifest.json` files; authorized sandboxes receive read-only mounts. |
 | Inference broker, new component | Keep upstream API keys outside sandboxes; enforce the selected model/provider, disclosure policy, active-user checks, shared budget reservations, concurrency, and usage accounting. |
 | Usage collector and private trace store, new components | Correlate sanitized interactions with tools, reviews, actual outcomes, model usage, and feedback; prepare reviewed exports for Phase 2. |
-| systemd, journald, timers | Supervision, bounded logs, idle stopping, backups, and cleanup. |
+| systemd, journald, timers | Supervision, bounded logs, idle stopping, backups, and cleanup; units/mounts/configuration installed by Ansible. |
 
 Use example hostnames such as `feam.example.org` for the user portal, `admin.example.org` for all management pages/APIs, and `u-<opaque-id>.example.org` for a demo workspace. These are placeholders, not configured domains. Keep workspace content on separate origins from the portal; never proxy arbitrary user content under the portal's origin.
 
@@ -143,7 +233,7 @@ Cloudflare Access emails a one-time code only when the email satisfies its Acces
 
 1. Bootstrap the first admin locally; provide no public signup or self-promotion endpoint.
 2. An admin adds an exact email address and role in the control database. Assign an immutable local user ID; do not use email strings as directory names.
-3. A reconciliation task updates the corresponding Cloudflare policy using a narrowly scoped API credential provisioned by the operator. New accounts remain `pending` until the edge policy and any regular-user workspace assignment are ready; admin accounts require no workspace. Admins see synchronization status in the dashboard. An operator command provides recovery if automatic reconciliation fails.
+3. A reconciliation task updates the corresponding dedicated Cloudflare Access group's exact-email membership using a narrowly scoped API credential provisioned by the operator. Terraform manages the referencing applications/policies, not these mutable groups, as specified in [IaC evaluation and ownership](#iac-evaluation-and-ownership). New accounts remain `pending` until the edge membership and any regular-user workspace assignment are ready; admin accounts require no workspace. Admins see synchronization status in the dashboard. An operator command provides recovery if automatic reconciliation fails.
 4. Users enter their email at Access, receive a PIN if allowed, and submit it to authenticate.
 5. The gateway validates the Access JWT's signature, issuer, intended application audience, and time bounds using a maintained JWT library and the documented key endpoint. It then looks up the active local account and checks the requested role/workspace. Plain email headers are never authentication. [Access JWT validation](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/)
 6. Use a separate Access application/audience for the admin host, with an exact admin email list and a proposed one-hour session. User portal/demo sessions may last eight hours. Require the audience matching the requested host; a regular-user token cannot authorize an admin route or enqueue a dataset-loading job.
@@ -158,25 +248,12 @@ Use host-only secure cookies for any local gateway session, with `HttpOnly`, `Sa
 
 Require MFA on the Cloudflare account that controls DNS and Access. Email-only admin login is an initial synthetic-demo tradeoff; an MFA-enabled identity provider can replace it without changing workspace ownership. If stronger admin authentication is required, make provider-enforced MFA a launch condition rather than assuming mailbox verification supplies a second factor.
 
-### Alternative: actual clickable magic links
-
-Use **Supabase Auth Free + a free transactional email tier**, retaining the same gateway, local roles, and containers. In this variant Cloudflare Tunnel remains, but Cloudflare Access email login is replaced for these routes to avoid two sign-ins.
-
-Supabase supports single-use magic links and `shouldCreateUser: false`; also disable public signup in provider configuration so this is enforced beyond the UI. Pre-create only allowlisted accounts administratively. [Passwordless email](https://supabase.com/docs/guides/auth/auth-email-passwordless), [signup configuration](https://supabase.com/docs/guides/auth/general-configuration)
-
-The application checks its active allowlist before asking the provider to send a link, returns a generic response, and checks eligibility again after server-side verification. Bind the resulting verified provider user ID to the local account. Use server-held sessions and revocation; do not trust roles in user-editable profile metadata. Proposed controls: 10-minute link expiry, fixed HTTPS callback destinations, per-email and per-IP request limits, and no token/query logging. The initial GET displays a confirmation page; a deliberate POST redeems the link to reduce consumption by email scanners. [Email template and prefetch guidance](https://supabase.com/docs/guides/auth/auth-email-templates)
-
-The built-in Supabase mail service is restricted and unsuitable for sending to arbitrary demo invitees; configure custom SMTP. Resend currently lists a free transactional allowance of 3,000 emails/month and 100/day, subject to its current plan and verified sender-domain setup. Configure SPF/DKIM and test delivery to the intended users. [Supabase SMTP](https://supabase.com/docs/guides/auth/auth-smtp), [Resend pricing](https://resend.com/pricing)
-
-Supabase Free currently includes 50,000 monthly active users, but free projects can pause after a week of low activity. That adds a pre-demo readiness check and makes this option less convenient for an infrequently used demo. It also adds another identity service, SMTP configuration, callback/session handling, and auth-provider outage dependency. [Supabase pricing](https://supabase.com/pricing), [free-project pausing](https://supabase.com/docs/guides/platform/free-project-pausing)
-
-Choose this alternative only if clickable links are worth the additional implementation and operations. It can fit free allowances at this scale, but does not eliminate domain, power, or backup costs.
 
 ## Sandbox boundary and FEAM integration
 
 Use one container per demo user, including that user's private practice provider and client projects. Separate containers have separate writable filesystems, process namespaces, terminal sessions, and caches. Pipeline-loaded providers are shared through read-only mounts selected by the controller's grant checks. This models isolated FEAM workflows with shared inputs; it does not pretend to be a multi-node shared HPC filesystem.
 
-The runtime should be rootless under a dedicated `feam-runner` account, with a non-root process inside each container. Use a read-only image, drop Linux capabilities, set `no-new-privileges`, retain applicable seccomp/AppArmor protection, and impose resource limits. Do not mount the personal home, host root, devices, SSH agents, runtime sockets, or controller secrets. Rootless containers reduce host privilege but share the host kernel: this boundary is appropriate for invited demo users and synthetic data, not an unrestricted hostile-code hosting service. [Docker rootless mode](https://docs.docker.com/engine/security/rootless/)
+The runtime should be rootless under a dedicated `feam-runner` account, with a non-root process inside each container. Use a read-only image, drop Linux capabilities, set `no-new-privileges`, retain supported seccomp protection, and impose resource limits. Apply the host RootlessKit AppArmor prerequisites described in [IaC on the existing Ubuntu machine](#iac-on-the-existing-ubuntu-machine); do not claim per-container AppArmor confinement for rootless Docker. Do not mount the personal home, host root, devices, SSH agents, runtime sockets, or controller secrets. Rootless containers reduce host privilege but share the host kernel: this boundary is appropriate for invited demo users and synthetic data, not an unrestricted hostile-code hosting service. [Docker rootless mode](https://docs.docker.com/engine/security/rootless/)
 
 Regular demo containers use `--network none`. `ttyd` can listen on a Unix domain socket; mount only that workspace's socket directory so the gateway can reach it without giving the sandbox network access. Enable writable terminal input and origin checks, disable URL-supplied command arguments, and allow at most two browser terminal connections per workspace. The server chooses the fixed FEAM launcher or shell command. [ttyd options](https://github.com/tsl0922/ttyd)
 
@@ -347,11 +424,11 @@ Set 128 PIDs per demo container, bounded file descriptors, and size-limited `/tm
 
 Rootless Docker resource flags require cgroup v2 and systemd, with appropriate controller delegation. Verify `memory`, `cpu`, and `pids` enforcement by measurement, not just accepted configuration. Ubuntu's restrictions on unprivileged namespaces may require the supported runtime/AppArmor packaging. [Docker resource controls](https://docs.docker.com/engine/security/rootless/tips/), [Ubuntu rootless prerequisites](https://docs.docker.com/engine/security/rootless/troubleshoot/)
 
-Store service data in a dedicated directory on the large home filesystem, such as `/home/feam-service-data`, with owner-only subdirectories. The actual location is an operator deployment choice; it must not expose `/home/saif` to containers. Container memory limits do not enforce disk quotas. For an initial ten-user pool, provision fixed-size ext4 workspace image files, mounted by the operator, and bind their mountpoints into containers. Preallocate storage rather than relying on unbounded sparse growth. The web controller cannot mount arbitrary images or paths. A dedicated quota-enabled filesystem is a later alternative; existing ext4 quota support has not been verified.
+Store service data in a dedicated directory on the large home filesystem, such as `/home/feam-service-data`, with owner-only subdirectories. Verify its mapping to the owner-confirmed 2 TB SSD. The actual location is an operator deployment choice; it must not expose `/home/saif` to containers. Container memory limits do not enforce disk quotas. Ansible provisions the fixed-size ext4 workspace pool and mount units specified in [Storage provisioning contract](#storage-provisioning-contract); preallocate storage rather than relying on unbounded sparse growth. The web controller cannot mount arbitrary images or paths. A dedicated quota-enabled filesystem is a later alternative; existing ext4 quota support has not been verified.
 
-Maintain a small preallocated spare pool for safe reset, serialize reset jobs if needed, and include spare volumes, Docker image storage, logs, and backups in the disk budget. Container root filesystems remain read-only so persistent writes cannot bypass the assigned workspace limit. Bound and rotate terminal/runtime logs; disable shell transcript logging by default. Refuse new starts/reset jobs when host free space falls below 15% or 20 GiB, whichever is larger, on the relevant filesystem.
+Maintain the two preallocated reset spares, serialize reset jobs if needed, and include spare volumes, Docker image storage, logs, and backup scratch in the disk budget. Container root filesystems remain read-only so persistent writes cannot bypass the assigned workspace limit. Bound and rotate terminal/runtime logs; disable shell transcript logging by default. Refuse new allocations/starts/reset jobs when the underlying host data filesystem or root filesystem has less free space than 15% or 20 GiB, whichever is larger. Apply per-volume byte/inode and headroom checks separately: the 20 GiB host threshold must not be applied to each 2 GiB workspace image or other small bounded filesystem.
 
-Put dataset staging and releases on the same dedicated, size-bounded filesystem to support atomic rename promotion. An initial 150 GiB dataset filesystem can cover the proposed 50 GiB staging and 100 GiB retained-release budgets. Reserve space for the complete candidate, incoming source, and required rollback versions before fetching; refuse a job that cannot fit. Enforce total filesystem capacity as well as per-job byte/file-count limits. Keep the trace store independently bounded, with retention and visible backpressure rather than silent event loss. Dataset retention and research-event retention are separate from the 30-day private-workspace policy.
+Put dataset staging and releases on the same dedicated, size-bounded filesystem to support atomic rename promotion. Provision 200 GiB for the proposed 50 GiB staging and 100 GiB retained-release budgets plus filesystem overhead and free-space reserve. Before a job, require that actual available space after its complete reservation stays above the dataset filesystem's 15% or 20 GiB threshold, whichever is larger. Reserve the complete candidate, incoming source, and required rollback versions; refuse a job that cannot fit even if one logical budget has room. Keep the trace store independently bounded, with its own high-water mark, retention, and visible backpressure rather than silent event loss. Dataset retention and research-event retention are separate from the 30-day private-workspace policy.
 
 Prefer preprocessed, modest-size dataset subsets for the initial cohort, with larger inputs added only after measurement. Stream validation and conversion where possible, cap ingestion I/O, and schedule heavy jobs outside advertised demos if they affect interaction latency. Builds and SLM training run in the project's separate engineering environment or available CI; the web service hosts management, demos, bounded ingestion, and telemetry.
 
@@ -368,6 +445,8 @@ Release workflow:
 5. Drain sessions before software migration. Keep the previous compatible image and data backup for rollback. Apply current account/grant/withdrawal rules after any restore; a rollback never restores revoked access.
 
 Host-side automation pulls or installs approved artifacts with narrowly scoped credentials. The admin website and user containers receive no runtime socket, arbitrary deployment authority, or upstream model key. Pipeline/collector restarts must not restart unrelated sandboxes, and broker restart must preserve spending reservations and cancellation state.
+
+Ansible's release deployment drains affected operations, takes a consistent pre-migration backup, runs explicit versioned migrations once, and verifies health before marking the release current. Unit/configuration changes notify only affected services. Retain the approved image and host binaries on disk so an ordinary reboot does not need the build system or registry. A previous binary is a valid rollback only with a compatible database schema; otherwise use the explicit restore workflow and its current-authorization/billing reconciliation. Bootstrap, migrate, and restore are separate recorded actions.
 
 ## Lifecycle and control data
 
@@ -388,17 +467,81 @@ Serialize start/reset/delete per workspace and reserve capacity transactionally 
 
 Browser disconnect should preserve a short reconnect window, using a private `tmux` session if persistent terminals are desired. Count user input or explicit activity, not transport heartbeat traffic, for idle stopping. Track an active model/tool operation explicitly so it is not mistaken for idle transport, but bound its lifetime. Cancel queued/in-flight inference as appropriate on stop and reconcile any billable work. Warn before idle shutdown. Stop gracefully so FEAM can finish or journal an in-flight mutation, then enforce a shutdown timeout. An idle stop preserves files; reset replaces private demo data and reattaches current grants; account disable revokes sessions and broker capabilities and stops workloads. Dataset and trace retention follow their own policies.
 
+## Restart and reboot contract
+
+The intended result is automatic recovery of the service and persistent data, with visible reconnection where processes are interrupted. The following are acceptance requirements, not measured results:
+
+| Event | Expected recovery | What the user can expect |
+| --- | --- | --- |
+| Browser/tunnel/gateway disconnect | Reconnect to an existing eligible container and private `tmux` session within its activity window. | Terminal connection interruption; surviving processes can continue. Revalidate identity and ownership. |
+| Controller restart | Inspect recorded container labels, slot IDs, generations, grants, and pending jobs; adopt only proven owned resources. | Existing eligible containers keep running; lifecycle controls pause during reconciliation. |
+| Broker/collector/pipeline restart | Recover durable requests, reservations, event cursors, and jobs independently. | Affected operations show interruption or an unknown outcome; do not automatically repeat a billable request or uncertain publication. |
+| Host reboot or rootless-runtime restart | Mount/verify storage, recover services, reconcile state, and recreate eligible workspaces from pinned artifacts. | Files persist; terminal/TUI processes and in-memory pending reviews do not. Users reconnect and review recovery state. |
+| Host loss | Provision and restore the cloud replacement through the recovery procedure below. | Sessions restart from the last complete recovery point; show backup age and capacity. |
+
+Use independent service units with bounded restart delays/rate limits, startup health checks, and graceful shutdown timeouts. The rootless runtime is enabled under the dedicated user's boot-started manager. Disable Docker's autonomous restart policy on demo containers so only the controller starts them after authorization/storage checks. Gateway/controller failures must not cascade through unrelated sandboxes; state or mount failures deliberately stop affected writes.
+
+Boot in this order:
+
+1. Verify the underlying filesystem and mount the registered data/workspace filesystems, recreate bounded socket tmpfs directories, and verify UID/GID mappings and ACLs. Missing storage fails service startup visibly; it never initializes an empty replacement database or dataset tree.
+2. Start the runner's user manager/rootless daemon and independent host services after their storage dependencies. Open existing databases at the expected schema version; perform recovery checks without replaying deployment migrations.
+3. Confirm this host is the active deployment, reconcile containers/jobs against durable records, invalidate stale capabilities, and preserve all unknown spending/publication outcomes for reconciliation. Readiness remains false if authorization, billing, or required recording state cannot be trusted.
+4. Admit eligible workspaces within current capacity and grants. Keep explicitly stopped/disabled workspaces stopped; interrupted reset/import jobs go through their recovery rules before resuming. Reissue workspace capabilities and start new TUI conversations without pending approvals from before the reboot.
+5. Report assisted-demo readiness through the authenticated gateway. The tunnel may connect earlier to show maintenance, but terminal/model routes remain unavailable until their checks pass. Failure of one assigned release blocks its workspaces; failure of shared authorization/billing storage blocks all affected routes.
+
+A proposed initial target is readiness within five minutes after the OS, required storage, and network are available, with no interactive host login. Measure it on the Ubuntu machine and revise before making a user promise. Hardware power restoration, failed disks, firmware prompts, provider outages, and full-disk recovery fall outside that routine-boot target.
+
+## Cloud portability and recovery
+
+The software has a straightforward **single Ubuntu VM** deployment path: use the same `linux/amd64` images, host binaries, Ansible roles, private sockets, and container mount paths, with a cloud inventory supplying the data-volume mount and host identity. Native rootless Docker needs a VM with a compatible kernel/systemd and storage/mount privileges; a restricted serverless container platform is not an interchangeable target. ARM is a separate build/test target and should not be selected solely for a lower VM price.
+
+The substantive portability work is state recovery. Keep SQLite and active workspace/dataset files on local block storage on the active host. Object storage holds encrypted backups and immutable recovery artifacts; it is not a live filesystem for SQLite or FEAM's direct local reads. A cloud copy of the existing Ubuntu disk is not required: restore only the service data/configuration into a clean provisioned VM, leaving the personal desktop and home out of the backup.
+
+| Cloud fallback mode | Standing resources and cost | Recovery tradeoff |
+| --- | --- | --- |
+| Cold recovery, default | Off-host backups, retained approved artifacts, Terraform state; create VM/storage when needed. | Lowest standing compute cost; provisioning time, data transfer, account quota, and VM availability affect recovery. |
+| Stopped prebuilt VM | Disks/snapshots, addresses, and possibly compute depending on provider. | Removes some setup time, but data must still be restored/refreshed and checked. |
+| Running standby | VM plus persistent storage, updated artifacts/backups, and health checks. | Faster promotion at recurring compute cost; still one authoritative writer and interrupted sessions on failover. |
+
+Do not assume powering a VM off eliminates its bill. For example, AWS EC2 stops charging on-demand instance usage while stopped but continues charging retained EBS storage; Hetzner charges for an existing server even when it is powered off. A snapshot-and-recreate strategy may therefore be cheaper than a stopped server. Compare the chosen provider's complete bill before provisioning. [EC2 lifecycle billing](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html), [Hetzner billing](https://docs.hetzner.com/cloud/billing/faq/)
+
+For the full ten-user fallback, use **16 GiB RAM and at least 4 vCPUs as a sizing candidate**, then repeat the real workload acceptance; this is not a measured equivalence to the Ryzen host. Pause ingestion during initial recovery. An 8 GiB candidate may serve a reduced cohort with correspondingly lower admission limits, but cannot be advertised as the full ten-user-plus-ingestion configuration. Hosted inference still needs no local GPU. Restore all persistent user data even when fewer users can run simultaneously.
+
+Cloud storage sizing follows restored bytes, preallocated workspace slots, dataset/candidate headroom, runtime artifacts, and retention. The local 2 TB SSD is not a requirement to rent a 2 TB cloud disk. Keeping the full local storage policy starts near the 269 GiB allocation plus reserves; using a smaller approved dataset subset and disabling ingestion can reduce it. Required missing releases make the affected workspace unavailable rather than substituting different data. Standing cost is retained backup/artifact GB-months, storage/API requests, network/address charges, any allocated VM/volume charges, and periodic restore drills; compute during recovery and model usage are additional. Select provider, region, measured retained bytes, and a monthly ceiling before quoting a cost.
+
+### Consistent recovery material
+
+Build a recovery manifest that records backup time/ID, schema and software versions, image digests, model profiles, account/grant/consent revisions, budget checkpoint, event watermark, UID/GID mappings, workspace slot/generation mapping, and release IDs/checksums. A recovery point is complete only when every required object is verified in independent storage. Alert when the last complete backup exceeds 24 hours; a partially uploaded nightly job does not meet the data-loss target.
+
+During a bounded maintenance window, pause lifecycle/pipeline writes and model dispatch, settle or record uncertain requests, stop writable sandbox processes, and flush event collection. Back up each SQLite store through its backup API or a tested clean-stop procedure; coordinate the stores at this application checkpoint because separate SQLite backups are not a cross-database transaction. Capture private workspace contents, including exports and journals, from stopped volumes with ownership, symlinks, and required ACL metadata. Raw copies of live database files or writable mounted image files are not the restore contract. Retain immutable dataset releases by checksum and verify their references before marking the backup complete. Use incremental encrypted off-host backup storage with bounded local scratch. [SQLite backup API](https://www.sqlite.org/backup.html)
+
+Retain the proposed seven daily recovery points, applying participant deletion/retention policy. Back up full persistent workspaces if claiming their recovery; an exports-only backup must instead advertise exports-only recovery. Exclude runtime sockets, expired tokens, disposable caches, and reconstructible synthetic fixtures where they can be regenerated without losing user modifications. Keep approved binaries/images and decrypt/restore credentials available even if the original host and its registry access are lost.
+
+Backups can be older than a revocation or billing event. Keep a restricted off-host recovery record of current account/dataset revocations, consent deletions, and active-site generation, updated before acknowledging such restrictive changes as durably complete. If this record cannot be updated, enforce the restriction locally immediately and report recovery synchronization as pending. If its completeness cannot be established during restore, reopen no affected accounts/datasets/research exports until the operator reconciles them. Provider request IDs and the restored broker ledger support billing reconciliation; unresolved costs retain reservations and new spending stays disabled until the remaining allowance is established.
+
+### Promotion and return to the Ubuntu host
+
+Use separate local and cloud tunnels. Two active connectors for the **same tunnel** may both receive traffic; replicas do not provide an ordered primary/standby routing policy. Nor do they replicate SQLite, workspace files, or budgets. Keep the existing public hostnames and Access applications, and switch their tunnel routes only after the replacement passes checks. [Cloudflare tunnel replica behavior](https://developers.cloudflare.com/tunnel/configuration/)
+
+1. Fence the old deployment: stop/power it down through operator access, or establish equivalent denial of its public access and external mutation credentials, including policy reconciliation and inference. A failed health probe alone does not establish that it has stopped. Record the active-host ID and a new activation generation off-host; boot/readiness checks on either host must consult that record, so a recovered old disk cannot automatically rejoin as primary. If fencing cannot be established, do not promote a second writable deployment.
+2. Provision the selected cloud VM and data storage with Terraform, then apply the same Ansible roles in recovery mode. Keep admission, pipeline dispatch, policy reconciliation, and model spending disabled while restoring. Use a private validation path or a separately protected test hostname.
+3. Restore the last complete recovery manifest and data, verify hashes/ownership and database integrity, apply current revocations/deletions, reconcile jobs and costs, and rotate sessions/capabilities and host-specific credentials. Recreate runtime resources from recorded generations; do not copy the original host's running Docker state.
+4. Validate authentication/roles, granted read-only datasets, workspace persistence, terminal sockets, broker budgets, and trace collection. Confirm the off-host activation record and make the new host authoritative. Apply the reviewed Terraform route change for all portal/admin/workspace hostnames, reconnect users, and record the observed recovery time/data age. Preserve the selected active site in deployment configuration so the next apply does not route traffic back accidentally.
+5. Before returning to Ubuntu, take a fresh consistent backup from the cloud authority. Drain/fence cloud writes, restore that current state to Ubuntu, perform the same reconciliation and validation, advance the activation generation, and switch routes back. Never merge two independently writable SQLite/workspace histories or restore yesterday's Ubuntu snapshot over newer cloud work. Remove temporary billable compute only after a complete verified backup and successful handback; keep recovery storage independent.
+
+Retain the initial **RPO of 24 hours** (maximum intended backup data loss) and **RTO of one working day**, measured from declared host loss through validated reopening. Data transfer can dominate: even 100 GiB takes roughly 2.4 hours at a sustained 100 Mbit/s before validation/overhead. Faster recovery needs more frequent complete checkpoints, pre-positioned data or a running standby, and new measured targets. Cloud fallback covers local power/internet/hardware loss; Cloudflare or the chosen model provider remains a shared dependency. Approve cloud region, dataset relocation, and research-data handling before copying service data there.
+
 ## Operations and recovery
 
 - **Reachability:** the host must remain powered, awake, and connected during advertised demo hours. Use stable wired networking when available. Check tunnel egress, approved pipeline/model egress, DNS, IPv4/IPv6 firewall behavior, and recovery after reboot. No public Docker, database, raw terminal, inference, or SSH listener is required.
-- **Supervision:** systemd starts the tunnel, gateway, controller, pipeline, broker, collector, and rootless runtime independently. Configure service-account startup at boot and fail closed when authorization or spending storage is unavailable. A local-only health endpoint reports assisted-demo readiness, including broker/provider health and collector capacity, without exposing secrets.
+- **Supervision:** Ansible installs the mount, system-service, and rootless user-service configuration in the [restart contract](#restart-and-reboot-contract). systemd starts the tunnel, gateway, controller, pipeline, broker, collector, and rootless runtime independently. Fail closed when required mounts, activation state, authorization, or spending storage are unavailable. A local-only health endpoint reports assisted-demo readiness, including broker/provider health and collector capacity, without exposing secrets.
 - **Monitoring:** show active sessions, resource/OOM/disk use, grant/policy sync, pipeline failures, model queue length, provider errors, known/unknown cost, budget remaining, event capture gaps, and backup age. An external availability check is needed to detect complete host loss; local monitoring cannot do that.
 - **Audit:** retain bounded local admin and lifecycle audit logs for a proposed 30 days. Redact JWTs, email codes, cookies, secrets, and authentication URL queries. Do not rely solely on free-provider log retention.
-- **Backups:** make nightly consistent backups of control/event databases, spending ledger, consent/export records, private configuration, pipeline definitions/provenance, and user exports. Back up irreplaceable shared releases/source artifacts and eligible trace data; synthetic fixtures are reconstructible. Keep seven daily encrypted copies on separate existing storage, with deletion/retention rules applied to research data. Another directory on this machine is not disaster recovery. Backup credentials remain inaccessible to workspaces.
-- **Recovery target:** initial data RPO 24 hours and RTO one working day, subject to a tested restore and replacement hardware. Restore control configuration, reconcile dataset releases/grants and research deletions, and invalidate old sessions/capabilities. Reconcile provider billing against the restored ledger before enabling model requests; restoring an old budget snapshot must not grant the same allowance again. Recreate runtime from pinned images and verify ownership/disclosure rules before reopening.
+- **Backups:** use the coordinated checkpoint and recovery manifest in [Consistent recovery material](#consistent-recovery-material). Back up control/event databases, spending ledger, consent/export records, private configuration, pipeline definitions/provenance, full persistent workspace contents, irreplaceable releases/source artifacts, and eligible trace data. Keep seven daily encrypted recovery points on independent storage, with deletion/retention rules applied to research data. Cloud recovery requires access to these copies without the Ubuntu host. Backup credentials remain inaccessible to workspaces.
+- **Recovery target:** initial data RPO 24 hours and RTO one working day, subject to the tested [cloud recovery procedure](#promotion-and-return-to-the-ubuntu-host). Reconcile current grants, research deletions, and provider billing before reopening; invalidate old sessions/capabilities and fence the previous writer. A restored budget snapshot must not grant the same allowance again. A separate five-minute readiness target applies only to routine boot after its dependencies become available.
 - **Dependencies:** internet, Cloudflare, power, or host loss makes browser access unavailable. Hosted-provider loss prevents the intended assisted demo even if manual FEAM remains available. Preserve private operator recovery access; auth or provider outages must not trigger an unapproved bypass or model fallback.
-- **Data handling:** browser traffic passes through Cloudflare; filtered model context passes through the selected router/provider. Shared datasets and research traces remain on this machine except for approved backups/exports. Apply each loaded dataset's audience, disclosure, and research-use policy.
-- **Maintenance:** patch the OS/runtime and rebuild images on a scheduled basis; announce planned restarts. Store a short operator runbook with backup restore, policy reconciliation, release rollback, account disablement, and disk/OOM recovery.
+- **Data handling:** browser traffic passes through Cloudflare; filtered model context passes through the selected router/provider. Shared datasets and research traces remain on the active host, with approved encrypted backups/exports elsewhere. Cloud storage and recovery processing must be allowed by the selected dataset, participant, and region policies. Apply each loaded dataset's audience, disclosure, and research-use policy.
+- **Maintenance:** patch the OS/runtime through reviewed Ansible changes and rebuild images on a scheduled basis; announce planned restarts. Store an operator runbook covering preflight, Terraform state recovery, converge/deploy/restore, policy reconciliation, release rollback, account disablement, disk/OOM recovery, and cloud promotion/handback. Test backup restore periodically and after storage/schema changes.
 
 ## Cost and alternatives
 
@@ -407,11 +550,13 @@ Browser disconnect should preserve a short reconnect window, using a private `tm
 | Existing Ubuntu hardware | No new compute rental | Power, wear, and internet remain real costs. |
 | Cloudflare Zero Trust Free | $0 subscription for this user count | Current limit is 50 users; no paid features assumed. |
 | Tunnel connector and host software | No software subscription proposed | Docker Engine/rootless, ttyd, Go, SQLite, systemd; local pipeline/broker/collector implementation and maintenance still take time. |
+| IaC tooling | No paid Terraform or Ansible subscription required | Terraform CLI and Ansible run from an operator machine; HCP Terraform is optional. Backend storage, CI/artifact retention, and maintenance may cost money. |
 | Domain | $0 incremental if a suitable domain is already owned | Otherwise an annual registration/renewal is required; choose based on current renewal price. |
 | Backups | $0 incremental if existing separate storage is available | New disks or cloud storage may cost extra. |
 | Email delivery | No separate SMTP service in the recommended path | Access supplies the email PIN flow. |
 | Hosted model API | Metered Phase 1 expense | Select a powerful model; broker budgets and provider limits control spend. It is not assumed free. |
 | Dataset ingestion and trace storage | No managed service required | Source licensing/egress and any extra backup capacity may cost money; use approved local/public data where suitable. |
+| Optional cloud recovery | Storage/artifact retention at rest; compute and data-volume charges when allocated | Default to provisioning compute on demand. Include addresses, requests, transfer, backup retention, and restore drills; a powered-off VM is not universally free. |
 
 For electricity planning, measure wall power: average watts × operating hours ÷ 1,000 gives kWh; multiply by the applicable tariff. Do not present existing hardware as cost-free to operate. Avoid auto-upgrading services to paid plans; show quota failures explicitly and review limits before increasing scale. [Cloudflare plan limits](https://www.cloudflare.com/plans/)
 
@@ -424,7 +569,7 @@ Estimate model spending from measured requests per task, tasks per user, and bil
 | Private VPN access | Small trusted internal team | Adds client setup; less convenient for a browser-only external demo. |
 | Full workspace platform | Many hosts or richer workspace provisioning | More deployment scope than ten assisted terminals and a management dashboard. |
 | VM or microVM per user | Users are mutually untrusted or need unrestricted code execution | Stronger boundary, with more memory and operational overhead. |
-| Cloud VM | Host availability becomes the limiting factor | Recurring compute/storage expense; defer until measured need. |
+| Cloud VM | Recover from local host/power/internet loss using the same Ansible roles | Cold recovery is the proposed fallback; a running standby needs a separate cost and recovery-time decision. |
 
 ## Delivery milestones and acceptance
 
@@ -434,12 +579,14 @@ These milestones implement Phase 1; Phase 2 SLM development follows the evidence
 
 | Milestone | Deliverable | Exit condition |
 | --- | --- | --- |
+| 0. IaC foundation | Recorded Ubuntu preflight; Ansible accounts/storage/runtime roles; Terraform edge configuration; state/secrets recovery; locked artifact versions and CI | Safe first and repeat converge on disposable Ubuntu; mounts, existing-daemon coexistence, runner boot without login, and correct architecture verified. Live cloud/account resources remain an explicit deployment step. |
 | 1. Local proof | Hosted-capable FEAM image, one rootless demo container, private socket terminal, fixed-size persistent volume | FEAM walkthrough works; reset is confined; actual resource limits and namespace permissions pass. |
-| 2. Identity and gateway | Domain/tunnel, user/admin Access policies, validated identity, local ownership store, minimal portal | Unlisted identities are denied; two listed users cannot reach each other's HTTP or WebSocket endpoints; admin separation passes. |
+| 2. Identity and gateway | Terraform-managed domain/tunnel/applications and static policies; separately reconciled email groups; validated identity, local ownership store, minimal portal | Unlisted identities are denied; two listed users cannot reach each other's HTTP or WebSocket endpoints; admin separation and no allowlist rollback after an infrastructure apply pass. |
 | 3. Management and datasets | Lifecycle controller, quotas, policy reconciliation, dataset pipeline, immutable releases and grants | Admins manage the environment without a workspace; imports, shared read-only access, updates, resets, and revocation pass. |
 | 4. Hosted assistance and evidence | Broker, powerful model selection, spend ledger, event instrumentation/collector, consent and export controls | Real hosted tool/review exchange, isolation, budget enforcement, and correlated durable traces pass before user rollout. |
 | 5. Ten-user acceptance | Concurrent assisted sessions with shared datasets, queued inference, bounded ingestion, and fault checks | Meets the gates below with actual machine/model evidence and capture coverage. |
-| 6. Cohort handoff | Backup/restore, pinned release/rollback, reboot recovery, admin runbook, curated Phase 2 export procedure | Restore/rollback demonstrated; cohort budget/model/recording policy set; initial export validated before SLM work. |
+| 6. Cohort handoff | Checkpoint backups, Ansible deploy/restore, pinned release/rollback, reboot recovery, operator/admin runbooks, curated Phase 2 export procedure | Restore/rollback and unattended reboot demonstrated on Ubuntu; cohort budget/model/recording policy set; initial export validated before SLM work. |
+| 7. Cloud fallback acceptance | Selected provider/region/budget, Terraform cloud resources, shared Ansible inventory, recovery/fencing and route-switch workflow | A paid/authorized cloud drill measures RPO/RTO, restored data/capacity, no stale-host reactivation, and handback to Ubuntu. Until this passes, cloud recovery is a design capability, not an available fallback. |
 
 Required acceptance scenarios:
 
@@ -451,6 +598,8 @@ Required acceptance scenarios:
 6. **Usage evidence:** correlate a user's request through proposal, review/edit, confirmed outcome, feedback, model identity, latency, and known/unknown cost. Verify redaction, consent withdrawal, duplicate/missing events, client-report trust labels, collector failure, retention/deletion, and private export controls. A sandbox reset preserves eligible history but cannot bypass a participant's deletion request. Produce a small reviewed corpus with provenance and a held-out split; exclude hidden reasoning and unverified success labels.
 7. **Concurrent load:** ten assisted sessions run a 60-minute representative workload with shared-data reads, staggered starts, and model/tool bursts. Proposed targets: warm start p95 ≤5 seconds, first initialization p95 ≤15 seconds, terminal input echo p95 ≤250 ms on a documented nearby connection, no host OOM, and no sustained swap thrashing. Record queue wait, first-token and full-task latency separately from UI responsiveness, plus per-container/host peaks, provider concurrency, costs, and event coverage. Calibrate acceptable model latency with the selected profile; do not promise a model completion SLA from local TUI numbers. Repeat with one bounded ingestion job and defer heavy jobs if it degrades the demo.
 8. **Failure and recovery:** exercise disconnects, expiry, idle stop, gateway/controller/broker/collector crashes, provider outage, host reboot, disk-full, failed policy sync, interrupted reset/import, and corrupted release metadata. Preserve ownership and honest accounting/capture status. Demonstrate backup restore and independent software/model-profile/dataset rollback under current grants and withdrawal rules.
+9. **IaC and boot:** validate a repeat converge preserves user files, database balances, identities, grants, and unrelated Docker workloads; no repeated format/reset/bootstrap. Boot without a user login and with the build registry unavailable. Test an absent/wrong data mount, unsupported cgroup delegation, exhausted reset spares, empty Access groups, and a user removal followed by Terraform apply. Expect visible failure or denial without unbounded allocation, empty-state initialization, or restored access.
+10. **Cloud promotion and handback:** restore a complete checkpoint on a clean cloud VM, check file ownership/ACLs and exact dataset hashes, replay later revocations/deletions, reconcile uncertain model charges, and test the real browser/broker/collector path. Attempt to restart the stale Ubuntu host and prove it cannot regain admission or external mutation authority. Preserve cloud changes on return to Ubuntu. Record total restore bytes/time, effective capacity, cloud charges, and partial/failed attempts; local VM tests alone do not pass this gate.
 
 A successful localhost page or ten open idle tabs is insufficient evidence of ten usable sandboxes. Keep the acceptance report separate from this proposed design.
 
@@ -464,5 +613,8 @@ A successful localhost page or ten open idle tabs is insufficient evidence of te
 - The powerful hosted model/provider, tested profile, cohort size/duration, and per-user/project monetary caps.
 - Participant notice/consent, the proposed 90-day research-event retention, export reviewers, and Phase 2 evaluation/training ownership.
 - Whether users remain an invited, limited-trust group; stronger isolation is required before broad public enrollment.
+- The Ubuntu management connection/operator access, measured SSD filesystem mapping/free space, and confirmed service UID/GID/subordinate-ID allocations.
+- Off-host Terraform state/locking and encrypted backup locations, independently recoverable keys, and the active-site/restriction recovery record.
+- For cloud fallback: provider/region, permitted data relocation, monthly storage/compute ceiling, full or reduced cohort capacity, and whether the initial 24-hour RPO/one-working-day RTO is sufficient.
 
-The local image, management portal, dataset pipeline, broker/collector integration, and isolation proof can be developed using synthetic fixtures and fake provider responses before deployment inputs are settled. Live hosted validation, domain/account provisioning, email invitations, and exposing the service are subsequent implementation actions. Phase 1 is complete only when the hosted assistance and usage-evidence gates pass; an unassisted terminal alone does not meet the objective.
+The IaC files, local image, management portal, dataset pipeline, broker/collector integration, and isolation proof can be developed using disposable Ubuntu environments, synthetic fixtures, and fake provider responses before deployment inputs are settled. Live hosted validation, domain/account provisioning, cloud charges/data transfer, email invitations, and exposing the service are subsequent implementation actions. Phase 1 is complete only when the hosted assistance and usage-evidence gates pass; an unassisted terminal alone does not meet the objective. Cloud fallback has its own measured acceptance gate.
