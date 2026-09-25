@@ -1,30 +1,39 @@
-# Functional Ubuntu gate takeover — 2026-09-25
+# Functional Ubuntu execution — 2026-09-25
 
-The active delivery scope is U.01–U.07/U.G in the
-[workplan](../../ubuntu_web_dev_demo_workplan.md#ubuntu-functional-milestone).
-Work continues on `feat/complete-ubuntu-web-demo`, preserving the earlier
-uncommitted implementation and unrelated `.DS_Store`. The owner requested
-GPT-6 sol agents for scoped work; three agents handle prerequisites/image,
-collector local archival, and operator archive-copy lifecycle respectively.
+The updated release is deployed at [the participant portal](https://feam.613202690.xyz).
+The [operator handoff](ubuntu-operator-handoff-20260925.md) supersedes the stopped
+[session handoff](ubuntu-session-handoff-20260925.md). No subagents were used in
+this resumed execution. Unrelated `.DS_Store`, `.ansible/`, raw evidence and
+private credentials/roster remain excluded from Git.
 
-## Current execution
+- [x] Guided empty-tool transport regression tests and implementation committed.
+- [x] Exact native Go/Rust builds and immutable image smoke pass.
+- [x] Stopped installation preserves prior files, grants, W1 slots and reset data.
+- [x] Four admins/seven users are active after exact real Access reconciliation;
+  all seven workspaces have the approved climate release.
+- [x] Two real participant sessions renew through normal SSO, start workspaces,
+  read with native Polars/Rasterio, and exercise live model/review/guide behavior.
+- [x] Eleven live requests settle at US$0.003119; non-synthetic capture correlates
+  every request and usage receipt. One model handle failure is preserved.
+- [x] Ordinary maintenance preserves the allocation/spend and research archive;
+  private Mac copies independently verify retained objects and provenance.
+- [x] Operator instructions and sanitized acceptance evidence prepared.
+- [ ] Fresh admin browser walkthrough: expired saved session; owner cannot
+  complete email-PIN login. Earlier admin browser evidence remains separate.
+- [ ] U.G final acceptance: depends on that unavailable check.
 
-| Task | Observed progress | Remaining proof |
-| --- | --- | --- |
-| U.01 | Complete: Ubuntu Python prerequisites, installed readers, image and synthetic hosted startup pass; current reused binary inputs match by content. [Receipt](u01-ubuntu-prerequisites.json). | Participant service/live acceptance belongs to U.04–U.06. |
-| U.02 | Exact owner-approved release promoted once; independent hash, installed readers, loopback STAC and mapped-UID read/write denials pass. [Release](u02-ubuntu-release.json). | U.04 per-user grant checks. |
-| U.03 | Explicit production local archive and protected Mac-copy lifecycle implemented. Four actual Ubuntu non-reviewer categories cannot read the existing collector archive or events DB or connect to its research-export socket. [Code evidence](u03-collector-local-archive.md), [deployed denials](u04-private-workspaces.json). | Deployed capture/flush/readback and independently verified Mac copy. |
-| U.04 | Six private services, A/B terminal HTTP 200, exact bounds and owner denials passed. The first A failure was hash-bound aborted before a fresh start. [Build](u04-native-web-final.json), [services](u04-private-services.json), [private workspace proof](u04-private-workspaces.json). A bounded [gateway repair](u05-browser-form-repair.json) now permits native Chromium same-origin form POSTs while retaining CSRF checks. Real admin browser grant gave A only the promoted read-only dataset; B remains ungranted. W1 remains preserved. | Reviewed reset, fake/capture flow, ordinary stop/start and unchanged converge. |
-| U.05 | **Complete for functional scope.** Owner-approved [public activation](u05-public-activation-proposal.md) applied four exact routes and protected Ubuntu ingress. Three real PIN logins reached dashboards; both owner terminals connected after the scoped [QUIC connector repair](u05-websocket-transport-repair.json). All 25 authenticated/negative HTTP and WebSocket probes passed. Admin browser disable closed the second regular alias’s current WebSocket in 0.506 seconds; old JWTs returned 403. The alias remains disabled, so current Access group includes one admin and one user. [Browser acceptance](u05-browser-acceptance.json), [activation checks](u05-public-activation.json). | Explicit expired-assertion test is deferred; U.G still depends on data, capture, live smoke and retained copy. |
-| U.06 | Key file checked privately; owner approved [five tasks with a US$1 cap](u06-functional-smoke-proposal.md), US$0.03 per-request ceiling and expiry. Current route metadata matches price ceilings. No allocation issued or inference sent. | Private checks, signed allocation and deployed five-task smoke. |
-| U.07 / U.G | Owner selected one admin and two regular staging identities, using separate browser profiles. | Real walkthrough, usable operator handoff and verified research copy. |
+[Updated release and validation](u07-updated-release.json),
+[live results and limits](u06-live-functional-smoke.json), and
+[maintenance/copy](u07-live-maintenance.json) are the current receipts.
+The workplan owns U.01–U.07/U.G status. Git publication is authorized and the
+final response records remote-main verification. No invitation, reboot,
+destructive teardown, cloud-host or R2 operation was performed.
 
-U.01, U.02 and U.05 are checked complete. Public activation, real PIN
-dashboards, authenticated terminal WebSockets and measured revocation pass.
-U.03/U.04/U.06/U.07/U.G remain open for fake capture/archive, ordinary
-stop/start, live model, verified Mac copy and operator handoff. No invitation
-or paid model request has been made. Cloud-host and R2 operations remain
-shelved.
+## Historical execution record
+
+The following sections retain earlier attempts and prerequisites. Statements
+about pending roster deployment, the initial US$1 proposal, absent allocations
+or pre-activation state describe those checkpoints, not the deployed state above.
 
 ## EDGE read-only inventory and local tests
 
@@ -50,17 +59,19 @@ permission exposed an overbroad expected-error assertion; after correction,
 all ten mock plans passed. The disabled live plan then applied eight creates.
 The reconciler-owned groups were created separately with explicit denying
 membership. Terraform state, saved plan, source and logs have an encrypted Mac
-snapshot. No public route is active.
+snapshot. This paragraph records the earlier disabled-stage checkpoint; U.05
+above records the later public activation.
 
-## Private operator inputs and human checks
+## Historical private operator inputs and human checks
 
 The owner selected an existing admin and supplied a new regular staging
 identity and a second staging alias in this conversation. The ignored private
-roster now has four admins and seven regular users; the encrypted vault is
-revision 10, retaining prior revisions. Two regular staging identities are
-available through the owner's inbox. These
-updates retain the full roster privately; only three staging identities enter
-bootstrap. The owner separately approved their actual group reconciliation in
+roster now has four admins and seven regular users; the encrypted vault's
+earlier revision 10 retained prior revisions. Two regular staging identities
+were available through the owner's inbox. The initial bootstrap admitted only
+three staging identities; the owner later authorized the full private roster
+and restoration of the disabled alias, with deployment still pending. The owner
+separately approved the initial group reconciliation in
 the [staging proposal](u05-staging-membership-proposal.md). No invitations ran.
 No identity or credential is included in this public record.
 
@@ -118,8 +129,9 @@ checks, actual container limits/mounts, zero pending jobs and collector
 non-reviewer denials. No dataset grant or capture event existed in this
 snapshot. Public browser and live-provider results remain separate.
 
-Next: complete fake capture/archive and ordinary stop/start on the deployed
-Ubuntu release, then the approved bounded live smoke and verified Mac copy.
+Next: integrate the updated native release and full private roster, then the
+approved bounded live smoke and ordinary live stop/start. Fake capture/stop and
+the first independently verified Mac copy are complete under U.03.
 The [public activation record](u05-public-activation-proposal.md) retains the
 initial failures and scoped repairs; [browser acceptance](u05-browser-acceptance.json)
 records the 25-case matrix and disabled-account disconnect. Preserve private
