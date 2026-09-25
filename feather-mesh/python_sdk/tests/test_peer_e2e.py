@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 import socket
-import stat
 import subprocess
 import time
 import urllib.error
@@ -143,31 +142,24 @@ def test_sdk_returns_native_lazy_frame_with_only_registered_shards(peer_projects
     assert project.scan_table("product://climate/observations", version="v1").collect().height == 4
 
 
-def test_authenticated_paginated_stac_round_trips_identity_to_rasterio(peer_projects, tmp_path: Path):
+def test_loopback_stac_paginates_and_round_trips_identity_to_rasterio(peer_projects):
     provider, client, _ = peer_projects
-    token_file = tmp_path / "token"
-    token_file.write_text("test-token\n", encoding="utf-8")
-    token_file.chmod(stat.S_IRUSR | stat.S_IWUSR)
     with socket.socket() as socket_probe:
         socket_probe.bind(("127.0.0.1", 0))
         port = socket_probe.getsockname()[1]
-    process = subprocess.Popen([EXE, "--project", str(client), "stac", "serve", "--token-file", str(token_file), "--addr", f"127.0.0.1:{port}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    process = subprocess.Popen([EXE, "--project", str(client), "stac", "serve", "--addr", f"127.0.0.1:{port}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     base = f"http://127.0.0.1:{port}"
     try:
         for _ in range(50):
             try:
-                request = urllib.request.Request(base + "/", headers={"Authorization": "Bearer test-token"})
-                with urllib.request.urlopen(request, timeout=0.25) as response:
+                with urllib.request.urlopen(base + "/", timeout=0.25) as response:
                     assert response.status == 200
                     break
             except (urllib.error.URLError, ConnectionError):
                 time.sleep(0.1)
         else:
             raise AssertionError("STAC server did not start")
-        with pytest.raises(urllib.error.HTTPError) as unauthorized:
-            urllib.request.urlopen(base + "/", timeout=1)
-        assert unauthorized.value.code == 401
-        catalog = Client.open(base, headers={"Authorization": "Bearer test-token"})
+        catalog = Client.open(base)
         result = catalog.search(collections=["climate--temperature"], bbox=[-76, 45, -75, 46], datetime="2026-01-01T00:00:00Z/2026-01-01T00:00:00Z", limit=1, max_items=2)
         found = list(result.items())
         assert len(found) == 2
@@ -175,12 +167,11 @@ def test_authenticated_paginated_stac_round_trips_identity_to_rasterio(peer_proj
         validate_json_schema(found[0].to_dict(), schema)
         empty = catalog.search(collections=["climate--temperature"], bbox=[0, 0, 1, 1], max_items=10)
         assert list(empty.items()) == []
-        page_request = urllib.request.Request(base + "/search?collections=climate--temperature&limit=1", headers={"Authorization": "Bearer test-token"})
-        with urllib.request.urlopen(page_request, timeout=1) as response:
+        with urllib.request.urlopen(base + "/search?collections=climate--temperature&limit=1", timeout=1) as response:
             next_link = next(link["href"] for link in json.load(response)["links"] if link["rel"] == "next")
         cli("--project", str(provider), "--format", "json", "withdraw", "product://climate/temperature", "--version", "v2", "--reason", "pagination test")
         with pytest.raises(urllib.error.HTTPError) as changed:
-            urllib.request.urlopen(urllib.request.Request(next_link, headers={"Authorization": "Bearer test-token"}), timeout=1)
+            urllib.request.urlopen(next_link, timeout=1)
         assert changed.value.code == 409
         asset = Project.open(client, executable=EXE).resolve_asset("product://climate/temperature", version="v1", asset="data")
         with rasterio.open(asset.path) as dataset:

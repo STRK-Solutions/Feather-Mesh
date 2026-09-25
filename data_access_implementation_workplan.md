@@ -47,7 +47,7 @@ These are proposed implementation decisions, not claims that every detail was al
 | Table profile | Parquet only; consistent physical column names/types across all declared shards. Partition columns, types, and layout are explicit. Record schema fingerprint, row counts where available, meanings, and units or explicit not-applicable/unknown values. |
 | Raster profile | Validate GeoTIFF with a raster reader. Record CRS, transform, dimensions, bounds/footprint, bands, types, nodata, and semantics. Require meaningful observation time/interval for the initial STAC profile; missing context must produce an actionable validation error, never an inferred file-modification timestamp. |
 | Python integration | Initially use an installed Rust CLI through argument-array subprocess calls and versioned JSON. Rust owns validation and resolution. Package the new SDK under `feather-mesh/python_sdk/`; native bindings can follow later. |
-| STAC transport/access | A read-only service bound to loopback with a per-instance bearer token stored in an owner-readable runtime file. Return encoded local file URIs preserving the client peer route, plus product/version/asset identity for SDK resolution. The supported client shares the service's filesystem view. |
+| STAC transport/access | An unauthenticated read-only service whose core accepts only exact IPv4 loopback (`127.0.0.1`) binds. Return encoded local file URIs preserving the client peer route, plus product/version/asset identity for SDK resolution. The supported client shares the service's filesystem view; same-node metadata access is trusted. |
 | Cache placement | Use a user-private process or host-local SQLite cache with an explicit local cache location. Shared project configuration may refer to the cache policy, but must not cause multiple nodes to share a WAL database. Detect configuration mismatches and document storage prerequisites. |
 | CLI compatibility | Preserve existing command names and exit-code meanings where practical. New peer publication requires project context and the full metadata profile. Retain explicit legacy-registry inspection/staging during migration, but never import legacy entries automatically into peer discovery or allow legacy publication to bypass the new gate. |
 
@@ -64,7 +64,7 @@ Record supported manifest/config/JSON schema versions, pinned STAC specification
 | P4 | Complete CLI workflows and safe managed staging | P3 |
 | P5 | Python descriptors and lazy Polars access | P4 |
 | P6 | STAC records and Rasterio workflow | P3, P5 |
-| P7 | Authenticated STAC HTTP browsing/search | P4, P6 |
+| P7 | Tokenless, loopback-only STAC HTTP browsing/search | P4, P6 |
 | P8 | End-to-end/HPC proof, CI, documentation, handoff | P5, P7 |
 
 This sequence intentionally implements authoritative registration before completing the resolver: tests must not establish a directory-scanning path that later bypasses publication. P0/P1 may use schema-valid manifest fixtures to exercise path handling. Wire the minimum CLI needed for each phase incrementally; P4 completes its public contract.
@@ -151,7 +151,7 @@ Finalize syntax in P0 and implement it in `mesh_cli`. The following proposed sur
 | `feam resolve REF --project ROOT --version VERSION [--asset ID]` | Return a pinned descriptor without copying; support a versioned JSON/error contract for the SDK |
 | `feam consume REF --project ROOT --version VERSION --out PATH [--overwrite]` | Stage only registered assets using the same resolver, then write a provenance receipt |
 | `feam withdraw REF --project ROOT --version VERSION --reason TEXT` | Publish a withdrawal tombstone under provider authorization |
-| `feam stac serve --project ROOT --token-file PATH` | Run the distinct read-only STAC service added in P7; never overload publication `serve` |
+| `feam stac serve --project ROOT [--addr 127.0.0.1:PORT]` | Run the distinct unauthenticated, loopback-only STAC service added in P7; never overload publication `serve` |
 
 Tasks:
 
@@ -208,13 +208,13 @@ Tasks:
 - [ ] Implement the pinned conformance classes, including landing/conformance documents, Collection browsing, Item retrieval, and Item Search with spatial/temporal filtering and pagination. Implement the methods and parameters required by the declared classes; reject unsupported queries clearly.
 - [ ] Query the project-scoped cache through core services/repositories. Apply current visibility/lifecycle checks before returning Items and Assets, including subsequent pages. Do not expose unrelated cache namespaces.
 - [ ] Define deterministic ordering and opaque pagination tokens tied to the query and catalog snapshot. On intervening publication/withdrawal, either preserve a permitted snapshot or require a documented restart; never leak withdrawn or newly unavailable peers through an old cursor.
-- [ ] Require the per-instance bearer token on catalog/search endpoints, store it outside shared project files with restrictive permissions, and keep it out of logs and pagination links. Loopback is the initial binding default, not the access-control mechanism.
+- [ ] Keep the service tokenless and reject every bind address except exact IPv4 loopback (`127.0.0.1`) in core before opening the listener. Treat same-node catalog metadata as visible to the trusted HPC users in the deployment boundary.
 - [ ] Return local file URIs and resolvable identities under the shared-filesystem transport contract. Serve metadata only; raster byte proxying is deferred.
-- [ ] Add a `pystac-client` integration test with authentication, collection selection, spatial/time filters, empty results, and multiple pages; pass a discovered identity through the SDK to Rasterio.
-- [ ] Test unauthenticated/invalid-token access, invalid query/limit/cursor, refreshed publication, withdrawal, removed links, and peer failures. Report freshness without claiming unavailable data is readable.
+- [ ] Add a tokenless `pystac-client` integration test with collection selection, spatial/time filters, empty results, and multiple pages; pass a discovered identity through the SDK to Rasterio.
+- [ ] Test successful credential-free access, rejected non-loopback binds, invalid query/limit/cursor, refreshed publication, withdrawal, removed links, and peer failures. Report freshness without claiming unavailable data is readable.
 - [ ] Document the real-client HTTP/conformance test commands and required dependencies and run them in CI before completing P7. Static STAC JSON cannot establish runtime search behavior.
 
-Acceptance: a standard STAC client performs authenticated browsing and paginated spatial/temporal search, then reads the correct registered raster through local resolution. All declared conformance behavior is tested; static JSON files do not satisfy this phase.
+Acceptance: a standard STAC client performs credential-free loopback browsing and paginated spatial/temporal search, non-loopback startup is rejected, and the client reads the correct registered raster through local resolution. All declared conformance behavior is tested; static JSON files do not satisfy this phase.
 
 ### P8 — Prove complete workflows and prepare handoff
 
@@ -222,7 +222,7 @@ Tasks:
 
 - [ ] Automate the complete scenario in section 6 using fresh temporary provider/client projects and the real built CLI/SDK/API.
 - [ ] Verify the CI checks/dependencies added during P0–P7 together and extend them for the complete workflow. Keep default core/CLI tests meaningful; do not silently skip required adapters because dependencies are missing.
-- [ ] Add notebook and batch-job examples with explicit project roots, versions, cache locations, token handling, provenance recording, bounded raster windows, and lazy table queries. Explain memory limits and optional streaming/sinks without claiming laziness alone bounds memory.
+- [ ] Add notebook and batch-job examples with explicit project roots, versions, cache locations, loopback placement, provenance recording, bounded raster windows, and lazy table queries. Explain memory limits and optional streaming/sinks without claiming laziness alone bounds memory.
 - [ ] Run a separate target-HPC checklist with distinct producer/consumer users or groups, permitted and denied access, publication during discovery, multi-node jobs with separate local caches, and measured window/table-query behavior.
 - [ ] Verify the chosen manifest lock/rename protocol on the actual shared filesystem. Confirm readers never observe partial records and caches do not share a multi-node WAL database.
 - [ ] Update the Rust README, new SDK README, format/profile and migration docs, fixture instructions, and affected agent context/skills. Explain direct read versus explicit staging and the limits of link removal for already-open handles or loaded data.
@@ -253,7 +253,7 @@ Acceptance: CI covers both access paths and the publication gate; onboarding wor
 2. Place a GeoTIFF and two Parquet shards in the serving directory. Confirm neither is discoverable or resolvable through Feather Mesh, including explicit path requests.
 3. Attempt publication with missing required metadata, a renamed CSV, and incompatible Parquet schemas. Confirm actionable errors and an unchanged authoritative manifest.
 4. Register complete raster/table versions; refresh the client. Assert stable namespace/product/version, manifest revision, metadata, and exact asset IDs/paths.
-5. Start the authenticated STAC endpoint. Discover by spatial extent and time with a standard client, resolve the selected asset, and verify a known Rasterio band/window.
+5. Start the tokenless loopback-only STAC endpoint. Discover by spatial extent and time with a standard client, resolve the selected asset, and verify a known Rasterio band/window; prove a non-loopback bind is rejected.
 6. Resolve the table through the SDK, construct a lazy Polars filter/projection, and verify expected values on execution. Add an unregistered shard and confirm the pinned version remains unchanged.
 7. Publish a second version under the same product and verify the original version still resolves its original inventory. Reject attempts to replace its registered metadata/assets. Exercise optional digest verification after a deliberate fixture mutation.
 8. Safely stage one pinned version and validate its receipt. Attempt source/output aliases, overlaps, and a failing overwrite; verify provider files and previous outputs remain intact.
@@ -290,5 +290,5 @@ Update this table after each phase; link tests, decisions, and reports rather th
 | P4 | Complete (local) | Added project `init`, metadata `serve`/validation, `refresh`, `cache status`, `resolve`, `withdraw`, scoped search/show/products/teams, project `consume`, structured `feam.peer.v1` JSON errors, and `stac serve`; legacy `--registry` remains isolated. | `cargo test -p mesh_cli --test cli_workflow_tests` covers init → publish → refresh → resolve → stage → withdraw, JSON protocol/error behavior, unregistered shard exclusion, and receipt output. |
 | P5 | Complete (local) | Added `python_sdk/` subprocess SDK with typed errors/descriptors, configurable executable, explicit versions, and native `polars.scan_parquet(..., glob=False, hive_partitioning=False)`. | Fresh venv install outside source plus `FEAM_E2E=1 ... pytest python_sdk/tests`: native lazy query, known filter/projection values, paths with spaces, and newly added unregistered-shard exclusion passed. Delayed reads are documented as library-time failures. |
 | P6 | Complete (local) | Added derived STAC 1.1.0 Collection/Item/Asset projection with local encoded file URIs, identity round trip, native CRS/EPSG, geometry/bbox/time/band/nodata/provenance fields, and pinned local profile validation. | Installed `jsonschema` validates generated items against `stac-item-profile-v1.1.0.json`; real Rasterio opens the resolved client route, verifies EPSG:4326/nodata, and reads the known 2×1 pixel window. |
-| P7 | Complete (local) | Added authenticated loopback metadata-only STAC HTTP adapter: landing/conformance, collections, Items, GET/POST search, deterministic revision-bound opaque cursors, spatial/time filters, and local file-URI transport. | Installed `pystac-client` performs authenticated multi-page search; tests cover missing token (401), empty search, cursor restart after withdrawal (409), and SDK/Rasterio identity round trip. Local sandbox blocks loopback binding, so this runtime check was run outside it; CI runs the same suite. |
+| P7 | Complete (local) | Added metadata-only STAC HTTP adapter: landing/conformance, collections, Items, GET/POST search, deterministic revision-bound opaque cursors, spatial/time filters, and local file-URI transport. On 2026-09-24, removed the prototype bearer token and made exact IPv4 loopback binding a core invariant. | Rust/CLI tests cover rejected non-loopback binding and rejection of the removed flag. A fresh installed-SDK run passed all four tests, including credential-free multi-page search, empty search, cursor restart after withdrawal (409), schema validation, and SDK/Rasterio identity round trip. A direct request returned `200 OK` without credentials. |
 | P8 | Local handoff complete; HPC acceptance pending | Updated Rust/SDK docs, [notebook/batch examples](docs/data_access_examples.md), CI adapter job, agent context, generated fixtures, and [target-HPC checklist](docs/data_access_hpc_checklist.md). | Local Rust, CLI, installed-SDK, Polars, Rasterio, and STAC checks are recorded above. Separate identities, target shared filesystem lock/rename, multi-node cache, and measured HPC I/O remain unavailable and must be attached before claiming target-HPC acceptance. |

@@ -6,17 +6,24 @@
 
 Feather Mesh (feam) is an HPC-native middleware layer that standardizes how teams publish, discover, and consume reusable data products without forcing teams to give up ownership of their data. It is intended to reduce duplicated work, improve cross-team interoperability, and make pipelines more reliable by replacing ad hoc path conventions with a governed product catalog and deterministic retrieval workflows.
 
+If you do not know the project yet, read the repository's
+[`map.md`](../map.md) first. It defines the beginner mental model and terminology
+while clearly separating personal orientation notes from binding contracts.
+
 Start here when contributing to the current Rust implementation:
 
 - CLI crate: `mesh_cli/`
 - Core business logic crate: `mesh_core/`
+- Optional terminal UI crate: `mesh_tui/`
+- Optional hosted-assistant harness: `mesh_agent/`
+- Supported Python adapter: `python_sdk/`
 - Test command from this directory: `cargo test`
 
 ---
 
 ## Prerequisites
 
-> **_NOTE:_**  Recommended to use some sort of Linux/Unix environment (WSL is a good option if you're running windows).
+> **_NOTE:_** A Linux/Unix environment is recommended. WSL is a good option on Windows.
 
 Make sure you have Rust installed.
 
@@ -150,7 +157,7 @@ The full manifest, metadata, lifecycle, cache, protocol, STAC, integrity, and
 staging contract is in [`docs/data_access_contract.md`](../docs/data_access_contract.md).
 The supported subprocess SDK is [`python_sdk/`](python_sdk/README.md).
 [Notebook and batch-job examples](../docs/data_access_examples.md) show bounded
-Rasterio windows, lazy Polars scans, token handling, provenance, and staging.
+Rasterio windows, lazy Polars scans, loopback STAC, provenance, and staging.
 
 Run the optional adapter fixtures and integration suite with:
 
@@ -163,9 +170,10 @@ FEAM_E2E=1 FEAM_EXECUTABLE="$(pwd)/target/debug/mesh_cli" \
   /tmp/feam-peer-venv/bin/python -m pytest python_sdk/tests
 ```
 
-`feam stac serve --project ROOT --token-file PATH` starts the read-only,
-loopback STAC endpoint. Its token file must be owner-readable only; it returns
-metadata and local file URIs, never raster bytes.
+`feam stac serve --project ROOT [--addr 127.0.0.1:PORT]` starts the read-only,
+unauthenticated STAC endpoint. Core rejects non-`127.0.0.1` bind addresses. It
+returns metadata and local file URIs, never raster bytes; filesystem permissions
+still govern opening those files.
 
 ### Optional project TUI and hosted assistant
 
@@ -218,7 +226,7 @@ The implemented command surface is:
 - `teams`
 - `products`
 - `refresh`, `cache status`, `resolve`, and `withdraw` (project-scoped)
-- `stac serve` (project-scoped, authenticated)
+- `stac serve` (project-scoped, unauthenticated and restricted to `127.0.0.1`)
 - `tui` (optional feature, project-scoped)
 
 Global options:
@@ -280,23 +288,37 @@ feather-mesh/
 │       └── main.rs        # CLI parsing, terminal UX, and process behavior
 ├── mesh_tui/              # Optional interactive terminal application
 ├── mesh_agent/            # Optional hosted router and typed agent harness
+├── python_sdk/             # Supported Python subprocess adapter
+├── scripts/                # TUI demos, evaluation, and offline checks
 └── mesh_core/
     ├── Cargo.toml
     ├── src/
     │   ├── lib.rs         # Library exports
     │   ├── db.rs          # SQLite connection and schema setup
+    │   ├── peer.rs        # Public project/peer workflow facade
+    │   ├── stac.rs        # Manifest-derived STAC projection
+    │   ├── stac_http.rs   # Unauthenticated, IPv4-loopback-only STAC API
     │   ├── models/        # Domain data structures
     │   │   ├── entities/  # Persisted database row models
     │   │   └── new/       # Insertable NewX models
     │   ├── repositories/  # SQL queries and object mapping
-    │   └── services/      # API-style workflow functions used by mesh_cli
+    │   └── services/      # Shared registry, peer, catalog, and operation workflows
     └── tests/
         └── data/          # Static test fixtures
 ```
 
 `mesh_cli` is responsible for command-line parsing, terminal output, process exit behavior, and other terminal UX concerns. It should translate user input into calls against the core library, then format results for the terminal.
 
-`mesh_core::services` defines API-style functions that expose key Feather Mesh workflows for `mesh_cli` to call, such as publishing, discovering, inspecting, and retrieving data products. Services coordinate `mesh_core::repositories` and `mesh_core::models` while keeping persistence details out of the CLI. Repository modules own SQL queries and database row mapping.
+`mesh_core::services` defines shared Feather Mesh workflows such as publishing,
+discovering, resolving, staging, and legacy registry access. The peer workflow
+uses provider manifests; the legacy workflow coordinates models and SQLite
+repositories. Repository modules own SQL queries and database row mapping.
+
+`mesh_tui` calls the shared services directly and owns terminal rendering,
+confirmation, and restoration. `mesh_agent` owns only the bounded model loop and
+typed proposals; it has no terminal or direct peer-mutation authority. The
+Python SDK invokes the structured CLI protocol and does not reimplement peer
+visibility or publication rules.
 
 For general product background, see `Feather_Mesh_PDD_Revised.pdf` at the repository root. For peer data access, [data_access.md](../data_access.md) supplies confirmed requirements and [`docs/data_access_contract.md`](../docs/data_access_contract.md) supplies the settled implementation contract. The legacy SQLite workflow above remains available for migration but does not bypass peer publication or discovery rules.
 

@@ -74,7 +74,7 @@ pub fn example(root: &Path, entry: &CatalogEntry) -> String {
     let version = python_quote(&entry.version);
     match entry.data_kind {
         DataKind::Table => text.push_str(&format!("query = project.scan_table({reference}, version={version})\n# Native polars.LazyFrame over only registered shards\nprint(query.collect())\n")),
-        DataKind::Raster => text.push_str(&format!("import rasterio\nfrom rasterio.windows import Window\nproduct = project.resolve({reference}, version={version})\nwith rasterio.open(product.assets[0].path) as raster:\n    print(raster.read(1, window=Window(0, 0, 2, 2)))\n\n# STAC uses the same registered identity/inventory.\n# Start separately: feam --project ROOT stac serve --token-file PRIVATE_TOKEN_FILE\n# Connect pystac_client.Client.open(URL, headers={{'Authorization': 'Bearer '+token}}).\n# Never put a token in a project draft or assistant message.\n")),
+        DataKind::Raster => text.push_str(&format!("import rasterio\nfrom rasterio.windows import Window\nproduct = project.resolve({reference}, version={version})\nwith rasterio.open(product.assets[0].path) as raster:\n    print(raster.read(1, window=Window(0, 0, 2, 2)))\n\n# STAC uses the same registered identity/inventory.\n# Start separately: feam --project ROOT stac serve --addr 127.0.0.1:8080\n# Connect with pystac_client.Client.open('http://127.0.0.1:8080').\n# The server accepts no non-loopback bind address.\n")),
     }
     text
 }

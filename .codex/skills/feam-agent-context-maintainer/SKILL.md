@@ -67,7 +67,7 @@ After updating context, verify that a future agent could answer:
 - Where are stable CLI exit codes documented and tested?
 - Which source governs direct peer reads, which defaults are unsettled, and what does current code actually implement?
 - Do CLI, SDK-only, HTTP-only, and core-only tasks find the shared invariant skill?
-- What proves a native Polars lazy query, a known Rasterio window, and authenticated paginated STAC HTTP behavior?
+- What proves a native Polars lazy query, a known Rasterio window, tokenless paginated STAC HTTP behavior, and rejected non-loopback binding?
 - Which supported native-inspector feature configurations ran, and did missing inspectors fail publication?
 - Which checks were unavailable or skipped, and which separate-user/multi-node HPC requirements remain pending?
 

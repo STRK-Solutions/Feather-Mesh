@@ -541,3 +541,47 @@ fn tui_rejects_machine_format_before_terminal_setup() {
         .stderr(predicate::str::contains("does not support --format json"));
     assert!(!temp.path().join("registry.db").exists());
 }
+
+#[test]
+fn stac_rejects_non_loopback_bind_and_removed_token_flag() {
+    let temp = tempdir().unwrap();
+    let project = temp.path().join("client");
+    feam()
+        .args([
+            "--project",
+            &registry_arg(&project),
+            "init",
+            "--namespace",
+            "consumer",
+        ])
+        .assert()
+        .success();
+
+    feam()
+        .args([
+            "--project",
+            &registry_arg(&project),
+            "stac",
+            "serve",
+            "--addr",
+            "0.0.0.0:8080",
+        ])
+        .assert()
+        .code(5)
+        .stderr(predicate::str::contains("STAC must bind to 127.0.0.1"));
+
+    feam()
+        .args([
+            "--project",
+            &registry_arg(&project),
+            "stac",
+            "serve",
+            "--token-file",
+            "/tmp/removed-feam-stac-token",
+        ])
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains(
+            "unexpected argument '--token-file'",
+        ));
+}
