@@ -1,6 +1,6 @@
 # Web-accessible FEAM demo development workplan
 
-Status: W0 and W1 complete. W1.01–W1.07 and W1.G passed, including owner-run Ubuntu provisioning, actual browser manual/fake flows, resource/socket enforcement, persistence/reset and unchanged repeat converge. [W1 evidence](evaluations/web-demo/w1-ubuntu-acceptance.json) and [execution record](evaluations/web-demo/w1-progress.md) retain the failed attempts and fixes. W2–W10 have not started.
+Status: W0 and W1 complete. W1.01–W1.07 and W1.G passed, including owner-run Ubuntu provisioning, actual browser manual/fake flows, resource/socket enforcement, persistence/reset and unchanged repeat converge. [W1 evidence](evaluations/web-demo/w1-ubuntu-acceptance.json) and [execution record](evaluations/web-demo/w1-progress.md) retain the failed attempts and fixes. [Unattended Ubuntu deployment access](#ubuntu-deployment-access-verified-2026-09-25) is verified for authorized work. W2–W10 have not started.
 
 Updated: 2026-09-25.
 
@@ -17,7 +17,7 @@ Source of truth: [Ubuntu web demo design](ubuntu_web_dev_demo_design.md). Explic
 7. If host access, a dependency or an external approval is unavailable, record the exact blocked task and continue independent Mac/offline work whose prerequisites are satisfied. Do not broaden permissions, bypass authentication, silently skip a required validator, or substitute a mock for target-host evidence.
 8. Before ending an implementation session, leave a concise handoff: completed IDs, changed files, executed/unexecuted checks, pending authorizations and the next ready task. Keep private identities, credentials and raw user traces out of public reports.
 
-This document is a development plan, not authorization to purchase a domain, provision paid resources, send invitations, expose a terminal publicly, reboot Ubuntu, or run billable inference. The owner will run reviewed sudo bootstrap commands and approve exact purchases. Obtain applicable approval once for a bounded operation; do not request repetitive permission for already authorized implementation. On-demand operation does not authorize automatic cloud activation.
+This document is a development plan, not authorization to purchase a domain, provision paid resources, send invitations, expose a terminal publicly, reboot Ubuntu, or run billable inference. The owner has enabled the dedicated `feam-deploy` SSH account with passwordless sudo; the agent may execute reviewed provisioning and verification within authorized Ubuntu work without another owner-terminal handoff. This account has full host-root capability, not a command-restricted helper; keep operations within the reviewed FEAM resource scope. Obtain applicable approval once for a bounded operation; do not request repetitive permission for already authorized implementation. Exact purchases and shared-host reboot timing remain separate approvals. On-demand operation does not authorize automatic cloud activation.
 
 ## 2. Where work happens
 
@@ -37,7 +37,7 @@ Use MAC for day-to-day coding and LINUX for release artifacts; do not copy a nat
 
 1. Edit and run narrow tests on MAC; keep fake authentication, inference and budget backends confined to explicit test configurations.
 2. Build/test the exact revision on LINUX. Retain the FEAM binary, host-service artifacts, container image and dependency manifest by digest.
-3. From MAC, invoke approved Ansible against a verified private SSH inventory. Install artifacts on UBUNTU into the dedicated service/staging scope, not the personal home or existing Docker daemon.
+3. From MAC, invoke approved Ansible against a verified private SSH inventory using the [delegated deployment access](../infra/demo/README.md#unattended-ubuntu-deployment-access). Keep strict host checking and use noninteractive sudo for authorized privileged steps. Install artifacts on UBUNTU into the dedicated service/staging scope, not the personal home or existing Docker daemon.
 4. Exercise the Ubuntu-hosted application from a browser on MAC through a private test connection initially, and through real EDGE authentication in W8. Collect host-side measurements on UBUNTU.
 5. Fix source/configuration on MAC, rebuild, and redeploy the new pinned release. Capture any emergency host repair in IaC before marking the task complete.
 
@@ -55,6 +55,7 @@ Before the machine serves participants, bounded native builds may use a separate
 - [x] Ubuntu and cloud are alternative hosts for an on-demand fresh demo. Runtime contents are disposable; no fixed hours, Canadian-region requirement, automatic failover, cross-host recovery or 15-minute target. Keep current private policy inputs and project spending outside disposable compute.
 - [x] MAC is the main development workstation; UBUNTU is an early and continuing integration/deployment target.
 - [x] Owner switched the demo back to `613202690.xyz` on 2026-09-25 and confirmed Cloudflare Active status. Public NS queries through Cloudflare and Google return the assigned nameservers. Use `https://feam.613202690.xyz` with the sibling routes below; demo DNS routes, HTTPS, Tunnel and Access remain unverified.
+- [x] Owner connected Cloudflare to Codex on 2026-09-25; Cloudflare tools are available in the current session. Use the existing connection first; verify account/zone permissions and automation authentication before EDGE operations. See the [connection record](#cloudflare-connected-to-codex-2026-09-25).
 - [x] Collected research traces and reviewed exports survive shutdown and teardown; intermittent uploads are acceptable. Private Git is an acceptable option; research a cheap suitable alternative. Prefer eastern North American compute for Ottawa latency; Canada is optional.
 
 These checked items record decisions, **not implemented capabilities**. The [Stage-1 acceptance record](tui_agent_stage1_acceptance.md#final-fresh-acceptance) contains historical 97/100 held-out model evidence. Keep it distinct from W8's new broker/browser validation and W9's deployed capacity/lifecycle proof.
@@ -83,8 +84,8 @@ Manage only the demo's explicit DNS records, Tunnel routes and Access applicatio
 
 | Input ID | Needed input or approval | Needed before | Work that can continue meanwhile |
 | --- | --- | --- | --- |
-| I1 | W0 preflight and W1 owner-run scoped bootstrap passed. Dedicated runtime, storage, lingering, isolation and repeat converge are verified on Ubuntu. Recheck collisions before later mutation. Shared-host reboot timing remains later. | W9 reboot/fault checks | MAC work and disposable LINUX tests. |
-| I2 | Hostname selection is settled: `feam.613202690.xyz`, with the sibling routes above. Owner confirms Cloudflare Active status and completed Zero Trust onboarding; public DNS returns the assigned nameservers. Supply scoped account access when edge configuration is ready; verify zone access and configure only demo resources. Confirm account MFA and capture renewal terms for handoff. No further domain purchase, nameserver change or initial Zero Trust onboarding is required. | W8 EDGE setup | Local gateway tests and Terraform validation. See [hostname plan](#demo-hostname-plan) and [domain setup and research](ubuntu_web_dev_demo_options.md). |
+| I1 | W0 preflight and W1 owner-run scoped bootstrap passed. Dedicated runtime, storage, lingering, isolation and repeat converge are verified on Ubuntu. Owner-enabled `feam-deploy` SSH and noninteractive root sudo were verified on 2026-09-25; authorized Ubuntu provisioning no longer needs manual sudo handoffs. Recheck collisions before later mutation. Shared-host reboot timing remains pending. | W9 reboot/fault checks require an approved window; routine authorized Ubuntu work has no sudo-access blocker. | MAC/LINUX implementation and authorized Ubuntu integration. |
+| I2 | Hostname selection is settled: `feam.613202690.xyz`, with the sibling routes above. Owner confirms Cloudflare Active status, completed Zero Trust onboarding and connection to Codex; Cloudflare tools are available in this session. Public DNS returns the assigned nameservers. Use the existing connection to verify the intended account/zone and required permissions; configure only demo resources. Check Terraform/runtime authentication separately and request only any missing scoped capability. Confirm account MFA and capture renewal terms for handoff. No repeat domain purchase, nameserver change, onboarding or connection setup is required. | W8 EDGE setup; connection is supplied, permission/configuration verification remains pending. | Local gateway tests and Terraform validation. See [hostname plan](#demo-hostname-plan) and [domain setup and research](ubuntu_web_dev_demo_options.md). |
 | I3 | Operator-held config/Terraform state and project spending; durable restricted research archive independent of disposable compute. No recovery backend or independent runner. | W5 budget; W6–W7 archive; W8 live capture/dispatch | Local budget/recreation and archive tests. |
 | I4 | Owner will supply OpenRouter key when requested; verify current route/prices and obtain finite live-test budget and guardrails. | W8 live model testing | W5–W6 fake inference/capture tests. |
 | I5 | No existing cloud provider. Research low total cost worldwide, then approve exact compute/storage/IP costs and bounded deployment tests. | W9 CLOUD allocation | Provider recipes, validation and local lifecycle tests. |
@@ -238,7 +239,7 @@ Output: correlated, bounded and provenance-aware events, with existing consent r
 Output: reproducible start/stop/teardown on either host, scoped operator bootstrap, safe ordinary restarts and project spending that survives disposable environments.
 
 - [ ] W7.01 [MAC] Complete Terraform edge/research-storage/cloud-host modules with locked providers and separate lifecycles. Operator automation owns the selected public route; the reconciler owns exact-email membership. Cloud teardown cannot delete research archives, durable edge configuration or unrelated resources.
-- [ ] W7.02 [MAC/LINUX] Complete reviewed sudo bootstrap and Ansible preflight/host/deploy/lifecycle entrypoints with ownership checks, secret-log suppression, versioned migrations and selective restarts. Distinguish fresh initialization, repeat converge, stop and explicit destructive teardown.
+- [ ] W7.02 [MAC/LINUX] Complete reviewed sudo bootstrap and Ansible preflight/host/deploy/lifecycle entrypoints with ownership checks, secret-log suppression, versioned migrations and selective restarts. Use the verified deployment account and noninteractive sudo for authorized Ubuntu operations. Distinguish fresh initialization, repeat converge, stop and explicit destructive teardown.
 - [ ] W7.03 [MAC/LINUX] Implement systemd units/timers and the cross-manager storage-to-rootless-runner ordering. Install bounded logs, socket mounts/ACL recreation and health checks. Disable autonomous Docker restarts so the controller checks current grants/storage/activation before starting workspaces.
 - [ ] W7.04 [MAC/LINUX; I3] Implement restricted operator configuration/state and per-run spend allocation persistence outside demo compute. Protect real inventories/keys from Git/images/logs; verify fresh recreation uses current roster/policies and remaining budget.
 - [ ] W7.05 [MAC/LINUX → UBUNTU] Implement bounded stop/drain, spend reconciliation and archive verification for all collected traces and reviewed exports. Treat uncertain spend conservatively. Runtime datasets/workspaces/control DB need no cross-host backup; failed archival blocks destructive teardown while preserving its source for retry.
@@ -252,7 +253,7 @@ Output: reproducible start/stop/teardown on either host, scoped operator bootstr
 
 Output: a protected, staged end-to-end service on Ubuntu, with real provider compatibility and finite-test evidence.
 
-- [ ] W8.01 [MAC → EDGE; I2] Verify scoped access to the active `613202690.xyz` Cloudflare zone and configure the explicit `feam`, `admin` and `u-<opaque-id>` records for the selected Tunnel. Preserve unrelated resources and the separate `saifshaikh.ca` zone; reuse/import existing demo records before managing them. Domain purchase and activation are complete; route configuration and verification remain pending. Record MFA and scoped credential/recovery ownership.
+- [ ] W8.01 [MAC → EDGE; I2] Use the existing Codex Cloudflare connection to verify the intended account and scoped access to the active `613202690.xyz` zone, then configure the explicit `feam`, `admin` and `u-<opaque-id>` records for the selected Tunnel. Verify required DNS/Tunnel/Access permissions and Terraform authentication; request additional credentials only for a demonstrated missing capability. Preserve unrelated resources and the separate `saifshaikh.ca` zone; reuse/import existing demo records before managing them. Domain purchase, activation and owner connection setup are complete; permission, route configuration and verification remain pending. Record MFA and scoped credential/recovery ownership.
 - [ ] W8.02 [EDGE + UBUNTU] Configure the separate local/cloud tunnel resources, deny unmatched routes, and enable valid automatically managed HTTPS certificates and HTTP-to-HTTPS redirects. Test browser trust, HTTPS WebSockets, renewal configuration, no direct-origin bypass and no need for public SSH/Docker ports.
 - [ ] W8.03 [MAC → EDGE/UBUNTU] Bootstrap approved private identities and reconcile Access groups with public admission disabled until ready. Activate only authorized staging testers initially; initial cohort invitations/activation belong to W10. Verify real PIN delivery, group sync, separate admin audience and one-hour/admin versus eight-hour/user session policy.
 - [ ] W8.04 [MAC browser → EDGE → UBUNTU] Run cross-user/cross-role, forged/expired token, sibling-origin CSRF/WebSocket and live account-disable tests against real Access. Verify disconnection within 30 seconds despite edge API failure and an infrastructure apply cannot resurrect access.
@@ -282,7 +283,7 @@ Output: measured service behavior on the actual Ubuntu machine and selected clou
 
 Output: a usable invited service with operator/admin instructions, honest acceptance status and a reviewed path to later SLM work.
 
-- [ ] W10.01 [MAC] Document exact tested bootstrap, start/stop/teardown, migration/rollback, account disable, spend reconciliation and cleanup commands. State who owns renewal, credentials, model/cloud budgets and support.
+- [ ] W10.01 [MAC] Document exact tested bootstrap, start/stop/teardown, migration/rollback, account disable, spend reconciliation and cleanup commands. State who owns renewal, credentials, model/cloud budgets and support; include deployment-key/sudo access revocation and the retained owner access path.
 - [ ] W10.02 [MAC + UBUNTU; I6] Confirm on-demand operation, support contact, research retention/export handling and reviewers. No fixed hours or new consent notice. Show model, budget, recording and disposable-workspace status in normal UI.
 - [ ] W10.03 [MAC → EDGE/UBUNTU; invitation approval] Reconcile and activate the supplied four-admin/five-user cohort without broadening enrollment. Send invitations only when authorized; test the invited user/admin flows from Ottawa networks. No admin workspace is allocated by default.
 - [ ] W10.04 [UBUNTU + MAC] Verify operator records, current policy exports, retained project spending and selected research-export handling through teardown/recreation. Document which resources remain billable after stop versus deletion. No automatic failover or backup service required.
@@ -363,7 +364,7 @@ Update this section in the same change as task checkboxes. Allowed statuses: `no
 | W5 | Not started | Socket/fake-provider/budget proof pending | Live provider W8; operator-held run allocations replace recovery journal. |
 | W6 | Not started | Actual collector/capture/retention proof pending | Keep synthetic and participant evidence separate. |
 | W7 | Not started | Full-VM and Ubuntu lifecycle checks pending | Implement operator start/stop/teardown and project budget persistence. |
-| W8 | Not started | EDGE and live hosted Ubuntu proof pending | Use `feam.613202690.xyz`; domain activation is confirmed by the owner. I2 still needs scoped edge access/configuration, plus I4 and applicable capture inputs. |
+| W8 | Not started | EDGE and live hosted Ubuntu proof pending | Use `feam.613202690.xyz` and the existing Codex Cloudflare connection. I2 still needs account/permission and automation-authentication verification, MFA and edge configuration; I4 and applicable capture inputs remain pending. |
 | W9 | Not started | W9.U and W9.C both pending | Approve priced cloud candidate; verify fresh startup/capacity/teardown. |
 | W10 | Not started | Cohort/operator/cloud handoff pending | No invitations or full-service completion claim yet. |
 
@@ -426,6 +427,35 @@ Documentation verification: context structural checks passed with `PATH=/tmp/fea
 
 The owner confirms that Cloudflare Zero Trust onboarding is complete. Record this as a satisfied account prerequisite for I2; do not request onboarding again. The agent has not authenticated to the account. Account MFA remains unconfirmed, and scoped API credentials, DNS routes, HTTPS, Tunnel, Access applications/policies and real login verification remain W8 work. No account configuration or implementation task status was changed by this documentation update; current development can continue independently of scoped Cloudflare access.
 
+### Ubuntu deployment access verified (2026-09-25)
+
+I1 access update, MAC → UBUNTU: the owner completed the dedicated `feam-deploy` account/key and passwordless-sudo setup, then the agent verified it over private SSH. The read-only command below exited 0 without a password prompt and returned `feam-deploy` followed by `0`:
+
+```bash
+ssh -i "$HOME/.ssh/feam_ubuntu_deploy" \
+  -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
+  -o ConnectTimeout=10 feam-deploy@"${FEAM_UBUNTU_HOST:?set from private inventory}" \
+  'id -un; sudo -n id -u'
+```
+
+The actual verified host address is redacted here; obtain it from private operator inventory. The dedicated private key remains on the operator Mac at `~/.ssh/feam_ubuntu_deploy`, outside Git. No password or private-key contents are required in chat. [Operator guidance](../infra/demo/README.md#unattended-ubuntu-deployment-access) records connection settings and revocation.
+
+This supersedes the earlier owner-run-only bootstrap requirement and the historical noninteractive-sudo blocker for future authorized Ubuntu work. The deployment account has full root capability; it is separate from the seven runtime service identities and from participant/admin web roles. Keep the existing W1 browser operator UID/ACL unless an explicit configuration change requires otherwise. Access availability does not expand the task's approved scope or authorize reboots, public exposure, invitations, purchases or live inference.
+
+Only SSH identity and noninteractive root execution were tested for this update; no provisioning, reset, reboot or application acceptance was rerun. W0/W1 evidence remains historical and W2–W10 stay pending. Next ready implementation is W2; scoped EDGE credentials, source pins, live-model budget/key, archive inputs and cloud/reboot approvals remain due at their existing gates.
+
+Documentation verification on MAC: context structural checks and all 121 local links/anchors across the five affected documents passed; all 96 implementation task IDs and checkbox states were preserved; `git diff --check` passed. Semantic review confirmed delegated execution, full-root capability, unchanged resource/approval boundaries and separate historical acceptance. No Rust or application tests were needed for this documentation-only update.
+
+### Cloudflare connected to Codex (2026-09-25)
+
+I2 connection update: the owner reports that Cloudflare is connected to Codex. The agent confirmed that Cloudflare API search/execute and resource tools are present in the current session's tool catalog. This records completed connection setup, not an authenticated account/zone permission test; no Cloudflare API request or resource change was made for this documentation update.
+
+Use the existing connection before requesting credentials or another onboarding step. Before EDGE implementation, verify the intended account, access to `613202690.xyz`, required DNS/Tunnel/Access permissions and whether the selected Terraform workflow has suitable authentication. Do not assume the Codex connection supplies credentials to Terraform or deployed services. Request only a specifically missing capability when its implementation is ready; retain secrets in private operator configuration.
+
+This supersedes the generic request to supply Cloudflare access in earlier planning entries. MFA, renewal/recovery ownership, deployment configuration, HTTPS, Access login and public-route verification remain pending. The connection does not authorize public exposure, purchases or invitations. No W8 task or other implementation gate is completed by this prerequisite update; W2 remains the next ready implementation phase.
+
+Documentation verification on MAC: context structural checks, all 129 local links/anchors across the six currently changed documents and `git diff --check` passed. All 96 implementation task IDs and checkbox states are preserved. Semantic review separates owner-reported connection setup/tool availability from untested permissions, automation authentication and deployment acceptance; no application or live EDGE tests were run for this documentation update.
+
 For each subsequent task/attempt, append an evidence record with:
 
 ```text
@@ -445,7 +475,7 @@ Next ready task / blocking input and owner:
 
 ### Resume handoff
 
-- Last completed work: W0 and W1, including W1.01–W1.07 and W1.G, pass. Owner-run provisioning and actual-Ubuntu browser, enforcement, persistence/reset, lingering and unchanged converge evidence are recorded in the [W1 record](evaluations/web-demo/w1-progress.md). The owner selected `feam.613202690.xyz` with sibling admin/workspace routes and confirmed Cloudflare Active status. EDGE verification remains pending.
+- Last completed work: W0 and W1, including W1.01–W1.07 and W1.G, pass. Owner-run provisioning and actual-Ubuntu browser, enforcement, persistence/reset, lingering and unchanged converge evidence are recorded in the [W1 record](evaluations/web-demo/w1-progress.md). Dedicated Ubuntu deployment SSH/noninteractive sudo is verified. The owner selected `feam.613202690.xyz` with sibling admin/workspace routes, confirmed Cloudflare Active status and connected Cloudflare to Codex; the tools are available. EDGE permissions, automation authentication and deployment verification remain pending.
 - Next ready work: W2 control DB, identity and authorization gateway. W0 merged in [PR #60](https://github.com/STRK-Solutions/Feather-Mesh/pull/60); W1 is complete. Prepare W8 configuration for `613202690.xyz` when its prerequisites are ready. Shared-host reboot, public identity, live inference, ten-user capacity, cloud and target-HPC acceptance remain separate gates.
 - Private input reminder: the ignored roster and future inventories/keys do not travel through Git; obtain them through the operator's approved private channel.
 - Final completion condition: all current task/environment gates pass, including actual Ubuntu service and fresh cloud provisioning/capacity/teardown. No cloud recovery-time, replication or Canadian-region gate remains.

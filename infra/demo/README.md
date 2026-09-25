@@ -43,10 +43,11 @@ ssh -o BatchMode=yes -o StrictHostKeyChecking=yes operator@ubuntu.example.invali
 
 No packages/accounts/mounts/services are changed. Expected missing resources
 and permission-denied probes must be reviewed, not converted to empty results.
-The actual host denies noninteractive sudo. The owner supplied these exact
-read-only commands' output for W0; the [reviewed evidence](../../docs/evaluations/web-demo/w0-privileged-preflight.json)
-closes that gate. Use the same commands when a fresh inventory is needed before
-later provisioning; keep raw workload details private:
+W0 preceded delegated sudo access, so the owner supplied these exact read-only
+commands' output; the [reviewed evidence](../../docs/evaluations/web-demo/w0-privileged-preflight.json)
+closes that gate. The deployment account now supports noninteractive sudo.
+Use the same probes with `sudo -n` through that account when a fresh inventory
+is needed before later provisioning; keep raw workload details private:
 
 ```bash
 sudo docker ps -a --format '{{.ID}} {{.State}}'
@@ -62,6 +63,51 @@ the seven named FEAM service accounts, dedicated systemd/socket configuration
 and a non-overlapping runner subordinate-ID range. Recheck collisions before
 mutation; preserve the current Docker daemon and other disk. No host changes
 are authorized by example placeholders alone.
+
+## Unattended Ubuntu deployment access
+
+Verified on 2026-09-25 after owner setup: the dedicated `feam-deploy` account
+authenticates with the operator Mac's `~/.ssh/feam_ubuntu_deploy` key, and
+`sudo -n id -u` returns `0` without prompting. See the
+[access record](../../docs/ubuntu_web_dev_demo_workplan.md#ubuntu-deployment-access-verified-2026-09-25).
+The account has full host-root capability, not a command-restricted helper.
+Use it only for authorized work within the reviewed FEAM scope. Reboot timing,
+public exposure, invitations, purchases and live inference retain their own gates.
+
+Read the verified host address from private inventory, then check access from MAC:
+
+```bash
+ssh -i "$HOME/.ssh/feam_ubuntu_deploy" \
+  -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
+  -o ConnectTimeout=10 feam-deploy@"${FEAM_UBUNTU_HOST:?set from private inventory}" \
+  'id -un; sudo -n id -u'
+```
+
+For delegated Ansible operations, configure the private inventory with
+`ansible_user: feam-deploy`,
+`ansible_ssh_private_key_file: ~/.ssh/feam_ubuntu_deploy`, and SSH options
+`-o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes`.
+The host/deploy playbooks already use `become: true`; no interactive sudo
+password handoff is needed. These are inventory instructions, not a claim that
+the new account has already run a full Ansible converge.
+
+Keep this deployment login separate from the seven runtime service accounts.
+Preserve W1's recorded `feam_operator_uid`, browser socket ACL and private output
+directory ownership when changing the Ansible login. The key and real host
+address stay out of Git, images, public CI and logs. No password or key contents
+need to be supplied in chat. Keep the original owner login for recovery.
+
+When delegation ends, the owner can remove its sudo rule and future key access
+from the original Ubuntu account:
+
+```bash
+sudo rm /etc/sudoers.d/90-feam-deploy
+sudo rm /home/feam-deploy/.ssh/authorized_keys
+sudo visudo -c
+```
+
+This does not terminate existing sessions or already-running root commands;
+finish or stop those separately before considering delegation fully revoked.
 
 ## Disposable Linux target
 
@@ -148,8 +194,8 @@ pinned pip wheel and does not alter system Python.
 
 | Input | Current state / next gate |
 | --- | --- |
-| I1 | W0 preflight and W1 owner-run scoped bootstrap passed. Actual runner enforcement, browser manual/fake flows, persistent storage, lingering and unchanged converge are verified. Private inventory/evidence retained locally. Shared-host reboot remains later; no sudo password is needed by the agent. |
-| I2 | Owner switched back to `feam.613202690.xyz`, with `admin.613202690.xyz` and `u-<opaque-id>.613202690.xyz` siblings, and confirmed Cloudflare Active status and completed Zero Trust onboarding. Public DNS returns the assigned nameservers. Account MFA confirmation, scoped credentials, route/HTTPS/Tunnel/Access configuration and verification remain W8; retain renewal terms for handoff. |
+| I1 | W0 preflight and W1 owner-run scoped bootstrap passed. Actual runner enforcement, browser manual/fake flows, persistent storage, lingering and unchanged converge are verified. Dedicated deployment SSH and noninteractive sudo passed on 2026-09-25; authorized Ubuntu work no longer needs manual sudo handoffs. Private inventory/evidence retained locally. Shared-host reboot still requires an approved window. |
+| I2 | Owner selected `feam.613202690.xyz` with `admin` and `u-<opaque-id>` siblings, confirmed Cloudflare Active status/Zero Trust onboarding, and connected Cloudflare to Codex on 2026-09-25. Cloudflare tools are available; use the existing connection first. Account/zone permissions, Terraform/runtime authentication, MFA and route/HTTPS/Tunnel/Access configuration remain unverified. Request only missing scoped capabilities and retain renewal terms for handoff; see the [connection record](../../docs/ubuntu_web_dev_demo_workplan.md#cloudflare-connected-to-codex-2026-09-25). |
 | I3 | Operator-held state and project/run allocation contract defined; actual encrypted storage/ledger/archive setup pending W5–W7. |
 | I4 | Selected route fixed; key, current prices and finite live budget pending W8. No live inference now. |
 | I5 | Cloud account/provider and bounded exact purchase approval pending W9. W0 does not create paid resources. |
