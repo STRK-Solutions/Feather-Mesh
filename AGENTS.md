@@ -26,6 +26,10 @@ The [demo runbook](docs/tui_agent_stage1_demo.md) gives manual/fake/live command
 
 The [router model screening runbook](docs/tui_agent_model_screening.md) documents the synthetic development screen, schema export, and offline Python checks. Keep its development tasks separate from held-out acceptance; live runs require explicit opt-in.
 
+## Web Demo Routing
+
+For web-accessible demo work, read the [design](docs/ubuntu_web_dev_demo_design.md) and [development workplan](docs/ubuntu_web_dev_demo_workplan.md). The workplan owns task status, Mac/Linux/Ubuntu execution boundaries, dependencies, and deployment/evidence gates. Web/IaC components remain planned until implemented; local tests do not establish Ubuntu or cloud acceptance.
+
 ## Validation
 
 Before finishing Rust changes, run the narrowest useful checks, then broaden as risk increases:

@@ -48,5 +48,6 @@ The product definition document, outlining an in-depth overview of the Feather M
 ## Where To Go Next
 
 - If you want the Rust implementation, start in [`feather-mesh/README.md`](/feather-mesh/README.md).
-- For the proposed browser demo host with powerful hosted assistance, admin management, shared datasets, and usage capture for SLM development, see [Ubuntu web demo environment](docs/ubuntu_web_dev_demo_design.md).
+- For the proposed browser demo host with hosted assistance, admin management, shared datasets, usage capture, Terraform/Ansible provisioning, and Ubuntu/cloud recovery, see [Ubuntu web demo environment](docs/ubuntu_web_dev_demo_design.md).
+- To implement that demo, follow the [agent-ready development workplan](docs/ubuntu_web_dev_demo_workplan.md), with checkable tasks, Mac versus Ubuntu responsibilities, and separate deployment/acceptance gates.
 - If you want architecture context, browse `diagrams/`, `proposal.md`, `Feather_Mesh_PDD_Revised.pdf`, and [`feather-mesh/README.md`](/feather-mesh/README.md).
