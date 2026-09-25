@@ -80,8 +80,7 @@ The [workspace README](../feather-mesh/README.md), [peer-access contract](data_a
 - The Cargo binary is `mesh_cli`; the installed user command should be `feam`.
 - Peer operations require `--project ROOT`. Authoritative data publication is in each provider's `serving/manifest.json`; legacy SQLite is separate.
 - The demo script already creates a provider and a `client with spaces`, including Parquet and GeoTIFF fixtures and an intentionally unavailable peer.
-- STAC is a loopback, bearer-token-protected metadata service returning local file URIs. It is not an internet dataset-download service.
-- The [Stage-1 assistant contract](tui_agent_stage1_contract.md) already defines a hosted router, bounded tools, local mutation reviews, outbound filtering, and per-session usage. A shared inference broker, durable multi-user telemetry, and SLM export pipeline are new components; the existing recovery journal is not a training corpus.
+- STAC is an unauthenticated, exact-IPv4-loopback metadata service returning local file URIs. It is not an internet dataset-download service and must remain inside the isolated workspace container.
 - Existing [footprint measurements](tui_agent_stage1_acceptance.md#footprint-and-conditions) are small, sampled, single-user macOS measurements. They do not prove Ubuntu peak memory or 10-user capacity.
 
 ## IaC evaluation and ownership
@@ -322,7 +321,7 @@ Generate the practice demo at its final container path because the script writes
 
 The private demo volume is disposable; reset stops the container, closes its sessions, creates a clean replacement generation, initializes it, reattaches currently granted datasets, verifies health, and switches the workspace record. Shared dataset releases remain intact. A failed initialization leaves the old stopped volume recoverable, but recovery must still enforce current grants. The controller operates on its own recorded volume IDs, never on a browser-supplied path or a user-controlled symlink. Garbage-collect old generations under a bounded retention rule.
 
-If users try STAC, run its service and Python client in the same container, with a private token file, so loopback and local file URIs have the correct meaning. Do not publish STAC directly to the internet as a substitute for the terminal. A future web dataset viewer or download API is a separate design.
+If users try STAC, run its service and Python client in the same isolated container so loopback and local file URIs have the correct meaning. It has no application token and rejects non-`127.0.0.1` binds. Do not publish STAC directly to the internet as a substitute for the terminal. A future web dataset viewer or download API is a separate design.
 
 Provision the `phase1-demo` profile outside the writable project, using the broker connection described below. The image includes the hosted feature and the launch profile; users do not need to supply an API key or manually turn assistance on. Existing TUI confirmations and core access rules still govern every operation.
 

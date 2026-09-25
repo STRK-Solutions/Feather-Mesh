@@ -164,14 +164,23 @@ projection/raster properties where known, and `feam:` ownership/version/
 provenance properties. Projection remains native CRS when already WGS84; other
 CRS transforms are rejected until a deterministic transformer is introduced.
 
-`feam stac serve --project ROOT --token-file PATH` binds to loopback and checks
-a per-instance bearer token on every metadata endpoint. It serves landing,
-conformance, collections, collection/items, Item Search and deterministic,
+`feam stac serve --project ROOT [--addr 127.0.0.1:PORT]` is an unauthenticated,
+metadata-only service. The core rejects every bind address except the exact IPv4
+loopback address `127.0.0.1`; the port remains configurable and defaults to 8080.
+The intended deployment trusts processes able to connect on the same HPC node;
+there is no Feather Mesh token, login, or per-user STAC authorization. Filesystem
+permissions still govern opening the returned raster assets. The service exposes
+landing, conformance, collections, collection/items, Item Search and deterministic,
 revision-bound pagination. A changed peer/revision causes an old cursor to fail
 with restart-required rather than leak a withdrawn record. Responses contain
 encoded local `file:` URIs preserving client routes plus resolvable identity;
 raster bytes are never proxied. The client and service must share the filesystem
 view.
+
+This is an intentional CLI break from the earlier authenticated prototype.
+`--token-file` is removed and rejected as an unknown argument; clients must stop
+sending bearer credentials. Deployments needing access from another node require
+a separately approved transport design and must not weaken the loopback invariant.
 
 ## Validation environment
 

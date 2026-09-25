@@ -41,7 +41,7 @@ The settled [peer-data-access contract](docs/data_access_contract.md) governs da
 | Publication | Authoritative provider manifest, metadata and format validation, immutable version inventory, withdrawal | Forms and agent actions call the same services |
 | Discovery and access | Registered product listing, refresh/cache status, current-route resolution, optional integrity verification, explicit staging | Direct reads remain the default access workflow; copying is an explicit choice |
 | Python | Supported subprocess SDK; native Polars lazy scans and raster resolution | Generate examples using the supported SDK; no second resolver in the harness |
-| STAC | Derived raster metadata and authenticated loopback HTTP service | Reuse existing raster identity and metadata; do not make STAC a catalog authority |
+| STAC | Derived raster metadata and unauthenticated IPv4-loopback-only HTTP service | Reuse existing raster identity and metadata; do not make STAC a catalog authority |
 | Agent/TUI | No implementation in the workspace | UI, model transport, tool execution control, and evaluation are new work |
 | HPC evidence | Local validation is recorded; target-filesystem, separate-identity, and multi-node acceptance remain pending | A local-model demonstration alone cannot establish HPC readiness |
 

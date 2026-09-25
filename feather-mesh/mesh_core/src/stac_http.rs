@@ -1,4 +1,4 @@
-//! Small authenticated, read-only STAC HTTP adapter.
+//! Small unauthenticated, loopback-only STAC HTTP adapter.
 //!
 //! The adapter intentionally has no publication logic. Every request rebuilds
 //! its view through the shared resolver/STAC projection, so a removed peer or
@@ -6,43 +6,20 @@
 
 use std::collections::BTreeMap;
 use std::io::{Read, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream};
-use std::path::Path;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream};
 
 use serde_json::{Value, json};
 
 use crate::peer::{PeerError, PeerResult, Project};
 use crate::stac::{CONFORMANCE_CLASSES, STAC_VERSION, StacItem, collections, items, search};
 
-pub fn read_bearer_token(path: impl AsRef<Path>) -> PeerResult<String> {
-    let path = path.as_ref();
-    let metadata = std::fs::metadata(path)?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        if metadata.mode() & 0o077 != 0 {
-            return Err(PeerError::Policy(format!(
-                "token file '{}' must not be group/world readable",
-                path.display()
-            )));
-        }
-    }
-    let token = std::fs::read_to_string(path)?.trim().to_string();
-    if token.is_empty() {
-        return Err(PeerError::Validation {
-            field: "token_file".into(),
-            message: "must contain a bearer token".into(),
-        });
-    }
-    Ok(token)
-}
-
-pub fn serve(project: Project, token: String, bind: SocketAddr) -> PeerResult<()> {
+pub fn serve(project: Project, bind: SocketAddr) -> PeerResult<()> {
+    validate_bind_address(bind)?;
     let listener = TcpListener::bind(bind)?;
     for connection in listener.incoming() {
         match connection {
             Ok(stream) => {
-                let _ = respond(project.clone(), &token, stream);
+                let _ = respond(project.clone(), stream);
             }
             Err(error) => return Err(PeerError::Io(error)),
         }
@@ -50,15 +27,17 @@ pub fn serve(project: Project, token: String, bind: SocketAddr) -> PeerResult<()
     Ok(())
 }
 
-fn respond(project: Project, token: &str, mut stream: TcpStream) -> PeerResult<()> {
-    let request = read_request(&mut stream)?;
-    if !authorized(&request.headers, token) {
-        return write_response(
-            &mut stream,
-            401,
-            json!({"code":"Unauthorized","description":"Bearer token required"}),
-        );
+fn validate_bind_address(bind: SocketAddr) -> PeerResult<()> {
+    if bind.ip() != IpAddr::V4(Ipv4Addr::LOCALHOST) {
+        return Err(PeerError::Policy(format!(
+            "STAC must bind to 127.0.0.1; rejected '{bind}'"
+        )));
     }
+    Ok(())
+}
+
+fn respond(project: Project, mut stream: TcpStream) -> PeerResult<()> {
+    let request = read_request(&mut stream)?;
     let outcome = route(&project, &request);
     match outcome {
         Ok((status, value)) => write_response(&mut stream, status, value),
@@ -149,12 +128,6 @@ fn read_request(stream: &mut TcpStream) -> PeerResult<HttpRequest> {
         headers,
         body: bytes[header_end..header_end + length].to_vec(),
     })
-}
-
-fn authorized(headers: &BTreeMap<String, String>, token: &str) -> bool {
-    headers
-        .get("authorization")
-        .is_some_and(|value| value.strip_prefix("Bearer ") == Some(token))
 }
 
 #[derive(Debug)]
@@ -486,8 +459,8 @@ fn internal(error: PeerError) -> HttpError {
 }
 fn status_name(status: u16) -> &'static str {
     match status {
+        200 => "OK",
         400 => "BadRequest",
-        401 => "Unauthorized",
         404 => "NotFound",
         409 => "Conflict",
         _ => "InternalServerError",
@@ -508,6 +481,23 @@ fn write_response(stream: &mut TcpStream, status: u16, value: Value) -> PeerResu
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stac_binding_is_restricted_to_ipv4_localhost() {
+        assert!(validate_bind_address("127.0.0.1:8080".parse().unwrap()).is_ok());
+        for rejected in [
+            "127.0.0.2:8080",
+            "[::1]:8080",
+            "0.0.0.0:8080",
+            "10.0.0.4:8080",
+        ] {
+            assert!(matches!(
+                validate_bind_address(rejected.parse().unwrap()),
+                Err(PeerError::Policy(_))
+            ));
+        }
+    }
+
     #[test]
     fn cursor_is_opaque_and_round_trips() {
         let cursor = Cursor {

@@ -28,13 +28,12 @@ still fail at execution time.
 
 ## Notebook raster discovery and windowed read
 
-Start metadata discovery in the same filesystem context as the notebook. The
-token is a per-instance secret stored outside shared project files.
+Start metadata discovery in the same filesystem context and on the same node as
+the notebook. The service has no application authentication and accepts only the
+exact IPv4 loopback address `127.0.0.1`.
 
 ```bash
-umask 077
-printf '%s\n' "$FEAM_STAC_TOKEN" > /tmp/feam-stac-token
-feam --project /work/client-project stac serve --token-file /tmp/feam-stac-token
+feam --project /work/client-project stac serve --addr 127.0.0.1:8080
 ```
 
 ```python
@@ -43,10 +42,7 @@ import rasterio
 from rasterio.windows import Window
 from pystac_client import Client
 
-client = Client.open(
-    "http://127.0.0.1:8080",
-    headers={"Authorization": f"Bearer {token}"},
-)
+client = Client.open("http://127.0.0.1:8080")
 item = next(client.search(
     collections=["climate--temperature"],
     bbox=[-76, 45, -75, 46],

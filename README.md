@@ -8,9 +8,17 @@ This STRK-Solutions repository contains the capstone work for Feather Mesh, an H
 
 This root README is intentionally high level. For setup, usage, and implementation details, use the README inside each subproject directory.
 
+New to the project? Start with [`map.md`](map.md). It explains the architecture,
+important terminology, document authority, and useful code entry points. The map
+is a personal orientation guide, not an implementation contract.
+
 For agent-specific repository guidance, use [`AGENTS.md`](/AGENTS.md). Keep that file concise and focused on durable project context, crate boundaries, and validation rules.
 
-For planned peer data access, start with [requirements](data_access.md) and the [implementation workplan](data_access_implementation_workplan.md). They distinguish confirmed requirements from proposed defaults; current implementation behavior remains documented in the Rust workspace README.
+For peer data access, start with the [requirements](data_access.md), the settled
+[contract](docs/data_access_contract.md), and the
+[implementation workplan](data_access_implementation_workplan.md). The workplan's
+execution record distinguishes locally delivered behavior from target-HPC
+acceptance that is still pending.
 
 ## Repository Overview
 
@@ -22,6 +30,9 @@ Key parts of this directory include:
 
 - `mesh_core/` for the shared Rust library and core domain logic
 - `mesh_cli/` for the command-line interface built on top of the core library
+- `mesh_tui/` for the optional interactive terminal application
+- `mesh_agent/` for the optional bounded, provider-neutral assistant harness
+- `python_sdk/` for the supported Python adapter used by notebook and batch jobs
 
 See [`feather-mesh/README.md`](/feather-mesh/README.md) for workspace layout, crate boundary notes, build guidance, and the `cargo test` command.
 
@@ -35,7 +46,14 @@ Holds image assets used by the documentation and project branding, including the
 
 ### `.github/`
 
-Contains GitHub-specific project automation, currently including workflow configuration for repository checks or CI-related tasks.
+Contains CI for Rust, optional feature combinations, Python/Polars/Rasterio/STAC
+integration, terminal workflows, and structural agent-context checks.
+
+### `.codex/skills/`
+
+Contains the repository's task-specific AI-SDLC guidance. These skills route
+Rust, CLI, peer-access, and context-maintenance work to the correct contracts,
+owners, tests, and validation commands.
 
 ### `proposal.md`
 
@@ -48,6 +66,12 @@ The product definition document, outlining an in-depth overview of the Feather M
 ## Where To Go Next
 
 - If you want the Rust implementation, start in [`feather-mesh/README.md`](/feather-mesh/README.md).
+- If this is your first time in the project, follow [`map.md`](map.md).
+- If you are investigating peer manifests, direct reads, staging, Python, or
+  STAC, read the [peer data-access contract](docs/data_access_contract.md).
+- If you are investigating the TUI or hosted assistant, read the
+  [Stage-1 contract](docs/tui_agent_stage1_contract.md) and
+  [acceptance record](docs/tui_agent_stage1_acceptance.md).
 - For the proposed browser demo host with hosted assistance, admin management, shared datasets, usage capture, Terraform/Ansible provisioning, and Ubuntu/cloud recovery, see [Ubuntu web demo environment](docs/ubuntu_web_dev_demo_design.md).
 - To implement that demo, follow the [agent-ready development workplan](docs/ubuntu_web_dev_demo_workplan.md), with checkable tasks, Mac versus Ubuntu responsibilities, and separate deployment/acceptance gates.
 - If you want architecture context, browse `diagrams/`, `proposal.md`, `Feather_Mesh_PDD_Revised.pdf`, and [`feather-mesh/README.md`](/feather-mesh/README.md).
