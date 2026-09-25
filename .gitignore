@@ -1,0 +1,2 @@
+# Local deployment inputs contain participant identities and must not be committed.
+/.local/demo-deployment/

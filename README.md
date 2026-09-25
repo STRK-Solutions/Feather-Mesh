@@ -72,5 +72,6 @@ The product definition document, outlining an in-depth overview of the Feather M
 - If you are investigating the TUI or hosted assistant, read the
   [Stage-1 contract](docs/tui_agent_stage1_contract.md) and
   [acceptance record](docs/tui_agent_stage1_acceptance.md).
-- For the proposed low-cost, browser-accessible development and demo host, see [Ubuntu web development and demo environment](docs/ubuntu_web_dev_demo_design.md).
+- For the proposed browser demo host with hosted assistance, admin management, shared datasets, usage capture, Terraform/Ansible provisioning, and Ubuntu/cloud recovery, see [Ubuntu web demo environment](docs/ubuntu_web_dev_demo_design.md).
+- To implement that demo, follow the [agent-ready development workplan](docs/ubuntu_web_dev_demo_workplan.md), with checkable tasks, Mac versus Ubuntu responsibilities, and separate deployment/acceptance gates.
 - If you want architecture context, browse `diagrams/`, `proposal.md`, `Feather_Mesh_PDD_Revised.pdf`, and [`feather-mesh/README.md`](/feather-mesh/README.md).
