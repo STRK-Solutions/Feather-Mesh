@@ -10,6 +10,7 @@ Phase 2 owner; the private roster/operator configuration retains the support con
 The [release receipt](u07-updated-release.json), [live smoke](u06-live-functional-smoke.json)
 and [maintenance/archive receipt](u07-live-maintenance.json) give measured evidence.
 This supersedes the stopped [session handoff](ubuntu-session-handoff-20260925.md).
+Implementation and hosted CI are tracked in [PR #64](https://github.com/STRK-Solutions/Feather-Mesh/pull/64).
 
 ## What was verified
 

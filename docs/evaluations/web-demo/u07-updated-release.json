@@ -151,5 +151,12 @@
     },
     "fresh_admin_PIN_login": "unavailable; earlier real admin login/grant/reset/revocation evidence retained separately"
   },
-  "maintenance_evidence": "u07-live-maintenance.json"
+  "maintenance_evidence": "u07-live-maintenance.json",
+  "ci": {
+    "pull_request": "https://github.com/STRK-Solutions/Feather-Mesh/pull/64",
+    "initial_failure": "All Terraform modules lacked the Linux amd64 h1 provider checksum. Read-only init installed the signed package but subsequent validation rejected its cache.",
+    "correction": "terraform providers lock -platform=linux_amd64 -platform=darwin_arm64 for the existing pinned versions; only one verified h1 hash added per module.",
+    "local_validation": "All three modules passed read-only init, fmt, validate and credential-free mock tests.",
+    "remote_results": "See PR checks; CodeRabbit skipped automated review because the change exceeds its file limit."
+  }
 }
