@@ -312,6 +312,7 @@ impl Review {
 enum CoreUpdate {
     Catalog(CatalogPage),
     Detail(String),
+    Preview(mesh_core::services::table_preview::TablePreviewResult),
     Review(Review),
     Draft(serde_json::Value),
     Operation(String),
@@ -446,6 +447,19 @@ impl App {
                 self.detail = Some(text);
                 self.scroll = 0;
                 self.status = "Local view ready; PgUp/PgDn scroll, :export NAME saves text.".into();
+            }
+            Ok(CoreUpdate::Preview(preview)) => {
+                // Format a simple ASCII table into the detail panel
+                let mut lines: Vec<String> = Vec::new();
+                let header = if preview.columns.is_empty() { "(no columns)".to_string() } else { preview.columns.join(" | ") };
+                lines.push(header);
+                lines.push("-".repeat(80));
+                for row in preview.rows.iter() {
+                    lines.push(row.join(" | "));
+                }
+                self.detail = Some(lines.join("\n"));
+                self.scroll = 0;
+                self.status = format!("Table preview: {} rows", preview.rows.len());
             }
             Ok(CoreUpdate::Review(review)) => {
                 self.review = Some(review);
@@ -608,6 +622,40 @@ impl App {
             }
             KeyCode::Char('e') => {
                 self.example_selected();
+                false
+            }
+            KeyCode::Char('p') => {
+                // quick preview for selected entry if possible
+                if let Some(entry) = self.selected_entry().cloned() {
+                    let root = self.options.project_root.clone();
+                    let request = {
+                        // resolve product to get asset paths
+                        let project = match Project::open(&root) {
+                            Ok(p) => p,
+                            Err(e) => { self.status = format!("Project open failed: {}", e); return false; }
+                        };
+                    
+                    match resolve(&project, &entry.reference, &entry.version, None, false) {
+                        Ok(product) => {
+                            let assets = product
+                                .assets
+                                .into_iter()
+                                .map(|a| project.serving_root().unwrap().join(&a.project_access_path))
+                                .collect();
+                            mesh_core::services::table_preview::TablePreviewRequest { assets, columns: Vec::new(), limit: 25 }
+                        }
+                        Err(e) => { self.status = format!("Resolve failed: {}", e); return false; }
+                    }
+                    };
+                    let _ = self.job("Running table preview…", false, move || {
+                        match mesh_core::services::table_preview::run_preview(request) {
+                            Ok(result) => Ok(CoreUpdate::Preview(result)),
+                            Err(e) => Err(e),
+                        }
+                    });
+                } else {
+                    self.status = "No entry selected to preview".into();
+                }
                 false
             }
             #[cfg(feature = "agent-hosted")]
@@ -1004,7 +1052,7 @@ impl App {
                     };
                     let _ = self.job("Running table preview…", false, move || {
                         match mesh_core::services::table_preview::run_preview(request) {
-                            Ok(result) => Ok(CoreUpdate::Detail(serde_json::to_string_pretty(&result).unwrap())),
+                            Ok(result) => Ok(CoreUpdate::Preview(result)),
                             Err(e) => Err(e),
                         }
                     });
