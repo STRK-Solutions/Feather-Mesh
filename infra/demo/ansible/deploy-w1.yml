@@ -1,0 +1,9 @@
+---
+- name: Install the approved W1 private terminal artifacts
+  hosts: demo
+  become: true
+  gather_facts: false
+  vars:
+    feam_root: /home/feam-service-data
+  roles:
+    - services

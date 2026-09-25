@@ -1,0 +1,6 @@
+{
+  "retained_file_with_missing_registration": true,
+  "enable_linger_repairs_registration": true,
+  "runner_ready_without_login": true,
+  "terminal_generation_and_storage_preserved": true
+}

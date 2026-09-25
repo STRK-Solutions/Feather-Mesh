@@ -1,0 +1,20 @@
+[Unit]
+Description=FEAM dedicated rootless Docker
+After=network-online.target
+[Service]
+Type=notify
+NotifyAccess=all
+Environment=PATH=/usr/bin:/bin:/usr/sbin:/sbin
+Environment=DOCKERD_ROOTLESS_ROOTLESSKIT_NET=slirp4netns
+ExecStart=/usr/bin/dockerd-rootless.sh --host=unix://%t/feam-docker.sock --data-root={{ feam_root }}/runtime/docker --exec-root=%t/feam-docker --storage-driver=overlay2 --log-driver=local --log-opt=max-size=1m --log-opt=max-file=2
+ExecStartPost=/usr/bin/setfacl -m u:2103:rw %t/feam-docker.sock
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=120
+TimeoutStopSec=60
+Delegate=yes
+KillMode=mixed
+LimitNOFILE=65536
+TasksMax=512
+[Install]
+WantedBy=default.target

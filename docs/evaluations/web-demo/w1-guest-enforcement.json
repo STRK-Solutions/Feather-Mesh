@@ -1,0 +1,17 @@
+{
+  "uid": 1000,
+  "read_only_image": true,
+  "capabilities_dropped": true,
+  "seccomp": true,
+  "no_new_privileges": true,
+  "network_none": true,
+  "memory_oom_kills": 1,
+  "pids_denied": 2,
+  "cpu_throttled_periods": 104,
+  "swap_bytes": 0,
+  "socket_tmpfs_byte_limit": true,
+  "socket_tmpfs_inode_limit": true,
+  "environment": "LINUX disposable Ubuntu QEMU guest",
+  "image_id": "sha256:0c4be2a296e46e09447327ff931953b0347be1f9bf54d4c69f63809787f68792",
+  "live_inference": false
+}

@@ -1,0 +1,71 @@
+---
+- name: Check account and subordinate ID collisions before mutation
+  ansible.builtin.script: '{{ playbook_dir }}/../scripts/w1_accounts.py'
+  args:
+    executable: python3
+  changed_when: false
+
+- name: Create root-owned service scope
+  ansible.builtin.file:
+    path: '{{ feam_root }}'
+    state: directory
+    owner: root
+    group: root
+    mode: '0711'
+
+- name: Mark the checked service scope
+  ansible.builtin.copy:
+    dest: '{{ feam_root }}/.feam-w1-owner'
+    content: "feam-w1-storage-v1\n"
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Create dedicated service groups
+  ansible.builtin.group:
+    name: 'feam-{{ item.name }}'
+    gid: '{{ item.uid }}'
+    system: true
+  loop:
+    - {name: runner, uid: 2101}
+    - {name: gateway, uid: 2102}
+    - {name: controller, uid: 2103}
+    - {name: broker, uid: 2104}
+    - {name: collector, uid: 2105}
+    - {name: pipeline, uid: 2106}
+    - {name: reconciler, uid: 2107}
+
+- name: Create dedicated locked service identities without automatic sub-ID ranges
+  ansible.builtin.user:
+    name: 'feam-{{ item.name }}'
+    uid: '{{ item.uid }}'
+    group: 'feam-{{ item.name }}'
+    system: true
+    shell: /usr/sbin/nologin
+    home: '{{ feam_root }}/{{ item.name }}-home'
+    create_home: true
+    password_lock: true
+  loop:
+    - {name: runner, uid: 2101}
+    - {name: gateway, uid: 2102}
+    - {name: controller, uid: 2103}
+    - {name: broker, uid: 2104}
+    - {name: collector, uid: 2105}
+    - {name: pipeline, uid: 2106}
+    - {name: reconciler, uid: 2107}
+
+- name: Apply the collision-checked runner subordinate range
+  ansible.builtin.lineinfile:
+    path: '/etc/{{ item }}'
+    regexp: '^feam-runner:'
+    line: 'feam-runner:200000:65536'
+  loop: [subuid, subgid]
+
+- name: Keep each service home private
+  ansible.builtin.file:
+    path: '{{ feam_root }}/{{ item }}-home'
+    state: directory
+    owner: 'feam-{{ item }}'
+    group: 'feam-{{ item }}'
+    mode: '0700'
+  loop: [runner, gateway, controller, broker, collector, pipeline, reconciler]

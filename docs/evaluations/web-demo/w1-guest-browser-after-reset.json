@@ -1,0 +1,9 @@
+{
+  "browser": "chromium",
+  "transport": "private SSH to Unix socket",
+  "live_tui": true,
+  "manual_resolve": true,
+  "query_args_rejected": true,
+  "anonymous_denied": true,
+  "live_inference": false
+}

@@ -1,0 +1,137 @@
+---
+- name: Create dedicated runner user unit directory
+  ansible.builtin.file:
+    path: '{{ feam_root }}/runner-home/.config/systemd/user'
+    state: directory
+    owner: feam-runner
+    group: feam-runner
+    mode: '0700'
+
+- name: Install rootless daemon as a user service
+  ansible.builtin.template:
+    src: docker.service.j2
+    dest: '{{ feam_root }}/runner-home/.config/systemd/user/docker.service'
+    owner: feam-runner
+    group: feam-runner
+    mode: '0600'
+  register: runtime_daemon_unit
+
+- name: Create the runner-only system manager override
+  ansible.builtin.file:
+    path: /etc/systemd/system/user@2101.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Bind runner manager to verified system mounts and recreate socket ACLs
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/user@2101.service.d/feam.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [Unit]
+      Requires=home-feam\x2dservice\x2ddata-runtime.mount
+      Requires=home-feam\x2dservice\x2ddata-slot\x2d01.mount
+      Requires=home-feam\x2dservice\x2ddata-slot\x2d02.mount
+      Requires=run-feam\x2dterminal\x2dw1-slot\x2d01.mount
+      After=home-feam\x2dservice\x2ddata-runtime.mount
+      After=home-feam\x2dservice\x2ddata-slot\x2d01.mount
+      After=home-feam\x2dservice\x2ddata-slot\x2d02.mount
+      After=run-feam\x2dterminal\x2dw1-slot\x2d01.mount
+      BindsTo=home-feam\x2dservice\x2ddata-runtime.mount
+      BindsTo=home-feam\x2dservice\x2ddata-slot\x2d01.mount
+      BindsTo=home-feam\x2dservice\x2ddata-slot\x2d02.mount
+      BindsTo=run-feam\x2dterminal\x2dw1-slot\x2d01.mount
+      [Service]
+      Delegate=cpu memory pids
+      ExecStartPre=+/usr/local/sbin/feam-w1-storage verify --parent-uuid {{ feam_parent_uuid }}
+      ExecStartPre=+/usr/bin/setfacl -m u:2101:x,u:2102:rwx,d:u:2102:rwx /run/feam-terminal-w1/slot-01
+      ExecStartPre=+/usr/bin/setfacl -m u:2103:x /run/user/2101
+  register: runtime_manager_unit
+
+- name: Create aggregate runner slice override
+  ansible.builtin.file:
+    path: /etc/systemd/system/user-2101.slice.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Bound aggregate runner resource use
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/user-2101.slice.d/feam.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [Slice]
+      MemoryMax=1536M
+      MemorySwapMax=0
+      CPUQuota=200%
+      TasksMax=512
+  register: runtime_slice_unit
+
+- name: Load system manager prerequisites
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: runtime_manager_unit.changed or runtime_slice_unit.changed
+
+- name: Inspect runner registration in logind rather than only the linger file
+  ansible.builtin.command:
+    argv: [loginctl, show-user, feam-runner, --property=Linger, --value]
+  register: runtime_linger
+  failed_when: false
+  changed_when: false
+
+- name: Enable or repair lingering for the dedicated runner only
+  ansible.builtin.command:
+    argv: [loginctl, enable-linger, feam-runner]
+  when: runtime_linger.rc != 0 or runtime_linger.stdout != 'yes'
+  changed_when: true
+
+- name: Start the mount-bound user manager without a login
+  ansible.builtin.systemd_service:
+    name: user@2101.service
+    state: started
+
+- name: Verify live lingering registration
+  ansible.builtin.command:
+    argv: [loginctl, show-user, feam-runner, --property=Linger, --value]
+  register: runtime_linger_verified
+  changed_when: false
+  failed_when: runtime_linger_verified.rc != 0 or runtime_linger_verified.stdout != 'yes'
+
+- name: Enable the dedicated user daemon
+  become: true
+  become_user: feam-runner
+  environment:
+    XDG_RUNTIME_DIR: /run/user/2101
+    DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/2101/bus
+  ansible.builtin.systemd_service:
+    scope: user
+    name: docker.service
+    daemon_reload: '{{ runtime_daemon_unit.changed }}'
+    enabled: true
+    state: started
+
+- name: Verify rootless systemd cgroup support
+  become: true
+  become_user: feam-runner
+  environment:
+    XDG_RUNTIME_DIR: /run/user/2101
+    DOCKER_HOST: unix:///run/user/2101/feam-docker.sock
+  ansible.builtin.command:
+    argv: [docker, info, --format, '{{ "{{json .}}" }}']
+  register: runtime_docker_info
+  changed_when: false
+
+- name: Reject ignored limits or a wrong runtime data root
+  ansible.builtin.assert:
+    that:
+      - (runtime_docker_info.stdout | from_json).CgroupDriver == 'systemd'
+      - (runtime_docker_info.stdout | from_json).CgroupVersion == '2'
+      - (runtime_docker_info.stdout | from_json).DockerRootDir == feam_root + '/runtime/docker'
+      - "'name=rootless' in (runtime_docker_info.stdout | from_json).SecurityOptions"
+      - "'name=seccomp,profile=builtin' in (runtime_docker_info.stdout | from_json).SecurityOptions"

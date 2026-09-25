@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "environment": "actual Ubuntu 24.04 x86-64 host",
+  "recorded_at": "2026-09-25T06:25:19.901118+00:00",
+  "privileged_execution": "owner-run reviewed bootstrap; read-only verification and browser probe from Mac",
+  "bundle_sha256": "7579ef01f2ae5a1134e5404ea3c2e39a9546f4589bb23c78dee9e6c17fa57fcb",
+  "image_id": "sha256:0c4be2a296e46e09447327ff931953b0347be1f9bf54d4c69f63809787f68792",
+  "proxy_sha256": "e13b6ea766e3ab028ce73ba8f351b501c2f04e38349b5ec72c141a40a4ad4838",
+  "readers_before_and_after_reset": {
+    "sdk_installed": true,
+    "native_lazyframe": true,
+    "known_raster_window": true,
+    "final_path_symlink": true
+  },
+  "full_walkthroughs": {
+    "manual": {
+      "passed": true,
+      "checks": 8
+    },
+    "fake": {
+      "passed": true,
+      "checks": 9
+    }
+  },
+  "browser_manual_and_fake": true,
+  "resources": "w1-ubuntu-enforcement.json",
+  "socket_acl": {
+    "gateway_terminal_allowed": true,
+    "broker_collector_terminal_denied": true,
+    "controller_runtime_allowed": true,
+    "gateway_runtime_denied": true,
+    "other_sandbox_uid_denied": true
+  },
+  "private_volume": {
+    "stop_start_preserves_bytes": true,
+    "reset_uses_fixed_spare": true,
+    "old_bytes_and_uuid_retained": true,
+    "second_reset_refused": true,
+    "active_generation": 2
+  },
+  "repeat_converge": {
+    "ok": 34,
+    "changed": 0,
+    "unreachable": 0,
+    "failed": 0
+  },
+  "runner": {
+    "linger": true,
+    "login_sessions": 0,
+    "starts_without_interactive_login": true
+  },
+  "preserved_host": {
+    "existing_docker_pid_and_start_times": true,
+    "namespace_restriction": true,
+    "rootlesskit_apparmor_policy": true
+  },
+  "not_exercised": [
+    "shared-host reboot",
+    "public identity or edge",
+    "live inference",
+    "ten-user capacity",
+    "cloud deployment",
+    "target HPC"
+  ],
+  "private_evidence_sha256": {
+    "apparmor-after": "c6e5f5ce6ec762591e8729243f6562b0adaa58cd75363aba2c139dd415fd368f",
+    "complete": "fe22ca99e3869d0b3d98188ca4f615602fa1e833cc756d2bb95e43136e90adbf",
+    "docker-after": "fe70c4d1674466bbc99e36ffdcda032049bdb1eadfe1737ffe3d22fe1156dc52",
+    "enforcement.lxuX8wvL.log": "20000c5d41b4e99b98533006d258a78844a7635b0aeea061245f1785ff8a94d0",
+    "enforcement.ok": "fe22ca99e3869d0b3d98188ca4f615602fa1e833cc756d2bb95e43136e90adbf",
+    "namespace-after": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "persistence.jrleqqWr.log": "7a415bd8218e3251cf893f26647c704796a7058cc89ce1e961b7419c83f9d8aa",
+    "persistence.ok": "fe22ca99e3869d0b3d98188ca4f615602fa1e833cc756d2bb95e43136e90adbf",
+    "post-reset-readers.log": "958e281194657d9a15709ee6648540f8e53e8a51121276b307e7aa29e4a12c06",
+    "preservation.log": "725ff0951b1dd09e6ab518425336ec17d9cd9577052e6a5c663d4acdcbc8dd7c",
+    "readers.hEjiSyU6.log": "958e281194657d9a15709ee6648540f8e53e8a51121276b307e7aa29e4a12c06",
+    "readers.ok": "fe22ca99e3869d0b3d98188ca4f615602fa1e833cc756d2bb95e43136e90adbf",
+    "repeat-converge.log": "1623b0962af150231c27c3754de17240e887178f518683305eeb34fee1f9ace8",
+    "reset.ok": "fe22ca99e3869d0b3d98188ca4f615602fa1e833cc756d2bb95e43136e90adbf",
+    "reset.wRjFeakw.log": "f8c7d4289c077239199961c6f3282d9cb462fb6b798180ac498487d15055ed29",
+    "runner-lingering.log": "e7d75b8d7e8a57e57e16bb20bf4abbad2c956e252c46670baf1c2fd18607d8c2",
+    "sockets.Z8yCN0QG.log": "746e216fb584980f34e2454abb8c97243103ebcac4cfb2f84e7df0318ad1043f",
+    "sockets.ok": "fe22ca99e3869d0b3d98188ca4f615602fa1e833cc756d2bb95e43136e90adbf",
+    "w1-fake.json": "67c8bce64e4340cbe751426fcefd490b8060501d4e81d17459f3b90ee2d3412b",
+    "w1-manual.json": "a0e530c00500c109f7363dad1061b292d308a36885db4dde05c0b6ed1d799834",
+    "walkthrough.QveAmzR5.log": "7c3bc832788e6f82a4a308d6f5f8207af293ab9f6f53634948a055a3ea5a7126",
+    "walkthrough.ok": "fe22ca99e3869d0b3d98188ca4f615602fa1e833cc756d2bb95e43136e90adbf"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "legacy": {
+    "bytes": 268435456,
+    "allocated_before_repair": 251666432,
+    "fully_reserved_after": true,
+    "inode_uuid_data_preserved": true
+  },
+  "eager": {
+    "bytes": 268435456,
+    "allocated_before_repair": 268439552,
+    "fully_reserved_after": true,
+    "inode_uuid_data_preserved": true
+  }
+}

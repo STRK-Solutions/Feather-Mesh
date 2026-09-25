@@ -32,7 +32,7 @@ For web-accessible demo work, read the [design](docs/ubuntu_web_dev_demo_design.
 
 The demo starts on demand on Ubuntu or a disposable cloud host; automatic cloud recovery is out of scope. Research traces, reviewed exports, and project spending survive teardown. Prefer eastern North America for the Ottawa cohort; Canadian hosting is not mandatory.
 
-The [web contract](docs/ubuntu_web_dev_demo_contract.md) defines process/IPC/state boundaries. [Web validation](web_demo/README.md) and [operator checks](infra/demo/README.md) document runnable schema checks and read-only preflight; use `python infra/demo/scripts/check.py` from the repository root after installing its locked environment. Services and provisioning remain planned; consult the [acceptance index](docs/ubuntu_web_dev_demo_acceptance.md) for measured environment evidence.
+The [web contract](docs/ubuntu_web_dev_demo_contract.md) defines process/IPC/state boundaries. [Web validation](web_demo/README.md) and [operator checks](infra/demo/README.md) document runnable schema checks and read-only preflight; use `python infra/demo/scripts/check.py` from the repository root after installing its locked environment. The [W1 private terminal](infra/demo/W1.md) adds scoped Ansible roles, a terminal image and `web_demo/cmd/private-terminal`; run `go test -race ./...` and `go vet ./...` from `web_demo/` with its pinned Go version. Participant services and Terraform remain planned; consult the [acceptance index](docs/ubuntu_web_dev_demo_acceptance.md) for measured environment evidence.
 
 ## Validation
 
