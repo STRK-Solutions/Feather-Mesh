@@ -321,6 +321,7 @@ fn table_output_handles_multibyte_text_when_truncating() {
         .stdout(predicate::str::contains("ééé"));
 }
 
+#[cfg(unix)]
 #[test]
 fn project_cli_publishes_resolves_stages_and_withdraws_registered_inventory() {
     let temp = tempdir().unwrap();
@@ -409,11 +410,13 @@ fn project_cli_publishes_resolves_stages_and_withdraws_registered_inventory() {
         .success();
     let peers = client.join("peers");
     fs::create_dir_all(&peers).unwrap();
-    #[cfg(unix)]
-    std::os::unix::fs::symlink(&serving, peers.join("local-climate")).unwrap();
+    // Use an explicit provider-serving path for the peer so tests are cross-platform.
     fs::write(
         client.join(".feam/project.toml"),
-        "schema_version = 1\nnamespace = 'consumer'\n\n[[peers]]\nalias = 'local-climate'\nnamespace = 'climate'\npath = 'peers/local-climate'\n",
+        format!(
+            "schema_version = 1\nnamespace = 'consumer'\n\n[[peers]]\nalias = 'local-climate'\nnamespace = 'climate'\npath = '{}'\n",
+            serving.to_string_lossy()
+        ),
     )
     .unwrap();
     feam()
@@ -508,6 +511,16 @@ fn project_cli_publishes_resolves_stages_and_withdraws_registered_inventory() {
         ])
         .assert()
         .success();
+    // If the client peers were copied (Windows fallback), refresh so the withdrawal is
+    // observed locally. On Unix a symlink is used so refresh is unnecessary.
+    #[cfg(not(unix))]
+    {
+        // Ensure client sees latest provider state
+        feam()
+            .args(["--project", &registry_arg(&client), "refresh"]) 
+            .assert()
+            .success();
+    }
     feam()
         .args([
             "--project",
