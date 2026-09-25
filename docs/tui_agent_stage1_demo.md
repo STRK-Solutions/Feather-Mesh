@@ -34,9 +34,11 @@ cargo run -p mesh_cli --features tui -- tui \
   --project '/tmp/feam-stage1-demo/client with spaces' --agent off
 ```
 
-Run it from any directory. `/` searches, Enter opens a pinned record, `e`
-renders (but does not execute) direct CLI/SDK examples, `r` refreshes peer
-status, and `:` opens commands. The manual commands are:
+Run it from any directory. `/` searches, `r` refreshes peer status, and `:`
+opens commands. In Catalog, Up/Down selects a version, Enter opens it, `e`
+renders (but does not execute) direct CLI/SDK examples, and `[`/`]` changes
+pages. Those Catalog keys are inactive in every other menu. The manual commands
+are:
 
 ```text
 :resolve PRODUCT_REF VERSION
@@ -86,8 +88,12 @@ cargo run -p mesh_cli --features agent-hosted -- tui \
 
 The status bar identifies the configured model/context policy without exposing
 the key. Press `a` to compose an assistant request and `s` to stop generation.
-The background worker keeps manual navigation available. It sends only the
-profile-permitted user text and bounded, path-free tool summaries. A mutation
+Submitting opens the Assistant menu. Its bounded transcript remains available
+when navigating away and back, scrolls independently, marks background
+completion as unread, resets on project/profile changes, and is never persisted
+automatically. The background worker keeps manual navigation available. It
+sends only the profile-permitted user text and bounded, path-free tool
+summaries. A mutation
 proposal is a local review, never an automatic write or a provider approval.
 
 Record the selected model/provider, date, configured cap, actual usage/cost,
@@ -103,9 +109,12 @@ evaluation or the manual/hosted TUI walkthrough.
 ## Complete local controls and automation
 
 Commands accept shell-style quotes as text parsing only; no shell is executed.
-`Tab` cycles Catalog/Peers/Operations/Help/Teams/Cache/Lineage; `[`/`]` page,
-PgUp/PgDn scroll, `/` searches, and `:filter '{"quality":"production"}'`
-applies the shared filters. `NO_COLOR=1` disables color. Minimum size is 80×24.
+`Tab` cycles Catalog/Peers/Operations/Help/Teams/Cache/Lineage; hosted builds
+append Assistant. Catalog has a Versions/metadata split; Lineage has the same
+selectable versions beside the product version lineage.
+Every other menu is a full-width view with its own PgUp/PgDn position. `/` searches and
+returns to Catalog, while `:filter '{"quality":"production"}'` applies the
+shared filters. `NO_COLOR=1` disables color. Minimum size is 80×24.
 
 ```text
 :project "/work/another project"

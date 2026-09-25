@@ -25,3 +25,5 @@ __pycache__/
 *.pyc
 /python_sdk/build/
 /python_sdk/src/*.egg-info/
+
+/.venv
