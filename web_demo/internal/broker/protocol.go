@@ -143,7 +143,13 @@ func scrub(v any, secret string, metadata bool) any {
 // cannot introduce a tool, model, provider, URL, reasoning, or retry option.
 func Prepare(b []byte, a budget.Allocation, secret string) ([]byte, map[string]bool, error) {
 	var r Request
-	if len(b) > MaxBody || StrictDecode(b, &r) != nil || r.Model != budget.Model || !r.Stream || !r.StreamOptions.IncludeUsage || r.Reasoning.Enabled || r.ToolChoice != "auto" || r.MaxTokens < 1 || r.MaxTokens > a.MaxOutputTokens || r.Temperature.String() != "0" || len(r.Messages) == 0 || len(r.Messages) > 100 || len(r.Tools) == 0 || len(r.Tools) > 11 {
+	if len(b) > MaxBody || StrictDecode(b, &r) != nil || r.Model != budget.Model || !r.Stream || !r.StreamOptions.IncludeUsage || r.Reasoning.Enabled || r.MaxTokens < 1 || r.MaxTokens > a.MaxOutputTokens || r.Temperature.String() != "0" || len(r.Messages) == 0 || len(r.Messages) > 100 || len(r.Tools) > 11 {
+		return nil, nil, budget.ErrInvalid
+	}
+	// Guided lessons share the conversation but cannot request new tools.
+	// Requiring an explicit choice avoids implicitly restoring tool authority.
+	guided := len(r.Tools) == 0
+	if guided && r.ToolChoice != "none" || !guided && r.ToolChoice != "auto" {
 		return nil, nil, budget.ErrInvalid
 	}
 	approved := map[string]WireTool{}
@@ -158,6 +164,14 @@ func Prepare(b []byte, a budget.Allocation, secret string) ([]byte, map[string]b
 		}
 		names[t.Function.Name] = true
 		r.Tools[i] = expected
+	}
+	historyNames := names
+	if guided {
+		r.Tools = []WireTool{}
+		historyNames = map[string]bool{}
+		for name := range approved {
+			historyNames[name] = true
+		}
 	}
 	total := 0
 	for i := range r.Messages {
@@ -183,7 +197,7 @@ func Prepare(b []byte, a budget.Allocation, secret string) ([]byte, map[string]b
 		}
 		for j := range m.ToolCalls {
 			c := &m.ToolCalls[j]
-			if c.ID == "" || len(c.ID) > 128 || c.Type != "function" || !names[c.Function.Name] {
+			if c.ID == "" || len(c.ID) > 128 || c.Type != "function" || !historyNames[c.Function.Name] {
 				return nil, nil, budget.ErrInvalid
 			}
 			var args any

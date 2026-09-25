@@ -302,7 +302,16 @@ impl RouterProvider {
         let request = crate::disclosure::outbound(request, &self.profile, Some(&self.api_key))?;
         let tool_names = RouterToolNames::new(&request.tools)?;
         let tools = tool_names.schemas(&request.tools)?;
-        let messages = tool_names.messages(&request.messages)?;
+        // Guided turns advertise no tools, but their conversation may contain
+        // completed ordinary turns. Translate only those historical names from
+        // the closed application schema; keep the response allowlist empty.
+        let history_names = if request.tools.is_empty() {
+            RouterToolNames::new(&crate::tools::tool_schemas())?
+        } else {
+            RouterToolNames::new(&request.tools)?
+        };
+        let messages = history_names.messages(&request.messages)?;
+        let tool_choice = if tools.is_empty() { "none" } else { "auto" };
         let mut body = serde_json::json!({
             "model": self.profile.model,
             "max_tokens": self.profile.max_output_tokens,
@@ -310,7 +319,7 @@ impl RouterProvider {
             "reasoning": {"enabled": self.profile.reasoning_enabled},
             "messages": messages,
             "tools": tools,
-            "tool_choice": "auto",
+            "tool_choice": tool_choice,
             "stream": true,
             "stream_options": {"include_usage": true}
         });
@@ -785,6 +794,20 @@ mod hosted_tests {
 
     #[test]
     fn router_http_round_trip_maps_names_and_preserves_tool_call_ids() {
+        router_history_round_trip(false, false);
+    }
+
+    #[test]
+    fn router_guided_turn_preserves_ordinary_tool_history_without_advertising_tools() {
+        router_history_round_trip(true, false);
+    }
+
+    #[test]
+    fn router_guided_turn_rejects_new_tool_calls() {
+        router_history_round_trip(true, true);
+    }
+
+    fn router_history_round_trip(guided: bool, returned_tool: bool) {
         use std::io::{BufRead, BufReader, Read, Write};
         use std::net::TcpListener;
         use std::time::{Duration, Instant};
@@ -831,7 +854,13 @@ mod hosted_tests {
                 let mut bytes = vec![0; length];
                 reader.read_exact(&mut bytes).unwrap();
                 let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-                assert_eq!(body["tools"][0]["function"]["name"], "help__lookup");
+                if guided && step == 1 {
+                    assert_eq!(body["tools"], serde_json::json!([]));
+                    assert_eq!(body["tool_choice"], "none");
+                } else {
+                    assert_eq!(body["tools"][0]["function"]["name"], "help__lookup");
+                    assert_eq!(body["tool_choice"], "auto");
+                }
                 assert_eq!(body["provider"]["allow_fallbacks"], false);
                 let events = if step == 0 {
                     vec![
@@ -856,9 +885,16 @@ mod hosted_tests {
                         body["messages"][2]["content"],
                         "\"An explicit version is required.\""
                     );
-                    vec![
-                        serde_json::json!({"choices":[{"delta":{"content":"Choose an explicit version."},"finish_reason":"stop"}]}),
-                    ]
+                    if returned_tool {
+                        vec![serde_json::json!({"choices":[{"delta":{"tool_calls":[{
+                            "index":0,"id":"forbidden-guided-call","type":"function",
+                            "function":{"name":"help__lookup","arguments":"{\"topic\":\"resolve\"}"}
+                        }]},"finish_reason":"tool_calls"}]})]
+                    } else {
+                        vec![
+                            serde_json::json!({"choices":[{"delta":{"content":"Choose an explicit version."},"finish_reason":"stop"}]}),
+                        ]
+                    }
                 };
                 let mut response = events
                     .into_iter()
@@ -946,23 +982,28 @@ mod hosted_tests {
             tool_calls: None,
         });
         let mut text = String::new();
-        provider
-            .stream(
-                ModelRequest {
-                    messages,
-                    tools,
-                    max_response_chars: 8000,
-                },
-                &CancellationToken::default(),
-                &mut |event| {
-                    if let ProviderEvent::TextDelta(delta) = event {
-                        text.push_str(&delta);
-                    }
-                },
-            )
-            .unwrap();
+        let mut returned_calls = Vec::new();
+        let result = provider.stream(
+            ModelRequest {
+                messages,
+                tools: if guided { Vec::new() } else { tools },
+                max_response_chars: 8000,
+            },
+            &CancellationToken::default(),
+            &mut |event| match event {
+                ProviderEvent::TextDelta(delta) => text.push_str(&delta),
+                ProviderEvent::ToolCall(call) => returned_calls.push(call),
+                _ => {}
+            },
+        );
         server.join().unwrap();
-        assert_eq!(text, "Choose an explicit version.");
+        assert!(returned_calls.is_empty());
+        if returned_tool {
+            assert!(matches!(result, Err(ProviderError::Protocol(_))));
+        } else {
+            result.unwrap();
+            assert_eq!(text, "Choose an explicit version.");
+        }
     }
 
     #[test]
