@@ -113,4 +113,30 @@ class TerminalTests(unittest.TestCase):
         s.send('\x1b[6~'*10);s.wait(lambda:visible('REPLAY RESPONSE ARRIVED'))
         s.send('q');s.finish()
 
+    def test_guided_tutorial_observes_real_help_result_then_stops_cleanly(self):
+        replay=self.root/'guided-replay.json'
+        replay.write_text(json.dumps([
+            [{'TextDelta':'GUIDE INITIAL LESSON'},'Finished'],
+            [{'TextDelta':'GUIDE OBSERVATION AFTER HELP'},'Finished'],
+        ]))
+        import codecs
+        import pyte
+        project=self.root/'guided fake'
+        subprocess.run([str(CLI),'--project',str(project),'init','--namespace','climate','--serving-dir','serving'],check=True,capture_output=True)
+        s=self.launch([str(CLI),'--project',str(project),'tui','--agent','fake'],{'FEAM_TUI_REPLAY':str(replay)})
+        fcntl.ioctl(s.slave,termios.TIOCSWINSZ,struct.pack('HHHH',24,120,0,0));s.process.send_signal(signal.SIGWINCH)
+        screen=pyte.Screen(120,24);stream=pyte.Stream(screen);decoder=codecs.getincrementaldecoder('utf-8')('replace');offset=0
+        def visible(marker):
+            nonlocal offset
+            stream.feed(decoder.decode(s.raw[offset:]));offset=len(s.raw)
+            return marker in '\n'.join(screen.display)
+        s.wait(lambda:visible('versions;'))
+        s.send('g');s.wait(lambda:visible('Open Help'))
+        self.assertFalse(visible('GUIDE OBSERVATION AFTER HELP'))
+        s.send('?');s.wait(lambda:visible('Guide response received'))
+        s.send('g');s.wait(lambda:not visible('Guide response received'))
+        s.send('\t\t\t\t');s.wait(lambda:visible('GUIDE OBSERVATION AFTER HELP'))
+        self.assertNotIn('Guide',screen.display[4][80:])
+        s.send('q');s.finish();self.assertEqual(s.process.returncode,0)
+
 if __name__=='__main__': unittest.main()

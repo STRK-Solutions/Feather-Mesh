@@ -19,7 +19,13 @@ use crossterm::terminal::{
 use mesh_core::peer::{Project, refresh, resolve};
 use mesh_core::services::interactive_operations::{RecoveryIdentity, path_state, reconcile};
 mod controls;
+#[cfg_attr(not(feature = "agent-hosted"), allow(dead_code))]
+mod guide;
 use controls::{example, save_local_text, split_command};
+use guide::{
+    GuideAction, GuideCommand, GuideObservation, GuideRunState, GuideState, PageDirection,
+    ReviewKind,
+};
 use mesh_core::services::catalog_service::{
     CatalogEntry, CatalogPage, CatalogQuery, query_catalog,
 };
@@ -98,7 +104,10 @@ pub fn run(mut options: TuiOptions) -> Result<(), TuiError> {
     loop {
         app.poll_core();
         #[cfg(feature = "agent-hosted")]
-        app.poll_agent();
+        {
+            app.poll_agent();
+            app.pump_guide();
+        }
         if terminating.load(std::sync::atomic::Ordering::Relaxed) && app.request_quit() {
             break;
         }
@@ -430,6 +439,16 @@ enum Review {
 }
 
 impl Review {
+    fn guide_kind(&self) -> ReviewKind {
+        match self {
+            Self::Publication(_) => ReviewKind::Publication,
+            Self::Stage(_) => ReviewKind::Staging,
+            Self::Withdrawal(_) => ReviewKind::Withdrawal,
+            Self::Inspect(_) => ReviewKind::Inspection,
+            Self::Save { .. } => ReviewKind::Export,
+        }
+    }
+
     fn operation_id(&self) -> &str {
         match self {
             Self::Publication(value) => &value.operation_id,
@@ -514,6 +533,11 @@ enum CoreUpdate {
         cache_text: String,
     },
     View(Section, String),
+    Preview {
+        text: String,
+        rows: i64,
+        columns: usize,
+    },
     Review(Review),
     Draft(serde_json::Value),
     Operation(String),
@@ -524,6 +548,7 @@ struct CorePending {
     receiver: mpsc::Receiver<Result<CoreUpdate, String>>,
     session: u64,
     mutation: bool,
+    guide_action: Option<GuideAction>,
 }
 
 struct App {
@@ -546,6 +571,7 @@ struct App {
     draft: Option<serde_json::Value>,
     quit_when_idle: bool,
     no_color: bool,
+    guide: GuideState,
     #[cfg(feature = "agent-hosted")]
     agent: HostedAgentState,
     #[cfg(feature = "agent-hosted")]
@@ -584,6 +610,7 @@ impl App {
             draft: None,
             quit_when_idle: false,
             no_color: std::env::var_os("NO_COLOR").is_some(),
+            guide: GuideState::default(),
             #[cfg(feature = "agent-hosted")]
             agent: hosted_agent,
             #[cfg(feature = "agent-hosted")]
@@ -606,6 +633,7 @@ impl App {
             receiver,
             session: self.session,
             mutation,
+            guide_action: None,
         });
         self.status = label.into();
         thread::spawn(move || {
@@ -616,11 +644,17 @@ impl App {
             let _ = sender.send(result);
         });
     }
+    fn tag_pending(&mut self, action: GuideAction) {
+        if let Some(pending) = &mut self.pending {
+            pending.guide_action = Some(action);
+        }
+    }
     fn poll_core(&mut self) {
         let Some(pending) = &self.pending else {
             return;
         };
         let session = pending.session;
+        let guide_action = pending.guide_action.clone();
         let update = match pending.receiver.try_recv() {
             Ok(update) => update,
             Err(TryRecvError::Empty) => return,
@@ -634,6 +668,8 @@ impl App {
         }
         match update {
             Ok(CoreUpdate::Catalog(page)) => {
+                let count = page.entries.len();
+                let peers = page.coverage.len();
                 self.selected = 0;
                 self.views.catalog = TextViewState::default();
                 self.status = format!(
@@ -644,8 +680,16 @@ impl App {
                 );
                 self.page = Some(page);
                 self.last_reload = Instant::now();
+                if let Some(action) = guide_action {
+                    self.observe(GuideObservation::success(
+                        action,
+                        format!("catalog returned {count} versions across {peers} observed peers"),
+                    ));
+                }
             }
             Ok(CoreUpdate::Refreshed { page, cache_text }) => {
+                let count = page.entries.len();
+                let peers = page.coverage.len();
                 self.selected = 0;
                 self.views.catalog = TextViewState::default();
                 self.views.cache.text = Some(cache_text);
@@ -657,18 +701,46 @@ impl App {
                 );
                 self.page = Some(page);
                 self.last_reload = Instant::now();
+                self.observe(GuideObservation::success(
+                    GuideAction::RefreshCompleted,
+                    format!("refresh returned {count} versions and {peers} peer observations"),
+                ));
             }
             Ok(CoreUpdate::View(section, text)) => {
                 let view = self.views.get_mut(section);
                 view.text = Some(text);
                 view.scroll = 0;
                 self.status = "Local view ready; PgUp/PgDn scroll, :export NAME saves text.".into();
+                if let Some(action) = guide_action {
+                    self.observe(GuideObservation::success(
+                        action,
+                        "bounded local view is ready",
+                    ));
+                }
+            }
+            Ok(CoreUpdate::Preview {
+                text,
+                rows,
+                columns,
+            }) => {
+                self.views.catalog.text = Some(text);
+                self.views.catalog.scroll = 0;
+                self.status = "Bounded registered table metadata preview ready.".into();
+                self.observe(GuideObservation::success(
+                    GuideAction::TablePreviewed,
+                    format!("registered descriptor reports {rows} rows and {columns} columns"),
+                ));
             }
             Ok(CoreUpdate::Review(review)) => {
+                let kind = review.guide_kind();
                 self.review = Some(review);
                 self.review_scroll = 0;
                 self.status =
                     "Review complete details; PgUp/PgDn scroll; y confirms, n denies.".into();
+                self.observe(GuideObservation::success(
+                    GuideAction::ReviewOpened(kind),
+                    "review opened; no mutation or local save has committed",
+                ));
             }
             Ok(CoreUpdate::Draft(draft)) => {
                 self.views.catalog.text = Some(serde_json::to_string_pretty(&draft).unwrap());
@@ -678,6 +750,10 @@ impl App {
                 self.status =
                     "Draft loaded; :draft set /field JSON, :draft validate, :draft save NAME"
                         .into();
+                self.observe(GuideObservation::success(
+                    GuideAction::Command(GuideCommand::DraftLoad),
+                    "bounded JSON draft loaded into local session state",
+                ));
             }
             Ok(CoreUpdate::Operation(result)) => {
                 #[cfg(feature = "agent-hosted")]
@@ -702,14 +778,51 @@ impl App {
                     })
                     .unwrap_or_else(|| result.clone());
                 self.section = Section::Operations;
+                if let Ok(value) = serde_json::from_str::<serde_json::Value>(&result) {
+                    let state = value["state"].as_str().unwrap_or("unknown");
+                    let kind = match guide_action {
+                        Some(GuideAction::ReviewConfirmed(kind)) => kind,
+                        _ => ReviewKind::Export,
+                    };
+                    if state.starts_with("committed") {
+                        let operation_id = value["operation_id"].as_str().unwrap_or("unknown");
+                        self.observe(GuideObservation::success(
+                            GuideAction::OperationCommitted(kind),
+                            format!(
+                                "authoritative local result reported committed state for operation {operation_id}"
+                            ),
+                        ));
+                    } else {
+                        self.observe(GuideObservation::failure(
+                            GuideAction::ReviewConfirmed(kind),
+                            state,
+                        ));
+                    }
+                }
             }
-            Ok(CoreUpdate::Status(status)) => self.status = status,
+            Ok(CoreUpdate::Status(status)) => {
+                self.status = status;
+                if let Some(action) = guide_action {
+                    self.observe(GuideObservation::success(
+                        action,
+                        "authoritative local action completed",
+                    ));
+                }
+            }
             Ok(CoreUpdate::Recovered(records)) => {
+                let count = records.len();
                 self.operations = records;
                 self.reload();
+                self.observe(GuideObservation::success(
+                    GuideAction::RecoveryCompleted,
+                    format!("reconciled {count} journal records without replay"),
+                ));
             }
             Err(error) => {
                 self.status = error;
+                if let Some(action) = guide_action {
+                    self.observe(GuideObservation::failure(action, &self.status));
+                }
             }
         }
     }
@@ -747,6 +860,151 @@ impl App {
             true
         }
     }
+
+    fn observe(&mut self, observation: GuideObservation) {
+        if self.guide.active() {
+            self.guide.enqueue(observation);
+        }
+    }
+
+    fn toggle_guide(&mut self) {
+        if self.guide.active() {
+            self.stop_guide();
+        } else {
+            self.start_guide(false);
+        }
+    }
+
+    fn stop_guide(&mut self) {
+        if self.guide.active() {
+            self.guide.stop();
+            self.status = "Guidance stopped; the shared Assistant conversation and usage remain available. Press g or run :guide start to resume.".into();
+        } else {
+            self.status = "Guidance is already stopped; press g or run :guide start.".into();
+        }
+    }
+
+    fn skip_guide(&mut self) {
+        #[cfg(not(feature = "agent-hosted"))]
+        {
+            self.status = "Guidance is unavailable in this build.".into();
+        }
+        #[cfg(feature = "agent-hosted")]
+        {
+            if !self.guide.active() {
+                self.status = "Start guidance with g before skipping a lesson.".into();
+                return;
+            }
+            if self.review.is_some() {
+                self.status =
+                    "A review is open. Press n to close it safely, then skip the lesson.".into();
+                return;
+            }
+            if self.pending.is_some() {
+                self.status = "Wait for the local action to finish before skipping.".into();
+                return;
+            }
+            if self.agent.is_pending() {
+                self.status = "The assistant is still responding. Wait, or press s to stop it, then press x again.".into();
+                return;
+            }
+            let Some(skipped) = self.guide.skip() else {
+                self.status =
+                    "The guide is already finished. Use :guide restart to begin again.".into();
+                return;
+            };
+            let prompt = self.guide.skip_prompt(skipped);
+            if let Err(error) =
+                self.start_guide_request(prompt, AssistantRequestKind::GuidedObservation)
+            {
+                self.status = error;
+            }
+        }
+    }
+
+    fn start_guide(&mut self, restart: bool) {
+        #[cfg(not(feature = "agent-hosted"))]
+        {
+            let _ = restart;
+            self.status = "Guidance needs assistant support. Rebuild with --features agent-hosted, then launch feam tui --agent hosted with a configured profile (or --agent fake for offline replay).".into();
+        }
+        #[cfg(feature = "agent-hosted")]
+        {
+            if !self.agent.is_configured() {
+                self.status = format!(
+                    "Guidance unavailable: {}. Launch with --agent hosted and a valid profile, or --agent fake with FEAM_TUI_REPLAY.",
+                    self.agent.status()
+                );
+                return;
+            }
+            if self.agent.is_pending() {
+                self.status =
+                    "Assistant response is still running; finish or press s, then start guidance."
+                        .into();
+                return;
+            }
+            if !restart && self.guide.current().is_none() {
+                self.status = "Guided curriculum is complete. Run :guide restart to begin again, or press a to use the normal Assistant.".into();
+                return;
+            }
+            if restart {
+                self.guide.restart();
+            } else {
+                self.guide.start();
+            }
+            let prompt = self.guide.initial_prompt();
+            if let Err(error) = self.start_guide_request(prompt, AssistantRequestKind::GuidedLesson)
+            {
+                self.guide.stop();
+                self.status = error;
+            }
+        }
+    }
+
+    #[cfg(feature = "agent-hosted")]
+    fn start_guide_request(
+        &mut self,
+        prompt: String,
+        kind: AssistantRequestKind,
+    ) -> Result<(), String> {
+        let project_root = self.options.project_root.clone();
+        let transcript_prompt = prompt.clone();
+        self.agent.start(project_root, prompt, kind)?;
+        let (position, total) = self.guide.position();
+        let label = match kind {
+            AssistantRequestKind::GuidedLesson => {
+                format!("Guide lesson {position}/{total} ({})", guide::CURRICULUM_ID)
+            }
+            AssistantRequestKind::GuidedObservation => {
+                format!("Guide observation for lesson {position}/{total}")
+            }
+            AssistantRequestKind::GuidedQuestion => "Guide follow-up question".into(),
+            AssistantRequestKind::Ordinary => "Assistant request".into(),
+        };
+        self.assistant_view
+            .begin(format!("{label}\n\n{transcript_prompt}"));
+        self.status = "Guide explanation running; actions are queued and correlated after their real results.".into();
+        Ok(())
+    }
+
+    #[cfg(feature = "agent-hosted")]
+    fn pump_guide(&mut self) {
+        if !self.guide.active() || self.agent.is_pending() {
+            return;
+        }
+        let Some(observation) = self.guide.pop() else {
+            return;
+        };
+        let disposition = self.guide.apply(&observation);
+        let prompt = self.guide.observation_prompt(&observation, disposition);
+        if let Err(error) =
+            self.start_guide_request(prompt, AssistantRequestKind::GuidedObservation)
+        {
+            self.status = error;
+            // Preserve the observation for a later retry instead of losing it.
+            self.guide.enqueue(observation);
+        }
+    }
     fn select_section(&mut self, section: Section) {
         self.section = section;
         #[cfg(feature = "agent-hosted")]
@@ -760,25 +1018,64 @@ impl App {
         #[cfg(feature = "agent-hosted")]
         if self.section == Section::Assistant {
             self.assistant_view.scroll_back = self.assistant_view.scroll_back.saturating_sub(10);
+            self.status = if self.assistant_view.scroll_back == 0 {
+                "Assistant transcript is at the newest message.".into()
+            } else {
+                format!(
+                    "Assistant transcript is {} lines back; press Down or j for newer text.",
+                    self.assistant_view.scroll_back
+                )
+            };
+            self.observe(GuideObservation::success(
+                GuideAction::Scrolled,
+                "Assistant transcript scroll changed",
+            ));
             return;
         }
         let view = self.views.get_mut(self.section);
         view.scroll = view.scroll.saturating_add(10);
+        self.observe(GuideObservation::success(
+            GuideAction::Scrolled,
+            "active view scroll changed",
+        ));
     }
 
     fn scroll_active_up(&mut self) {
         #[cfg(feature = "agent-hosted")]
         if self.section == Section::Assistant {
             self.assistant_view.scroll_back = self.assistant_view.scroll_back.saturating_add(10);
+            self.status = format!(
+                "Assistant transcript is {} lines back; press Up or k for older text.",
+                self.assistant_view.scroll_back
+            );
+            self.observe(GuideObservation::success(
+                GuideAction::Scrolled,
+                "Assistant transcript scroll changed",
+            ));
             return;
         }
         let view = self.views.get_mut(self.section);
         view.scroll = view.scroll.saturating_sub(10);
+        self.observe(GuideObservation::success(
+            GuideAction::Scrolled,
+            "active view scroll changed",
+        ));
     }
 
     fn handle_key(&mut self, code: KeyCode) -> bool {
         #[cfg(feature = "agent-hosted")]
         self.poll_agent();
+        if code == KeyCode::Char('g') && matches!(self.input, InputMode::None) {
+            self.toggle_guide();
+            return false;
+        }
+        if code == KeyCode::Char('x')
+            && matches!(self.input, InputMode::None)
+            && self.guide.active()
+        {
+            self.skip_guide();
+            return false;
+        }
         if self.review.is_some() {
             return self.handle_review_key(code);
         }
@@ -796,10 +1093,18 @@ impl App {
             KeyCode::Char('q') | KeyCode::Esc => self.request_quit(),
             KeyCode::Char('?') => {
                 self.select_section(Section::Help);
+                self.observe(GuideObservation::success(
+                    GuideAction::HelpOpened,
+                    "current keyboard and command help opened",
+                ));
                 false
             }
             KeyCode::Tab => {
                 self.select_section(self.section.next());
+                self.observe(GuideObservation::success(
+                    GuideAction::SectionChanged(self.section.title().into()),
+                    "selected tab is active",
+                ));
                 false
             }
             KeyCode::PageDown => {
@@ -820,6 +1125,10 @@ impl App {
             }
             KeyCode::Char('/') => {
                 self.input = InputMode::Search(String::new());
+                self.observe(GuideObservation::success(
+                    GuideAction::SearchOpened,
+                    "catalog search input opened",
+                ));
                 false
             }
             KeyCode::Char(':') => {
@@ -828,6 +1137,16 @@ impl App {
             }
             KeyCode::Char('r') => {
                 self.refresh();
+                false
+            }
+            #[cfg(feature = "agent-hosted")]
+            KeyCode::Char('j') | KeyCode::Down if self.section == Section::Assistant => {
+                self.scroll_active_down();
+                false
+            }
+            #[cfg(feature = "agent-hosted")]
+            KeyCode::Char('k') | KeyCode::Up if self.section == Section::Assistant => {
+                self.scroll_active_up();
                 false
             }
             KeyCode::Char('j') | KeyCode::Down
@@ -850,6 +1169,10 @@ impl App {
                 self.example_selected();
                 false
             }
+            KeyCode::Char('p') if self.section == Section::Catalog => {
+                self.preview_selected();
+                false
+            }
             #[cfg(feature = "agent-hosted")]
             KeyCode::Char('a') => {
                 if self.agent.is_ready() {
@@ -863,6 +1186,10 @@ impl App {
             KeyCode::Char('s') => {
                 self.agent.stop();
                 self.status = "Stopping assistant generation; any started data operation continues until its shared service finishes.".into();
+                self.observe(GuideObservation::success(
+                    GuideAction::ResponseStopRequested,
+                    "assistant cancellation was requested locally",
+                ));
                 false
             }
             _ => false,
@@ -935,6 +1262,7 @@ impl App {
             KeyCode::PageDown => self.review_scroll = self.review_scroll.saturating_add(10),
             KeyCode::PageUp => self.review_scroll = self.review_scroll.saturating_sub(10),
             KeyCode::Char('n') | KeyCode::Char('s') | KeyCode::Esc => {
+                let kind = self.review.as_ref().map(Review::guide_kind);
                 self.status = "Operation cancelled before commit.".into();
                 #[cfg(feature = "agent-hosted")]
                 if let Some(review) = &self.review
@@ -946,6 +1274,12 @@ impl App {
                     );
                 }
                 self.review = None;
+                if let Some(kind) = kind {
+                    self.observe(GuideObservation::success(
+                        GuideAction::ReviewDenied(kind),
+                        "review was denied before commit; no approval was retained",
+                    ));
+                }
             }
             KeyCode::Char('h') =>
             {
@@ -982,6 +1316,7 @@ impl App {
         self.query.cursor = None;
         self.history.clear();
         self.reload();
+        self.tag_pending(GuideAction::SearchCompleted);
     }
     fn page_next(&mut self) {
         if self.pending.is_some() {
@@ -991,6 +1326,12 @@ impl App {
             self.history.push(self.query.cursor.clone());
             self.query.cursor = Some(cursor);
             self.reload();
+            self.tag_pending(GuideAction::PageAttempt(PageDirection::Next));
+        } else {
+            self.observe(GuideObservation::success(
+                GuideAction::PageAttempt(PageDirection::Next),
+                "no next-page cursor existed; the catalog did not change",
+            ));
         }
     }
     fn page_previous(&mut self) {
@@ -1000,6 +1341,12 @@ impl App {
         if let Some(cursor) = self.history.pop() {
             self.query.cursor = cursor;
             self.reload();
+            self.tag_pending(GuideAction::PageAttempt(PageDirection::Previous));
+        } else {
+            self.observe(GuideObservation::success(
+                GuideAction::PageAttempt(PageDirection::Previous),
+                "no previous page existed in session history; the catalog did not change",
+            ));
         }
     }
     fn refresh(&mut self) {
@@ -1016,6 +1363,7 @@ impl App {
                 cache_text: serde_json::to_string_pretty(&snapshot).unwrap(),
             })
         });
+        self.tag_pending(GuideAction::RefreshCompleted);
     }
     fn section_view(&mut self) {
         let root = self.options.project_root.clone();
@@ -1052,6 +1400,13 @@ impl App {
         if self.section == Section::Lineage {
             self.views.lineage.scroll = 0;
         }
+        self.observe(GuideObservation::success(
+            GuideAction::SelectionMoved,
+            format!(
+                "selected row changed to {} within a bounded page of {len}",
+                self.selected + 1
+            ),
+        ));
     }
 
     fn selected_entry(&self) -> Option<&CatalogEntry> {
@@ -1060,10 +1415,10 @@ impl App {
 
     fn open_selected(&mut self) {
         if let Some(e) = self.selected_entry().cloned() {
-            self.resolve_view(e.reference, e.version);
+            self.resolve_view(e.reference, e.version, GuideAction::ProductOpened);
         }
     }
-    fn resolve_view(&mut self, reference: String, version: String) {
+    fn resolve_view(&mut self, reference: String, version: String, action: GuideAction) {
         self.section = Section::Catalog;
         let root = self.options.project_root.clone();
         self.job(
@@ -1079,6 +1434,7 @@ impl App {
                 ))
             },
         );
+        self.tag_pending(action);
     }
     fn example_selected(&mut self) {
         if let Some(entry) = self.selected_entry() {
@@ -1086,7 +1442,45 @@ impl App {
             self.views.catalog.scroll = 0;
             self.status =
                 "Examples generated locally; :export NAME saves to .feam/exports/NAME.".into();
+            self.observe(GuideObservation::success(
+                GuideAction::ExamplesGenerated,
+                "locally generated direct CLI and supported Python SDK examples",
+            ));
         }
+    }
+
+    fn preview_selected(&mut self) {
+        let Some(entry) = self.selected_entry().cloned() else {
+            self.status = "Select a registered table version before previewing.".into();
+            self.observe(GuideObservation::failure(
+                GuideAction::TablePreviewed,
+                &self.status,
+            ));
+            return;
+        };
+        let root = self.options.project_root.clone();
+        self.job("Reading bounded registered table metadata…", false, move || {
+            let project = Project::open(root).map_err(|e| e.to_string())?;
+            let product = resolve(&project, &entry.reference, &entry.version, None, false)
+                .map_err(|e| e.to_string())?;
+            let Some(table) = product.table else {
+                return Err("Selected registered version is not a table".into());
+            };
+            let text = format!(
+                "Pinned table preview\nreference: {}\nversion: {}\nrows: {}\ncolumns: {}\nschema:\n{}",
+                entry.reference,
+                entry.version,
+                table.row_count,
+                table.columns.len(),
+                serde_json::to_string_pretty(&table.columns).unwrap()
+            );
+            Ok(CoreUpdate::Preview {
+                text,
+                rows: table.row_count,
+                columns: table.columns.len(),
+            })
+        });
+        self.tag_pending(GuideAction::TablePreviewed);
     }
     fn command(&mut self, input: String) {
         let args = match split_command(&input) {
@@ -1097,6 +1491,7 @@ impl App {
             }
         };
         let words: Vec<_> = args.iter().map(String::as_str).collect();
+        let guide_command = GuideCommand::from_words(&words);
         let root = self.options.project_root.clone();
         if self.pending.is_some() {
             self.status = "Wait for the current operation; navigation remains available.".into();
@@ -1126,6 +1521,7 @@ impl App {
             ["init", namespace] | ["init", namespace, _] => {
                 let namespace = namespace.to_string(); let serving = args.get(2).map(PathBuf::from);
                 self.job("Initializing selected project…", true, move || Project::init(root, namespace, serving).map(|_| CoreUpdate::Status("Project initialized; press r to load.".into())).map_err(|e| e.to_string()));
+                self.tag_pending(GuideAction::Command(guide_command));
             }
             ["project", path] => {
                 let selected = match std::path::absolute(path) { Ok(path) => path, Err(error) => { self.status = error.to_string(); return; } };
@@ -1140,11 +1536,14 @@ impl App {
                     self.agent = HostedAgentState::from_profile_request(self.options.agent_profile.as_deref());
                     self.assistant_view = AssistantViewState::default();
                 }
+                self.guide.reset();
                 self.reload();
             }
-            ["resolve", reference, version] => self.resolve_view(reference.to_string(), version.to_string()),
+            ["resolve", reference, version] => self.resolve_view(reference.to_string(), version.to_string(), GuideAction::Command(guide_command)),
             ["publish", path] | ["draft", "load", path] => {
-                let path = PathBuf::from(path); let publish = words[0] == "publish";
+                let path = PathBuf::from(path);
+                let path = if path.is_absolute() { path } else { root.join(path) };
+                let publish = words[0] == "publish";
                 self.job("Loading bounded publication draft…", false, move || {
                     use std::io::Read;
                     let mut bytes = Vec::new();
@@ -1153,42 +1552,85 @@ impl App {
                     let value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
                     Ok(if publish { CoreUpdate::Review(Review::Inspect(value)) } else { CoreUpdate::Draft(value) })
                 });
+                self.tag_pending(GuideAction::Command(guide_command));
             }
             ["draft", "new", kind] if ["table", "raster"].contains(kind) => {
                 self.draft = Some(controls::draft_template(kind)); self.show_draft();
+                self.observe(GuideObservation::command(
+                    &words,
+                    true,
+                    "local draft template created with blank user-supplied fields",
+                ));
             }
             ["draft", "set", pointer, json] => {
                 let result = serde_json::from_str(json).map_err(|e| e.to_string()).and_then(|value| controls::patch_draft(self.draft.as_mut().ok_or("Load or create a draft first")?, pointer, value));
-                match result { Ok(()) => { self.review = None; self.show_draft(); } Err(e) => self.status = e }
+                match result {
+                    Ok(()) => {
+                        self.review = None;
+                        self.show_draft();
+                        self.observe(GuideObservation::success(GuideAction::Command(guide_command), "existing draft field replaced with locally supplied JSON"));
+                    }
+                    Err(e) => {
+                        self.status = e;
+                        self.observe(GuideObservation::failure(GuideAction::Command(guide_command), &self.status));
+                    }
+                }
             }
             ["draft", "validate"] => {
-                if let Some(draft) = &self.draft { self.review = Some(Review::Inspect(draft.clone())); self.review_scroll = 0; }
+                if let Some(draft) = &self.draft {
+                    self.review = Some(Review::Inspect(draft.clone()));
+                    self.review_scroll = 0;
+                    self.observe(GuideObservation::success(GuideAction::ReviewOpened(ReviewKind::Inspection), "inspection consent review opened; publication has not started"));
+                } else {
+                    self.status = "Load or create a draft first".into();
+                    self.observe(GuideObservation::failure(GuideAction::Command(guide_command), &self.status));
+                }
             }
             ["draft", "save", name] | ["draft", "save", name, "--overwrite"] => {
-                if let Some(draft) = &self.draft { self.prepare_save("drafts", name, serde_json::to_string_pretty(draft).unwrap(), words.len() == 4); }
+                if let Some(draft) = &self.draft {
+                    self.prepare_save("drafts", name, serde_json::to_string_pretty(draft).unwrap(), words.len() == 4);
+                    self.tag_pending(GuideAction::Command(guide_command));
+                }
             }
             ["export", name] | ["export", name, "--overwrite"] => {
                 if let Some(text) = self.active_export_text() {
                     self.prepare_save("exports", name, text, words.len() == 3);
+                    self.tag_pending(GuideAction::Command(guide_command));
                 } else {
                     self.status = "The active menu has no content to export.".into();
+                    self.observe(GuideObservation::failure(GuideAction::Command(guide_command), &self.status));
                 }
             }
             ["stage", reference, version, destination] | ["stage", reference, version, destination, "--overwrite"] => {
                 let (reference, version, destination) = (reference.to_string(), version.to_string(), PathBuf::from(destination)); let overwrite = words.len() == 5;
                 self.job("Checking staging inventory and destination…", false, move || prepare_stage(root, reference, version, destination, overwrite).map(|p| CoreUpdate::Review(Review::Stage(Box::new(p)))).map_err(|e| e.to_string()));
+                self.tag_pending(GuideAction::Command(guide_command));
             }
             ["withdraw", reference, version, reason @ ..] if !reason.is_empty() => {
                 let (reference, version, reason) = (reference.to_string(), version.to_string(), reason.join(" "));
                 self.job("Checking local withdrawal…", false, move || prepare_withdrawal(root, reference, version, reason).map(|p| CoreUpdate::Review(Review::Withdrawal(Box::new(p)))).map_err(|e| e.to_string()));
+                self.tag_pending(GuideAction::Command(guide_command));
             }
             ["filter", json] => {
-                match serde_json::from_str::<CatalogQuery>(json) { Ok(query) => { self.section = Section::Catalog; self.query = query; self.history.clear(); self.reload(); } Err(e) => self.status = e.to_string() }
+                match serde_json::from_str::<CatalogQuery>(json) {
+                    Ok(query) => {
+                        self.section = Section::Catalog;
+                        self.query = query;
+                        self.history.clear();
+                        self.reload();
+                        self.tag_pending(GuideAction::Command(guide_command));
+                    }
+                    Err(e) => {
+                        self.status = e.to_string();
+                        self.observe(GuideObservation::failure(GuideAction::Command(guide_command), &self.status));
+                    }
+                }
             }
             #[cfg(feature = "agent-hosted")]
             ["agent-draft"] => {
                 if let Some(draft) = self.draft.clone() && let Ok(harness) = self.agent.harness_mut(root) {
                     harness.executor_mut().register_draft("selected-draft".into(), draft); self.status = "Draft handle selected-draft exposed; ask for a metadata patch with a.".into();
+                    self.observe(GuideObservation::success(GuideAction::Command(guide_command), "bounded selected-draft handle registered locally"));
                 }
             }
             #[cfg(feature = "agent-hosted")]
@@ -1196,16 +1638,20 @@ impl App {
                 self.agent.stop(); self.review = None; self.session += 1;
                 self.options.agent_profile = if *profile == "off" { None } else { Some(profile.to_string()) };
                 self.agent = HostedAgentState::from_profile_request(self.options.agent_profile.as_deref());
-                self.assistant_view = AssistantViewState::default(); self.status = self.agent.status();
+                self.assistant_view = AssistantViewState::default(); self.guide.reset(); self.status = self.agent.status();
             }
             #[cfg(feature = "agent-hosted")]
             ["integrity-consent", reference, version] => {
                 if let Ok(harness) = self.agent.harness_mut(root) {
                     harness.executor_mut().grant_integrity_consent(reference.to_string(),version.to_string());
                     self.status = "One full-asset integrity read authorized for the exact selected version.".into();
+                    self.observe(GuideObservation::success(GuideAction::Command(guide_command), "one-use exact-version integrity consent registered locally"));
                 }
             }
-            ["recover"] => self.recover(),
+            ["recover"] => {
+                self.recover();
+                self.tag_pending(GuideAction::RecoveryCompleted);
+            }
             #[cfg(feature = "agent-hosted")]
             ["usage"] => {
                 if let HostedAgentState::Ready(ready) = &self.agent {
@@ -1213,9 +1659,17 @@ impl App {
                     self.section = Section::Assistant;
                     self.assistant_view.push_local("Assistant session usage", usage, true);
                     self.status = "Assistant session usage; export to retain it before switching profiles.".into();
+                    self.observe(GuideObservation::success(GuideAction::Command(guide_command), "shared assistant session usage displayed"));
                 }
             },
-            ["help"] => self.select_section(Section::Help),
+            ["guide", "start"] | ["tutorial", "start"] => self.start_guide(false),
+            ["guide", "stop"] | ["tutorial", "stop"] => self.stop_guide(),
+            ["guide", "restart"] => self.start_guide(true),
+            ["guide", "skip"] | ["tutorial", "skip"] => self.skip_guide(),
+            ["help"] => {
+                self.select_section(Section::Help);
+                self.observe(GuideObservation::success(GuideAction::Command(GuideCommand::Help), "current help opened"));
+            }
             _ => self.status = "Unknown command or arguments; ? shows command help. Quote paths containing spaces.".into(),
         }
     }
@@ -1285,6 +1739,7 @@ impl App {
         let Some(review) = self.review.take() else {
             return;
         };
+        let guide_kind = review.guide_kind();
         let root = self.options.project_root.clone();
         let journal = self.journal.clone();
         match review {
@@ -1346,6 +1801,18 @@ impl App {
                 },
             ),
         }
+        self.tag_pending(GuideAction::ReviewConfirmed(guide_kind));
+    }
+
+    #[cfg(feature = "agent-hosted")]
+    fn ordinary_agent_request(&mut self, user_text: String) -> String {
+        if self.guide.take_ordinary_transition() {
+            format!(
+                "Application mode notice: guided mode has ended. This is an ordinary Assistant turn. The normal bounded tools are available again. Use the advertised tools when evidence is needed, and do not claim this turn is guided.\n\nUser question: {user_text}"
+            )
+        } else {
+            user_text
+        }
     }
 
     #[cfg(feature = "agent-hosted")]
@@ -1356,7 +1823,23 @@ impl App {
         }
         let project_root = self.options.project_root.clone();
         let display_text = user_text.clone();
-        match self.agent.start(project_root, user_text) {
+        let (request_text, kind) = if self.guide.active() {
+            let instruction = self
+                .guide
+                .current()
+                .map(|step| step.instruction)
+                .unwrap_or("The curriculum is complete.");
+            (
+                format!(
+                    "The user asks a follow-up question during guided mode. Answer the question text-only without tools. It does not complete or reorder any lesson. Then briefly return to this application-owned instruction: {instruction}\n\nQuestion: {user_text}"
+                ),
+                AssistantRequestKind::GuidedQuestion,
+            )
+        } else {
+            let request_text = self.ordinary_agent_request(user_text);
+            (request_text, AssistantRequestKind::Ordinary)
+        };
+        match self.agent.start(project_root, request_text, kind) {
             Ok(()) => {
                 self.section = Section::Assistant;
                 self.assistant_view.begin(display_text);
@@ -1380,7 +1863,7 @@ impl App {
         if let Some(streamed) = streamed {
             self.assistant_view.stream(&streamed);
         }
-        if let Some(run) = self.agent.take_completed() {
+        if let Some((run, kind)) = self.agent.take_completed() {
             let run_id = match &self.agent {
                 HostedAgentState::Ready(ready) => ready.next_run_id - 1,
                 _ => 0,
@@ -1403,16 +1886,25 @@ impl App {
                 });
                 self.review_scroll = 0;
             }
+            let safe_text = mesh_agent::disclosure::redact(&run.text, None);
             let result = format!(
                 "Assistant result #{run_id} ({:?}):\n{}\n\nTool activity:\n{}",
                 run.state,
-                run.text,
+                safe_text,
                 serde_json::to_string_pretty(&run.tools).unwrap_or_else(|_| "unavailable".into())
             );
             self.assistant_view
                 .finish(result, self.section == Section::Assistant);
+            let guide_finished =
+                !matches!(kind, AssistantRequestKind::Ordinary) && self.guide.finish_response();
             self.status = if self.review.is_some() {
                 "Assistant proposal awaits local review; press y to confirm or n to cancel.".into()
+            } else if guide_finished {
+                "Guide complete. Normal Assistant tools are restored; press a to ask anything or run :guide restart to begin again.".into()
+            } else if matches!(kind, AssistantRequestKind::GuidedQuestion) {
+                "Follow-up answered; the Guide remains on the same curriculum lesson.".into()
+            } else if !matches!(kind, AssistantRequestKind::Ordinary) {
+                "Guide response received; perform only the displayed local action.".into()
             } else {
                 "Assistant response received. Any mutation proposal is never auto-executed.".into()
             };
@@ -1428,6 +1920,16 @@ struct AgentPending {
     receiver: mpsc::Receiver<AgentWorkerMessage>,
     cancellation: CancellationToken,
     run_id: u64,
+    kind: AssistantRequestKind,
+}
+
+#[cfg(feature = "agent-hosted")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AssistantRequestKind {
+    Ordinary,
+    GuidedLesson,
+    GuidedObservation,
+    GuidedQuestion,
 }
 
 #[cfg(feature = "agent-hosted")]
@@ -1520,6 +2022,10 @@ impl HostedAgentState {
         matches!(self, Self::Ready(ready) if ready.pending.is_none())
     }
 
+    fn is_configured(&self) -> bool {
+        matches!(self, Self::Ready(_))
+    }
+
     fn is_pending(&self) -> bool {
         matches!(self, Self::Ready(ready) if ready.pending.is_some())
     }
@@ -1558,7 +2064,12 @@ impl HostedAgentState {
             AgentHarness::new(ready.profile.clone(), ready.provider.clone(), root)
         }))
     }
-    fn start(&mut self, project_root: PathBuf, user_text: String) -> Result<(), String> {
+    fn start(
+        &mut self,
+        project_root: PathBuf,
+        user_text: String,
+        kind: AssistantRequestKind,
+    ) -> Result<(), String> {
         self.harness_mut(project_root)?;
         let Self::Ready(ready) = self else {
             unreachable!()
@@ -1570,30 +2081,35 @@ impl HostedAgentState {
         let run_id = ready.next_run_id;
         ready.next_run_id += 1;
         ready.streamed.clear();
+        let guided = !matches!(kind, AssistantRequestKind::Ordinary);
         thread::spawn(move || {
-            let run = harness.run_streamed(&user_text, &mut |event| {
-                let _ = sender.try_send(AgentWorkerMessage::Event(run_id, event));
-            });
+            let run = if guided {
+                harness.run_guided_streamed(&user_text, &mut |event| {
+                    let _ = sender.try_send(AgentWorkerMessage::Event(run_id, event));
+                })
+            } else {
+                harness.run_streamed(&user_text, &mut |event| {
+                    let _ = sender.try_send(AgentWorkerMessage::Event(run_id, event));
+                })
+            };
             let _ = sender.send(AgentWorkerMessage::Complete(run_id, Box::new(harness), run));
         });
         ready.pending = Some(AgentPending {
             receiver,
             cancellation,
             run_id,
+            kind,
         });
         Ok(())
     }
     fn stop(&mut self) {
-        if let Self::Ready(ready) = self {
-            if let Some(pending) = &ready.pending {
-                pending.cancellation.cancel();
-            }
-            if let Some(harness) = &mut ready.harness {
-                harness.invalidate();
-            }
+        if let Self::Ready(ready) = self
+            && let Some(pending) = &ready.pending
+        {
+            pending.cancellation.cancel();
         }
     }
-    fn take_completed(&mut self) -> Option<AgentRun> {
+    fn take_completed(&mut self) -> Option<(AgentRun, AssistantRequestKind)> {
         let Self::Ready(ready) = self else {
             return None;
         };
@@ -1618,16 +2134,17 @@ impl HostedAgentState {
                 }
                 Ok(AgentWorkerMessage::Complete(id, mut harness, run)) => {
                     let cancelled = active.cancellation.is_cancelled() || id != active.run_id;
+                    let kind = active.kind;
                     if ready.usage.len() == 100 {
                         ready.usage.remove(0);
                     }
                     ready.usage.push(serde_json::json!({"run_id": id, "cancelled": cancelled, "usage": run.usage, "cost_usd": run.estimated_cost_usd}));
                     if cancelled {
-                        harness.invalidate();
+                        harness.expire_interrupted_state();
                     }
                     ready.harness = Some(*harness);
                     ready.pending = None;
-                    return (!cancelled).then_some(run);
+                    return (!cancelled).then_some((run, kind));
                 }
                 Ok(_) => (),
                 Err(TryRecvError::Empty) => return None,
@@ -1700,7 +2217,7 @@ fn render(frame: &mut Frame, app: &App) {
         render_body(frame, app, rows[1]);
     }
     let prompt = match &app.input {
-        InputMode::None => key_hints(app.section),
+        InputMode::None => key_hints(app.section, app.guide.active()),
         InputMode::Search(value) => format!("Search: {value}"),
         InputMode::Command(value) => format!("Command: {value}"),
         #[cfg(feature = "agent-hosted")]
@@ -1716,13 +2233,39 @@ fn render(frame: &mut Frame, app: &App) {
     }
 }
 
-fn key_hints(section: Section) -> String {
-    match section {
-        Section::Catalog => "/ search | : command | ↑/↓ select | Enter details | e examples | [/] page | Tab menu | q exit".into(),
-        Section::Lineage => "/ search | : command | ↑/↓ select | PgUp/PgDn scroll | Tab menu | q exit".into(),
+fn key_hints(section: Section, guide_active: bool) -> String {
+    let mut hints: String = match section {
+        Section::Catalog => "/ search | : command | ↑/↓ select | Enter details | e examples | p preview | [/] page | g guide | Tab menu | q exit".into(),
+        Section::Lineage => "/ search | : command | ↑/↓ select | PgUp/PgDn scroll | g guide | Tab menu | q exit".into(),
         #[cfg(feature = "agent-hosted")]
-        Section::Assistant => "a ask | s stop | / search | PgUp/PgDn transcript | : command | Tab menu | ? help | q exit".into(),
-        _ => "/ search | : command | PgUp/PgDn scroll | r refresh | Tab menu | ? help | q exit".into(),
+        Section::Assistant => "a ask | ↑/↓ or j/k scroll | PgUp/PgDn page | s stop | g guide | : command | Tab menu | ? help | q exit".into(),
+        _ => "/ search | : command | PgUp/PgDn scroll | r refresh | g guide | Tab menu | ? help | q exit".into(),
+    };
+    if guide_active {
+        hints = hints.replace("g guide", "x skip | g stop guide");
+    }
+    hints
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BodyLayout {
+    Inactive,
+    GuidedTwoPane,
+    GuidedThreePane,
+    GuidedNeedsResize,
+}
+
+fn body_layout(section: Section, guide_active: bool, width: u16) -> BodyLayout {
+    if !guide_active {
+        BodyLayout::Inactive
+    } else if matches!(section, Section::Catalog | Section::Lineage) {
+        if width >= 120 {
+            BodyLayout::GuidedThreePane
+        } else {
+            BodyLayout::GuidedNeedsResize
+        }
+    } else {
+        BodyLayout::GuidedTwoPane
     }
 }
 
@@ -1756,12 +2299,47 @@ fn render_body(frame: &mut Frame, app: &App, area: Rect) {
             .divider("|"),
         chunks[0],
     );
+    match body_layout(app.section, app.guide.active(), chunks[1].width) {
+        BodyLayout::Inactive => render_current_view(frame, app, chunks[1]),
+        BodyLayout::GuidedNeedsResize => frame.render_widget(
+            Paragraph::new("Guided three-pane mode requires at least 120 columns. Resize the terminal, press g to stop guidance, or press Tab to select another view.")
+                .wrap(Wrap { trim: false })
+                .block(Block::default().title("Resize required").borders(Borders::ALL)),
+            chunks[1],
+        ),
+        BodyLayout::GuidedThreePane => {
+            let cols = Layout::horizontal([
+                Constraint::Percentage(30),
+                Constraint::Percentage(40),
+                Constraint::Percentage(30),
+            ])
+            .split(chunks[1]);
+            match app.section {
+                Section::Catalog => render_catalog_panes(frame, app, cols[0], cols[1]),
+                Section::Lineage => render_lineage_panes(frame, app, cols[0], cols[1]),
+                _ => unreachable!("three-pane layout is only for product views"),
+            }
+            render_guide(frame, app, cols[2]);
+        }
+        BodyLayout::GuidedTwoPane => {
+            let cols = Layout::horizontal([
+                Constraint::Percentage(65),
+                Constraint::Percentage(35),
+            ])
+            .split(chunks[1]);
+            render_current_view(frame, app, cols[0]);
+            render_guide(frame, app, cols[1]);
+        }
+    }
+}
+
+fn render_current_view(frame: &mut Frame, app: &App, area: Rect) {
     match app.section {
-        Section::Catalog => render_catalog(frame, app, chunks[1]),
-        Section::Lineage => render_lineage(frame, app, chunks[1]),
+        Section::Catalog => render_catalog(frame, app, area),
+        Section::Lineage => render_lineage(frame, app, area),
         #[cfg(feature = "agent-hosted")]
-        Section::Assistant => render_assistant(frame, app, chunks[1]),
-        _ => render_section(frame, app, chunks[1]),
+        Section::Assistant => render_assistant(frame, app, area),
+        _ => render_section(frame, app, area),
     }
 }
 
@@ -1806,16 +2384,20 @@ fn render_version_list(frame: &mut Frame, app: &App, area: Rect, title: &str) {
 fn render_catalog(frame: &mut Frame, app: &App, area: Rect) {
     let cols =
         Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)]).split(area);
-    render_version_list(frame, app, cols[0], "Versions  [ / ] page");
+    render_catalog_panes(frame, app, cols[0], cols[1]);
+}
+
+fn render_catalog_panes(frame: &mut Frame, app: &App, list: Rect, detail_area: Rect) {
+    render_version_list(frame, app, list, "Versions  [ / ] page");
     let detail = app.views.catalog.text.clone().unwrap_or_else(|| {
-        "Enter: metadata/inventory. e: table/raster examples. PgUp/PgDn: scroll. :project \"PATH\": switch and clear context.".into()
+        "Enter: metadata/inventory. e: table/raster examples. p: table metadata preview. PgUp/PgDn: scroll. :project \"PATH\": switch and clear context.".into()
     });
     frame.render_widget(
         Paragraph::new(sanitize_terminal_text(&detail))
             .wrap(Wrap { trim: false })
             .scroll((app.views.catalog.scroll, 0))
             .block(Block::default().title("Catalog").borders(Borders::ALL)),
-        cols[1],
+        detail_area,
     );
 }
 
@@ -1848,7 +2430,11 @@ fn lineage_summary(app: &App) -> Option<String> {
 fn render_lineage(frame: &mut Frame, app: &App, area: Rect) {
     let cols =
         Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)]).split(area);
-    render_version_list(frame, app, cols[0], "Products / versions");
+    render_lineage_panes(frame, app, cols[0], cols[1]);
+}
+
+fn render_lineage_panes(frame: &mut Frame, app: &App, list: Rect, detail_area: Rect) {
+    render_version_list(frame, app, list, "Products / versions");
 
     let text = lineage_summary(app)
         .unwrap_or_else(|| "No catalog products loaded. Press r to refresh.".into());
@@ -1857,7 +2443,63 @@ fn render_lineage(frame: &mut Frame, app: &App, area: Rect) {
             .wrap(Wrap { trim: false })
             .scroll((app.views.lineage.scroll, 0))
             .block(Block::default().title("Lineage").borders(Borders::ALL)),
-        cols[1],
+        detail_area,
+    );
+}
+
+fn render_guide(frame: &mut Frame, app: &App, area: Rect) {
+    let (position, total) = app.guide.position();
+    let (action, actions) = app.guide.action_position();
+    #[cfg(feature = "agent-hosted")]
+    let state = if app.agent.is_pending() {
+        "running"
+    } else {
+        match app.guide.state() {
+            GuideRunState::Explaining => "running",
+            GuideRunState::Waiting => "waiting for your local action",
+            GuideRunState::Result => "observed result",
+            GuideRunState::Complete => "complete",
+        }
+    };
+    #[cfg(not(feature = "agent-hosted"))]
+    let state = match app.guide.state() {
+        GuideRunState::Explaining => "running",
+        GuideRunState::Waiting => "waiting for your local action",
+        GuideRunState::Result => "observed result",
+        GuideRunState::Complete => "complete",
+    };
+    let text = if let Some(step) = app.guide.current() {
+        let result = app
+            .guide
+            .last_result()
+            .map(|value| {
+                let retry = if value.contains(" failure:") {
+                    format!("\n\nRetry\n{}", step.failure)
+                } else {
+                    String::new()
+                };
+                format!("\n\nMost recent result\n{value}{retry}")
+            })
+            .unwrap_or_default();
+        format!(
+            "{}\nLesson {position}/{total}: {}\nAction {action}/{actions}: {}\n\nDo this\n{}\n\nState\n{state}{result}\n\nControls\nx skip | g stop guide",
+            guide::CURRICULUM_ID,
+            step.lesson_title,
+            step.title,
+            step.instruction,
+        )
+    } else {
+        format!(
+            "{}\n\nGuide ended. {} action(s) skipped. The full chat remains in Assistant. Press a to ask a question or run :guide restart.",
+            guide::CURRICULUM_ID,
+            app.guide.skipped()
+        )
+    };
+    frame.render_widget(
+        Paragraph::new(sanitize_terminal_text(&text))
+            .wrap(Wrap { trim: false })
+            .block(Block::default().title("Guide").borders(Borders::ALL)),
+        area,
     );
 }
 
@@ -2095,6 +2737,7 @@ mod tests {
             receiver,
             session: app.session,
             mutation: false,
+            guide_action: None,
         });
 
         app.poll_core();
@@ -2152,6 +2795,7 @@ mod tests {
             receiver,
             session: app.session,
             mutation: false,
+            guide_action: None,
         });
         app.section = Section::Help;
         app.poll_core();
@@ -2170,6 +2814,15 @@ mod tests {
     #[test]
     fn assistant_is_a_persistent_bounded_menu() {
         let (_temp, mut app) = test_app();
+        app.guide.start();
+        app.guide.stop();
+        let transition = app.ordinary_agent_request("how do I publish?".into());
+        assert!(transition.contains("guided mode has ended"));
+        assert!(transition.contains("normal bounded tools are available again"));
+        assert_eq!(
+            app.ordinary_agent_request("second question".into()),
+            "second question"
+        );
         assert_eq!(Section::ALL.last(), Some(&Section::Assistant));
         app.assistant_view.begin("show observations".into());
         app.assistant_view.stream("partial response");
@@ -2186,10 +2839,26 @@ mod tests {
         let assistant = screen_text(&app, 80, 24);
         assert!(assistant.contains("Assistant"));
         assert!(assistant.contains("COMPLETE RESPONSE"));
-        assert!(assistant.contains("/ search"));
+        assert!(assistant.contains("j/k scroll"));
         assert!(!assistant.contains("Versions"));
-        app.handle_key(KeyCode::PageUp);
+
+        let long_response = (0..80)
+            .map(|line| format!("scroll line {line:02}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        app.assistant_view
+            .push_local("scroll test", long_response, true);
+        let bottom = screen_text(&app, 80, 24);
+        assert!(bottom.contains("scroll line 79"));
+        app.handle_key(KeyCode::Up);
         assert_eq!(app.assistant_view.scroll_back, 10);
+        let older = screen_text(&app, 80, 24);
+        assert_ne!(bottom, older);
+        assert!(!older.contains("scroll line 79"));
+        assert!(app.status.contains("10 lines back"));
+        app.handle_key(KeyCode::Char('j'));
+        assert_eq!(app.assistant_view.scroll_back, 0);
+        assert!(app.status.contains("newest message"));
 
         app.assistant_view
             .push_local("large one", "a".repeat(700_000), true);
@@ -2209,9 +2878,63 @@ mod tests {
         assert!(!app.assistant_view.unread);
     }
 
+    #[cfg(feature = "agent-hosted")]
+    #[test]
+    fn guided_layout_uses_three_two_or_resize_without_changing_inactive_layouts() {
+        let (_temp, mut app) = test_app();
+        app.page = Some(catalog_page());
+        app.views.catalog.text = Some("PINNED PRODUCT DETAIL".into());
+        app.guide.start();
+
+        assert_eq!(
+            body_layout(Section::Catalog, true, 120),
+            BodyLayout::GuidedThreePane
+        );
+        let product = screen_text(&app, 120, 30);
+        assert!(product.contains("Versions"));
+        assert!(product.contains("PINNED PRODUCT DETAIL"));
+        assert!(product.contains("Guide"));
+
+        app.section = Section::Help;
+        assert_eq!(
+            body_layout(Section::Help, true, 100),
+            BodyLayout::GuidedTwoPane
+        );
+        let help = screen_text(&app, 100, 30);
+        assert!(help.contains("Commands (quote paths with spaces)"));
+        assert!(help.contains("Guide"));
+        assert!(!help.contains("Versions"));
+
+        app.section = Section::Catalog;
+        assert_eq!(
+            body_layout(Section::Catalog, true, 119),
+            BodyLayout::GuidedNeedsResize
+        );
+        let narrow = screen_text(&app, 100, 30);
+        assert!(narrow.contains("requires at least 120 columns"));
+        assert!(narrow.contains("Resize required"));
+        assert!(!narrow.contains("PINNED PRODUCT DETAIL"));
+
+        app.guide.stop();
+        assert_eq!(
+            body_layout(Section::Catalog, false, 100),
+            BodyLayout::Inactive
+        );
+        assert!(screen_text(&app, 100, 30).contains("PINNED PRODUCT DETAIL"));
+    }
+
     #[test]
     fn external_terminal_controls_are_not_rendered() {
         assert_eq!(sanitize_terminal_text("safe\u{1b}[2Jtext"), "safe�[2Jtext");
+    }
+
+    #[test]
+    fn guide_activation_without_assistant_support_is_actionable() {
+        let (_temp, mut app) = test_app();
+        app.handle_key(KeyCode::Char('g'));
+        assert!(!app.guide.active());
+        assert!(app.status.contains("Guidance"));
+        assert!(app.status.contains("--agent"));
     }
 
     #[test]
@@ -2270,6 +2993,22 @@ mod workflow_tests {
         app.draft = Some(serde_json::to_value(request).unwrap());
         (temp, app)
     }
+
+    #[test]
+    fn relative_draft_paths_are_anchored_to_the_selected_project() {
+        let (_temp, mut app) = fixture_app();
+        let draft_path = app.options.project_root.join("guided-product.json");
+        std::fs::write(&draft_path, r#"{"name":"project-relative"}"#).unwrap();
+
+        app.command("draft load guided-product.json".into());
+        settled(&mut app);
+
+        assert_eq!(
+            app.draft.as_ref().and_then(|draft| draft["name"].as_str()),
+            Some("project-relative")
+        );
+    }
+
     #[test]
     fn manual_publication_stage_denial_withdrawal_and_recovery() {
         let (temp, mut app) = fixture_app();
