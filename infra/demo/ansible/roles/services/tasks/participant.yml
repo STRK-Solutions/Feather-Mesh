@@ -161,7 +161,9 @@
     state: directory
     owner: 'feam-{{ item }}'
     group: 'feam-{{ item }}'
-    mode: '0700'
+    # The pipeline's named traversal ACL below has an execute mask. Preserve
+    # that mask on reconverge instead of clearing and immediately restoring it.
+    mode: "{{ '0710' if item == 'pipeline' else '0700' }}"
   loop: '{{ services_names }}'
 
 - name: Create fixed private collector archive on the verified traces filesystem
