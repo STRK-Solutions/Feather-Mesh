@@ -1,7 +1,8 @@
 # Web demo development baseline
 
-W0 supplies versioned schemas, examples and offline validation. No gateway,
-controller, broker or collector is implemented yet. Follow the
+W0 supplies versioned schemas, examples and offline validation. W1 adds the
+operator-only `cmd/private-terminal` Unix-socket proxy. The participant
+gateway, controller, broker and collector remain later components. Follow the
 [interface contract](../docs/ubuntu_web_dev_demo_contract.md) and
 [workplan](../docs/ubuntu_web_dev_demo_workplan.md); Rust remains FEAM's authority.
 
@@ -24,5 +25,29 @@ migrations arrive with the consuming W2/W5/W6 components. A schema-valid caller
 claim is never authorization; service peers/capabilities must be verified.
 
 Use [operator checks](../infra/demo/README.md) for the separate actual-host and
-full-system VM gates. Add Go unit/race tests and browser negatives when those
-services appear; do not report nonexistent application tests as passing.
+full-system VM gates. The implemented Go proxy checks are below; the W1 runbook
+includes the Chromium manual/fake probe and browser admission negatives.
+
+## W1 private terminal development
+
+With the pinned Go toolchain, run from `web_demo/`:
+
+```bash
+go test -race ./...
+go vet ./...
+go build -trimpath ./cmd/private-terminal
+```
+
+Tests use actual local Unix sockets and WebSockets; socket-denying sandboxes
+need scoped local socket access. The binary accepts only a Unix listener and
+backend plus an exact loopback browser origin and an owner-only random operator
+credential file. Reach it through verified SSH; it has no TCP listener, test
+identity headers, runtime authority or production identity mode. W2 owns the
+Cloudflare/participant gateway. W1's Basic credential is restricted to the
+operator smoke path, consumed by the proxy and stripped before the sandbox.
+
+The image's launcher invokes manual FEAM with a fixed project path. Hosted
+capability is compiled in; no provider credential or live dispatch is configured.
+Use the [W1 operator runbook](../infra/demo/W1.md) for build, VM and actual-host
+commands. [Execution evidence](../docs/evaluations/web-demo/w1-progress.md)
+distinguishes local tests, native builds, VM proof and actual Ubuntu acceptance.

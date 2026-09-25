@@ -1,0 +1,26 @@
+[Unit]
+Description=FEAM W1 private operator terminal (SSH transport only)
+After=user@2101.service
+Requires=user@2101.service
+BindsTo=user@2101.service
+[Service]
+User=feam-gateway
+Group=feam-gateway
+RuntimeDirectory=feam-w1-proxy
+RuntimeDirectoryMode=0700
+ExecStart=/opt/feam-w1/private-terminal --socket /run/feam-w1-proxy/http.sock --terminal-socket /run/feam-terminal-w1/slot-01/ttyd.sock --credential-file {{ feam_root }}/gateway-home/w1-credential --origin http://127.0.0.1:18771
+ExecStartPost=+/usr/local/sbin/feam-w1-proxy-acl
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/run/feam-w1-proxy
+RestrictAddressFamilies=AF_UNIX
+CapabilityBoundingSet=
+MemoryMax=128M
+TasksMax=32
+UMask=0077
+[Install]
+WantedBy=multi-user.target

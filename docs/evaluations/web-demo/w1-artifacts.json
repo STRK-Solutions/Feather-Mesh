@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "source_baseline": "643992a4fd4ad1d72b47e9ce23760e6949c98e0d",
+  "platform": "linux/amd64",
+  "ubuntu_base": "ubuntu:24.04@sha256:496754492fb28b4d3049432f2ca787449331e23fb14f0dd3fffea86bf5a93eb4",
+  "feam_sha256": "6d21243cdac07ddf60fc92aae1b79e6e39e80c16444afca444ae2a9824db50c3",
+  "feam_features": [
+    "agent-hosted"
+  ],
+  "ttyd": {
+    "version": "1.7.7",
+    "url": "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64",
+    "sha256": "8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55"
+  },
+  "python_wheel_lock_sha256": "6d0976d87176ca8f57eae18f40a9b282a41cc4e32526b5ca02e24a719c563a89",
+  "guest_builder_image_id": "sha256:7c96201e639210264d14fb526d597209c6c2ca5e7ea5876fd107c50aab71341e",
+  "image_config_digest": "sha256:0c4be2a296e46e09447327ff931953b0347be1f9bf54d4c69f63809787f68792",
+  "native_proxy_sha256": "e13b6ea766e3ab028ce73ba8f351b501c2f04e38349b5ec72c141a40a4ad4838",
+  "build_evidence": "Ubuntu 24.04 x86-64 QEMU TCG guest; native Go build on physical Ubuntu in isolated engineering scope; not performance or deployed host acceptance",
+  "image_archive_sha256": "a49c453bef465bdb06b17458a4cfe405a44e08a1ddc76a5104e7654f2775eb77",
+  "rootless_image_id": "sha256:0c4be2a296e46e09447327ff931953b0347be1f9bf54d4c69f63809787f68792"
+}

@@ -1,0 +1,156 @@
+{
+  "mode": "fake",
+  "checks": [
+    "unrelated cwd and spaced path without registry",
+    "discovery, partial coverage, pinned metadata and export",
+    "exported SDK examples execute externally with native Polars and known Rasterio pixels",
+    "assistant clarification then explicit pinned resolution",
+    "denied stage produces no output",
+    "confirmed stage receipt and exact two-asset inventory",
+    "changed destination invalidates review",
+    "incomplete draft, supplied contact patch, validated publication",
+    "cross-namespace rejection and local withdrawal"
+  ],
+  "passed": true,
+  "usage": {
+    "consumer": [
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 1,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 2,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 3,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 4,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 5,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      }
+    ],
+    "producer": [
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 1,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 2,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      },
+      {
+        "cancelled": false,
+        "cost_usd": 0.0,
+        "run_id": 3,
+        "usage": {
+          "cost_usd": 0.0,
+          "generation_id": null,
+          "input_tokens": 0,
+          "model": null,
+          "output_tokens": 0,
+          "provider": null
+        }
+      }
+    ]
+  },
+  "outcomes": [
+    {
+      "operation_id": "feam-op-18d879bfc880ed30-2",
+      "operation": "withdrawal",
+      "state": "committed",
+      "reference": "product://climate/observations",
+      "version": "v3"
+    },
+    {
+      "operation_id": "feam-op-18d879be67be884f-1",
+      "operation": "publication",
+      "state": "committed",
+      "reference": "product://climate/observations",
+      "version": "v3"
+    },
+    {
+      "operation_id": "feam-op-18d879babac0ec9b-3",
+      "operation": "staging",
+      "state": "failed_before_commit",
+      "reference": null,
+      "version": null
+    },
+    {
+      "operation_id": "feam-op-18d879b94c585367-2",
+      "operation": "staging",
+      "state": "committed",
+      "reference": "product://climate/observations",
+      "version": "v1"
+    }
+  ],
+  "elapsed_seconds": 96.70338812
+}

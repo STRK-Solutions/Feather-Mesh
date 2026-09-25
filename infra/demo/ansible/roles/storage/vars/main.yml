@@ -1,0 +1,5 @@
+---
+storage_units:
+  runtime: 'home-feam\x2dservice\x2ddata-runtime.mount'
+  slot-01: 'home-feam\x2dservice\x2ddata-slot\x2d01.mount'
+  slot-02: 'home-feam\x2dservice\x2ddata-slot\x2d02.mount'

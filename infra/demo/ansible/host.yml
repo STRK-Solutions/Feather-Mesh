@@ -1,0 +1,44 @@
+---
+- name: Converge the scoped W1 private terminal host
+  hosts: demo
+  become: true
+  gather_facts: true
+  gather_subset: [min]
+  vars:
+    feam_root: /home/feam-service-data
+    feam_runner_uid: 2101
+    feam_gateway_uid: 2102
+    feam_controller_uid: 2103
+    feam_subid_start: 200000
+    feam_container_host_uid: 200999
+    feam_runtime_size_mib: '{{ feam_runtime_mib | default(20480) }}'
+  pre_tasks:
+    - name: Require reviewed native Ubuntu scope and explicit filesystem identity
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.distribution == 'Ubuntu'
+          - ansible_facts.distribution_version == '24.04'
+          - ansible_facts.architecture == 'x86_64'
+          - feam_parent_uuid is defined
+          - feam_parent_uuid is match('^[a-f0-9-]{36}$')
+          - feam_root == '/home/feam-service-data'
+          - feam_runtime_size_mib | int in [4096, 20480]
+    - name: Inspect supported host runtime dependencies without changing Docker
+      ansible.builtin.command:
+        argv: [dpkg-query, -W, uidmap, dbus-user-session, acl, docker-ce-rootless-extras, apparmor]
+      changed_when: false
+    - name: Read parent storage identity
+      ansible.builtin.command:
+        argv: [findmnt, -n, -o, UUID, --target, /home]
+      register: feam_parent
+      changed_when: false
+    - name: Reject an unexpected storage filesystem
+      ansible.builtin.assert:
+        that: feam_parent.stdout == feam_parent_uuid
+  roles:
+    - role: accounts
+      tags: accounts
+    - role: storage
+      tags: storage
+    - role: runtime
+      tags: runtime

@@ -1,0 +1,14 @@
+{
+  "uid": 1000,
+  "read_only_image": true,
+  "capabilities_dropped": true,
+  "seccomp": true,
+  "no_new_privileges": true,
+  "network_none": true,
+  "memory_oom_kills": 1,
+  "pids_denied": 2,
+  "cpu_throttled_periods": 81,
+  "swap_bytes": 0,
+  "socket_tmpfs_byte_limit": true,
+  "socket_tmpfs_inode_limit": true
+}

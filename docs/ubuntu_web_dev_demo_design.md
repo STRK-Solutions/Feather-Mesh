@@ -32,7 +32,7 @@ Confirmed requirements:
 
 | Topic | Owner-confirmed decision |
 | --- | --- |
-| Initial accounts | Four admins and three regular users, all in Ottawa. Admins receive management access, not workspaces. Keep capacity for ten regular users. |
+| Initial accounts | Four admins and five regular users, all in Ottawa. Admins receive management access, not workspaces. Keep capacity for ten regular users. |
 | Enrollment and login | Invitation only, exact-email allowlists, Cloudflare Access email PINs; no public enrollment or whole-domain grants. |
 | Retention and access | The proposed workspace retention, role permissions, separate audiences, and dataset-grant model are accepted. |
 | Initial data | Small Government of Canada open-data climate datasets; valid GeoTIFF `.tiff` rasters and Parquet-only published tables. |
@@ -46,7 +46,7 @@ Confirmed requirements:
 | Research preservation | Collected research traces and reviewed exports survive demo shutdown and teardown in separate durable storage. Retention duration and export reviewers remain to be configured. |
 | Setup and accounts | SSH key access is verified. Owner reports no workload requiring preservation, will run reviewed sudo bootstrap commands, and will supply the OpenRouter key when needed. No cloud account exists yet. |
 
-The exact seven email addresses are retained in the ignored local planning file `.local/demo-deployment/participants.yaml`, with owner-only permissions. This is not executable IaC or an encrypted backup. Move it into encrypted operator configuration before provisioning; do not commit identities into this public design, Terraform configuration/state, images, or research exports. Bootstrap all four admins and three users idempotently by exact identity, then let the control database and membership reconciler own changes. Repeated provisioning must not recreate removed accounts or overwrite later roles. No invitations or account creation have been performed.
+The exact nine email addresses are retained in the ignored local planning file `.local/demo-deployment/participants.yaml`, with owner-only permissions. This is not executable IaC or an encrypted backup. Move it into encrypted operator configuration before provisioning; do not commit identities into this public design, Terraform configuration/state, images, or research exports. Bootstrap all four admins and five users idempotently by exact identity, then let the control database and membership reconciler own changes. Repeated provisioning must not recreate removed accounts or overwrite later roles. No invitations or account creation have been performed.
 
 Proposed operating defaults:
 
@@ -118,7 +118,7 @@ Use a private encrypted Ansible inventory/vault for host addresses, enrollment/p
 
 ## IaC on the existing Ubuntu machine
 
-**Assessment: a good fit for in-place Ansible provisioning; W0 preflight is complete and W1 runtime proof remains required.** Read-only checks verified SSH, the 2 TB non-rotating device mapping, ext4 `/home`, its private filesystem UUID, about 1.5 TiB available and synchronized time. Root has about 136 GiB free and cannot hold the proposed service allocation. Noninteractive sudo remains unavailable; the owner's supplied privileged output reports no Docker container rows/errors, the existing daemon at `/var/lib/docker`, Snap-only loop devices and loaded AppArmor. Preserve these existing host resources and policies. The owner-authorized disposable QEMU VM and separate native build pass W0 checks, recorded in the [acceptance index](ubuntu_web_dev_demo_acceptance.md). Actual demo runtime enforcement and reviewed host bootstrap remain W1. No reinstall or repartition is proposed.
+**Assessment: a good fit for in-place Ansible provisioning; W0 preflight and the scoped W1 runtime proof are complete.** Read-only checks verified SSH, the 2 TB non-rotating device mapping, ext4 `/home`, its private filesystem UUID, about 1.5 TiB available and synchronized time. Root has about 136 GiB free and cannot hold the proposed service allocation. Noninteractive sudo remains unavailable; the owner's supplied privileged output reports no Docker container rows/errors, the existing daemon at `/var/lib/docker`, Snap-only loop devices and loaded AppArmor. Preserve these existing host resources and policies. The owner-authorized disposable QEMU VM and separate native build pass W0 checks, recorded in the [acceptance index](ubuntu_web_dev_demo_acceptance.md). W1 owner-run bootstrap, private browser manual/fake flows, runtime enforcement and unchanged converge passed; see the [W1 evidence](evaluations/web-demo/w1-ubuntu-acceptance.json). Full participant services, capacity/cloud and shared-host reboot remain later gates. No reinstall or repartition is proposed.
 
 | Recorded condition | Ubuntu provisioning decision | Evidence required before deployment |
 | --- | --- | --- |
@@ -146,10 +146,11 @@ Mount staging and releases on the same dataset filesystem so promotion remains a
 
 ### Proposed repository artifacts and operator workflow
 
-W0 now implements the operator README, read-only preflight and example inventory,
-tool/version locks, disposable VM/native-build helpers and offline checks. The
-remaining host/deploy/lifecycle, Terraform, image and runtime-role paths below
-are deliverables to implement, **not existing deployment entrypoints**:
+W0 implements the operator README, read-only preflight and example inventory,
+tool/version locks, disposable VM/native-build helpers and offline checks. W1
+adds scoped host/runtime roles, `host.yml`, `deploy-w1.yml` and the terminal image.
+The production deploy/lifecycle and Terraform paths below remain deliverables
+to implement; use the [W1 runbook](../infra/demo/W1.md) for current entrypoints:
 
 ```text
 infra/demo/
@@ -180,9 +181,10 @@ Implementation CI must add Terraform format/validation and provider-lock checks,
 W0 selects Go for host services/orchestration and Python for bounded climate
 conversion. The [implementation contract](ubuntu_web_dev_demo_contract.md)
 records process/database ownership, typed IPC, settings and operator run-budget
-records. The [web baseline](../web_demo/README.md) and
-[operator tools](../infra/demo/README.md) now exist; runtime services and
-provisioning roles remain later implementation, tracked by the workplan.
+records. The [web baseline](../web_demo/README.md),
+[operator tools](../infra/demo/README.md), W1 private terminal proxy and scoped
+provisioning roles exist. Participant services and production lifecycle remain
+later implementation, tracked by the workplan.
 
 ```mermaid
 flowchart LR
@@ -272,7 +274,7 @@ Admin flow: use the management dashboard to approve users, set sandbox quotas an
 
 Cloudflare Access emails a one-time code only when the email satisfies its Access policy; codes are single-use and expire after 10 minutes. The login page returns a generic message for disallowed addresses. This avoids operating an SMTP service or implementing token issuance. [Cloudflare email PIN documentation](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/one-time-pin/)
 
-1. Bootstrap the four supplied admins locally from private configuration; provide no public signup or self-promotion endpoint. Initialize the three supplied regular users through the same exact-email reconciliation path.
+1. Bootstrap the four supplied admins locally from private configuration; provide no public signup or self-promotion endpoint. Initialize the five supplied regular users through the same exact-email reconciliation path.
 2. An admin adds an exact email address and role in the control database. Assign an immutable local user ID; do not use email strings as directory names.
 3. A reconciliation task updates the corresponding dedicated Cloudflare Access group's exact-email membership using a narrowly scoped API credential provisioned by the operator. Terraform manages the referencing applications/policies, not these mutable groups, as specified in [IaC evaluation and ownership](#iac-evaluation-and-ownership). New accounts remain `pending` until the edge membership and any regular-user workspace assignment are ready; admin accounts require no workspace. Admins see synchronization status in the dashboard. An operator command provides recovery if automatic reconciliation fails.
 4. Users enter their email at Access, receive a PIN if allowed, and submit it to authenticate.
@@ -637,7 +639,7 @@ These milestones implement Phase 1; Phase 2 SLM development follows the evidence
 
 Required acceptance scenarios:
 
-1. **Authentication and roles:** bootstrap the exact private four-admin/three-user roster with no public signup; repeat converge must not resurrect removed identities. Allowed email succeeds; unlisted email is denied; expired/replayed PIN fails; forged headers and wrong-audience JWTs fail. A regular user cannot open admin APIs, run dataset jobs, change grants/model budgets, or export others' traces. Admin provisioning allocates no workspace. Removal closes sessions within 30 seconds and revokes capabilities. Verify PIN delivery and browser/WebSocket access from the actual Ottawa institutional networks.
+1. **Authentication and roles:** bootstrap the exact private four-admin/five-user roster with no public signup; repeat converge must not resurrect removed identities. Allowed email succeeds; unlisted email is denied; expired/replayed PIN fails; forged headers and wrong-audience JWTs fail. A regular user cannot open admin APIs, run dataset jobs, change grants/model budgets, or export others' traces. Admin provisioning allocates no workspace. Removal closes sessions within 30 seconds and revokes capabilities. Verify PIN delivery and browser/WebSocket access from the actual Ottawa institutional networks.
 2. **Ownership and origins:** users A and B attempt each other's guessed hostname/IDs, reset endpoints, downloads if introduced, and WebSocket upgrades. All fail. Cross-origin/sibling-origin CSRF and terminal upgrade attempts fail. Sandbox-controlled responses cannot obtain portal authentication material. Direct origin/port access offers no authentication bypass.
 3. **Isolation and quotas:** verify A cannot read/write B's private data, ungranted bundles, host home, pipeline staging, provider credentials, trace stores, other users' inference sockets, or host services. Exhaust memory, PIDs, CPU, disk, and event quotas separately; contain failure without starving other users. Shared mounts reject writes through shell and symlink paths. The model bridge cannot proxy arbitrary destinations or cross-account requests.
 4. **FEAM and datasets:** run refresh, detail, pinned resolve, direct SDK reads, explicit private staging, and practice publication/withdrawal/recovery. Test successful load plus corrupt formats, missing metadata, namespace conflicts, duplicate versions, concurrent jobs, partial fetch/publication, and failed promotion. Grant a bundle only to A and verify B cannot read it even by path. Restart applies the selected release; removal rejects future access and stops old mounts; reset A leaves shared releases and B unchanged. Rollback cannot resurrect withdrawn access.
@@ -652,7 +654,7 @@ A successful localhost page or ten open idle tabs is insufficient evidence of te
 
 ## Decisions and remaining deployment inputs
 
-- [x] Four admins and three regular users recorded privately; invited email PIN login and ten-user capacity remain the target.
+- [x] Four admins and five regular users recorded privately; invited email PIN login and ten-user capacity remain the target.
 - [x] Existing participant consent confirmed; role/audience boundaries and dataset permissions remain required.
 - [x] Small Canadian government climate sources, GeoTIFF `.tiff` rasters and Parquet-only tables remain the dataset direction.
 - [x] Selected DeepSeek/OpenRouter profile and US$100 project allowance remain; owner will supply the key when needed.
@@ -660,6 +662,7 @@ A successful localhost page or ten open idle tabs is insufficient evidence of te
 - [x] On-demand Ubuntu or cloud, disposable demo contents, no scheduled hours, no cloud recovery workflow, no Canadian-region restriction.
 - [x] Cloudflare account exists; owner purchased `613202690.xyz` at Spaceship.
 - [x] Owner selected `613202690.xyz` again and confirmed Cloudflare Active status on 2026-09-25; public DNS returns its assigned Cloudflare nameservers.
+- [x] Owner confirms Cloudflare Zero Trust onboarding is complete on 2026-09-25. Account MFA and scoped access remain to be verified for W8.
 - [ ] Supply scoped Cloudflare access when EDGE configuration is ready; configure and verify the selected routes, HTTPS, Tunnel and Access, and retain domain renewal terms for handoff.
 - [ ] Approve a low-cost provider/region and complete instance/storage/IP estimate; create the selected account and authorize a bounded deployment test.
 - [ ] Supply the OpenRouter credential privately and approve finite live-test/per-user/request budgets.
@@ -667,6 +670,6 @@ A successful localhost page or ten open idle tabs is insufficient evidence of te
 - [x] Collected research traces and reviewed exports survive shutdown/teardown; prefer eastern North American compute for latency.
 - [ ] Configure durable research storage, retention duration, reviewers, support contact and Phase 2 ownership. No demo-hours decision is required.
 - [x] W0 preflight, disposable Linux test target and exact future service path/mount scope verified; owner-run privileged output reviewed.
-- [ ] Implement/test W1 runtime/storage roles and run the reviewed sudo bootstrap; recheck mount identity, account/subordinate-ID collisions and resource ownership immediately before mutation.
+- [x] Implement/test W1 runtime/storage roles and run the reviewed owner sudo bootstrap; mount identity, account/subordinate-ID collisions and ownership were checked. Actual Ubuntu enforcement, browser manual/fake flows, persistence/reset and unchanged converge pass; shared-host reboot remains later.
 
 The IaC, image, portal, pipeline and broker/collector can be implemented and tested offline while external inputs are settled. The domain purchase is complete; paid cloud deployment, billable inference, public exposure and invitations remain explicit subsequent operations. Completion requires actual Ubuntu and cloud lifecycle/capacity evidence, not an automatic recovery drill.

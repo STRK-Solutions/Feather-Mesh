@@ -1,8 +1,9 @@
 # Demo operator baseline
 
 W0 introduces read-only preflight, sanitized examples, validation and a bounded
-disposable-VM probe. Host/deploy/lifecycle roles, images and Terraform modules
-are still planned. See [contract](../../docs/ubuntu_web_dev_demo_contract.md),
+disposable-VM probe. W1 adds scoped account/storage/rootless-runtime roles, a
+terminal image and the private operator proxy; see the [W1 runbook](W1.md).
+Production lifecycle services and Terraform modules remain planned. See [contract](../../docs/ubuntu_web_dev_demo_contract.md),
 [toolchain](toolchain.md) and [acceptance](../../docs/ubuntu_web_dev_demo_acceptance.md).
 
 ## Local checks
@@ -22,7 +23,7 @@ No inventory connection or VM mutation is performed by this check command.
 Copy [example.yml](ansible/inventories/example.yml) into an operator-private
 inventory and replace the reserved placeholder host/user. Verify the SSH host
 key independently; strict host checking stays enabled. Do not use a real
-inventory in public CI. Preserve the private roster's four admins/three users
+inventory in public CI. Preserve the private roster's four admins/five users
 and existing consent; it is not a broadly matching public allowlist.
 
 ```bash
@@ -147,8 +148,8 @@ pinned pip wheel and does not alter system Python.
 
 | Input | Current state / next gate |
 | --- | --- |
-| I1 | W0 SSH, owner-authorized VM/native build and owner-run privileged inventory passed. Private inventory retained locally. Reviewed W1 bootstrap and actual runner enforcement remain later work. No sudo password needed by the agent. |
-| I2 | Owner switched back to `feam.613202690.xyz`, with `admin.613202690.xyz` and `u-<opaque-id>.613202690.xyz` siblings, and confirmed Cloudflare Active status. Public DNS returns the assigned nameservers. Scoped credentials, route/HTTPS/Tunnel/Access configuration and verification remain W8; retain renewal terms for handoff. |
+| I1 | W0 preflight and W1 owner-run scoped bootstrap passed. Actual runner enforcement, browser manual/fake flows, persistent storage, lingering and unchanged converge are verified. Private inventory/evidence retained locally. Shared-host reboot remains later; no sudo password is needed by the agent. |
+| I2 | Owner switched back to `feam.613202690.xyz`, with `admin.613202690.xyz` and `u-<opaque-id>.613202690.xyz` siblings, and confirmed Cloudflare Active status and completed Zero Trust onboarding. Public DNS returns the assigned nameservers. Account MFA confirmation, scoped credentials, route/HTTPS/Tunnel/Access configuration and verification remain W8; retain renewal terms for handoff. |
 | I3 | Operator-held state and project/run allocation contract defined; actual encrypted storage/ledger/archive setup pending W5–W7. |
 | I4 | Selected route fixed; key, current prices and finite live budget pending W8. No live inference now. |
 | I5 | Cloud account/provider and bounded exact purchase approval pending W9. W0 does not create paid resources. |

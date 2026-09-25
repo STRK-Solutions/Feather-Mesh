@@ -1,0 +1,114 @@
+---
+- name: Install the finite storage verifier
+  ansible.builtin.copy:
+    src: '{{ playbook_dir }}/../scripts/w1_storage.py'
+    dest: /usr/local/sbin/feam-w1-storage
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Allocate only new ownership-recorded files under an exclusive operator lock
+  ansible.builtin.command:
+    argv:
+      - flock
+      - /run/feam-w1-provision.lock
+      - /usr/local/sbin/feam-w1-storage
+      - provision
+      - --parent-uuid
+      - '{{ feam_parent_uuid }}'
+      - --runtime-mib
+      - '{{ feam_runtime_size_mib | string }}'
+  register: storage_inventory
+  changed_when: storage_inventory.rc == 0 and (storage_inventory.stdout | from_json).changed
+
+- name: Install finite filesystem mount units
+  ansible.builtin.copy:
+    dest: '/etc/systemd/system/{{ storage_units[item] }}'
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=FEAM W1 owned {{ item }} volume
+      RequiresMountsFor=/home
+      Before=user@2101.service
+      [Mount]
+      What={{ feam_root }}/{{ item }}.ext4
+      Where={{ feam_root }}/{{ item }}
+      Type=ext4
+      Options=loop,nosuid,nodev,nodiscard{% if item != 'runtime' %},noexec{% endif %}
+
+      [Install]
+      WantedBy=multi-user.target
+  loop: [runtime, slot-01, slot-02]
+  register: storage_mount_units
+
+- name: Reload system units after mount definitions change # noqa: no-handler
+  # The following mount starts require this reload before role completion.
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: storage_mount_units.changed
+
+- name: Start verified finite mounts
+  ansible.builtin.systemd_service:
+    name: '{{ storage_units[item] }}'
+    enabled: true
+    state: started
+  loop: [runtime, slot-01, slot-02]
+
+- name: Verify actual filesystem and loop backing identities
+  ansible.builtin.command:
+    argv: [/usr/local/sbin/feam-w1-storage, verify, --parent-uuid, '{{ feam_parent_uuid }}']
+  changed_when: false
+
+- name: Set mounted roots only to their fixed mapped owner
+  ansible.builtin.file:
+    path: '{{ feam_root }}/{{ item.name }}'
+    state: directory
+    owner: '{{ item.uid }}'
+    group: '{{ item.uid }}'
+    mode: '{{ "0700" if item.name == "runtime" else "0710" }}'
+  loop:
+    - {name: runtime, uid: 2101}
+    - {name: slot-01, uid: 200999}
+    - {name: slot-02, uid: 200999}
+
+- name: Permit runner traversal of the mapped private volume roots
+  ansible.builtin.command:
+    argv: [setfacl, -m, 'u:2101:x', '{{ feam_root }}/{{ item }}']
+  changed_when: false
+  loop: [slot-01, slot-02]
+
+- name: Create terminal mount parent
+  ansible.builtin.file:
+    path: /run/feam-terminal-w1
+    state: directory
+    owner: root
+    group: root
+    mode: '0711'
+
+- name: Install bounded terminal socket mount
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/run-feam\x2dterminal\x2dw1-slot\x2d01.mount
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=FEAM W1 bounded terminal sockets
+      Before=user@2101.service
+      [Mount]
+      What=tmpfs
+      Where=/run/feam-terminal-w1/slot-01
+      Type=tmpfs
+      Options=size=1M,nr_inodes=64,mode=0700,uid=200999,gid=200999,nosuid,nodev,noexec
+      [Install]
+      WantedBy=multi-user.target
+  register: storage_socket_mount
+
+- name: Load terminal socket mount
+  ansible.builtin.systemd_service:
+    daemon_reload: '{{ storage_socket_mount.changed }}'
+    name: run-feam\x2dterminal\x2dw1-slot\x2d01.mount
+    enabled: true
+    state: started

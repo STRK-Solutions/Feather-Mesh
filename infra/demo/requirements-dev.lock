@@ -22,6 +22,7 @@ playwright==1.63.0
 pycparser==3.0
 pyee==13.0.1
 pytokens==0.4.1
+pyte==0.8.2
 PyYAML==6.0.3
 referencing==0.37.0
 resolvelib==1.2.1
@@ -30,4 +31,5 @@ ruamel.yaml==0.19.1
 subprocess-tee==0.4.2
 typing_extensions==4.16.0
 wcmatch==11.0.1
+wcwidth==0.9.1
 yamllint==1.38.0

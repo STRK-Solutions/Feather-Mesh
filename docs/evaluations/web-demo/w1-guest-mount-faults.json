@@ -1,0 +1,10 @@
+{
+  "mount_loss_stops_runner": true,
+  "missing_mount_denied": true,
+  "wrong_mount_denied": true,
+  "underlying_write_denied": true,
+  "runner_start_without_login": true,
+  "filesystem_inventory_unchanged": true,
+  "namespace_policy_unchanged": true,
+  "environment": "LINUX disposable Ubuntu QEMU guest"
+}
