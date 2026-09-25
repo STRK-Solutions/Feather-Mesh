@@ -55,9 +55,9 @@ func privateJSON(path string, v any) error {
 	return nil
 }
 func main() {
-	mode := flag.String("mode", "serve", "initialize, migrate, bootstrap, invite, restore, assign or serve")
+	mode := flag.String("mode", "serve", "initialize, migrate, bootstrap, invite, restore, assign, grant or serve")
 	path := flag.String("config", "", "private operator config")
-	input := flag.String("input", "", "private roster or workspace assignment JSON")
+	input := flag.String("input", "", "private roster, workspace assignment or reviewed grant JSON")
 	flag.Parse()
 	var c config
 	if e := privateJSON(*path, &c); e != nil {
@@ -69,7 +69,7 @@ func main() {
 		open = db.Initialize
 	case "migrate":
 		open = db.Migrate
-	case "bootstrap", "invite", "restore", "assign", "serve":
+	case "bootstrap", "invite", "restore", "assign", "grant", "serve":
 	default:
 		log.Fatal("unknown explicit operation")
 	}
@@ -81,6 +81,26 @@ func main() {
 	s := &control.Store{DB: d}
 	switch *mode {
 	case "initialize", "migrate":
+		return
+	case "grant":
+		var in struct {
+			Actor   string `json:"actor_id"`
+			Target  string `json:"account_id"`
+			Bundle  string `json:"bundle"`
+			Digest  string `json:"digest"`
+			Version int64  `json:"grant_version"`
+		}
+		if privateJSON(*input, &in) != nil {
+			log.Fatal("invalid private reviewed grant")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := gateway.AssignReviewedRelease(ctx, s, c.Gateway.PipelineSocket, in.Actor, in.Target, in.Bundle, in.Digest, in.Version); err != nil {
+			log.Fatal("reviewed grant incomplete; inspect current state without replay")
+		}
+		if err := json.NewEncoder(os.Stdout).Encode(map[string]string{"status": "committed", "reconfiguration": "pending"}); err != nil {
+			log.Fatal("grant committed; output unavailable, inspect current state without replay")
+		}
 		return
 	case "invite":
 		var in struct {

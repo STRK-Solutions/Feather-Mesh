@@ -18,6 +18,26 @@ import (
 var bundleName = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
 var releaseDigest = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
+// AssignReviewedRelease is the privileged operator entrypoint for an exact
+// approved assignment. The configured gateway identity resolves the release
+// through pipeline IPC; SetGrant rechecks current roles and the grant version,
+// audits the change and queues normal controller reconciliation. No browser
+// identity or controller acknowledgment is synthesized here.
+func AssignReviewedRelease(ctx context.Context, store *control.Store, pipelineSocket, actor, target, bundle, digest string, version int64) error {
+	admin, err := store.Account(ctx, actor)
+	if err != nil || admin.Role != "admin" || admin.Status != "active" {
+		return control.ErrForbidden
+	}
+	if version < 1 || !bundleName.MatchString(bundle) || !releaseDigest.MatchString(digest) {
+		return control.ErrConflict
+	}
+	g := Gateway{Config: Config{PipelineSocket: pipelineSocket}}
+	if !g.resolveRelease(ctx, bundle, digest) {
+		return control.ErrConflict
+	}
+	return store.SetGrant(ctx, actor, target, bundle, digest, version)
+}
+
 // Assignment changes accept identities only. The pipeline resolves the exact
 // current immutable release; the controller independently validates it at mount.
 func (g *Gateway) grant(w http.ResponseWriter, r *http.Request, a control.Account) {

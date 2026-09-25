@@ -38,6 +38,60 @@ type trackedCloser struct{ closed atomic.Bool }
 
 func (c *trackedCloser) Close() error { c.closed.Store(true); return nil }
 
+func TestOperatorGrantValidatesReleaseRolesAndVersion(t *testing.T) {
+	for _, scenario := range []string{"valid", "unavailable", "different_release", "user_actor", "admin_target", "stale", "invalid_digest"} {
+		t.Run(scenario, func(t *testing.T) {
+			f := setup(t, "/run/absent.sock")
+			ctx := context.Background()
+			digest := strings.Repeat("a", 64)
+			actor, target, version := f.accounts[0].ID, f.accounts[4].ID, int64(1)
+			socket := unixBackend(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var grant control.Grant
+				if r.Method != "POST" || r.URL.Path != "/v1/releases/resolve" || json.NewDecoder(r.Body).Decode(&grant) != nil || grant.Bundle != "climate" || grant.Digest != digest {
+					t.Error("operator must resolve the exact reviewed release")
+				}
+				if scenario == "unavailable" {
+					w.WriteHeader(503)
+					return
+				}
+				if scenario == "different_release" {
+					grant.Digest = strings.Repeat("b", 64)
+				}
+				json.NewEncoder(w).Encode(pipeline.ReleaseView{Bundle: grant.Bundle, Digest: grant.Digest, Namespace: grant.Bundle, Revision: 1, ServingRoot: "/datasets/releases/climate/provider/serving"})
+			}))
+			switch scenario {
+			case "user_actor":
+				actor = f.accounts[4].ID
+			case "admin_target":
+				target = f.accounts[0].ID
+			case "stale":
+				version = 2
+			case "invalid_digest":
+				digest = ""
+			}
+			err := AssignReviewedRelease(ctx, f.g.Store, socket, actor, target, "climate", digest, version)
+			updates, _ := f.g.Store.PendingGrantUpdates(ctx)
+			workspace, _ := f.g.Store.Workspace(ctx, f.workspaces[0].ID)
+			if scenario != "valid" {
+				if err == nil || len(updates) != 0 || workspace.GrantVersion != 1 || !workspace.Ready {
+					t.Fatal("rejected operator grant changed state", err, workspace)
+				}
+				return
+			}
+			if err != nil || len(updates) != 1 || workspace.GrantVersion != 2 || workspace.Ready {
+				t.Fatal("grant did not queue conservative reconfiguration", err, workspace)
+			}
+			var audits int
+			if err := f.g.Store.DB.QueryRow(`SELECT count(*) FROM audit WHERE actor_id=? AND target_id=? AND action='dataset_grant_changed'`, actor, target).Scan(&audits); err != nil || audits != 1 {
+				t.Fatal("grant audit missing", err, audits)
+			}
+			if AssignReviewedRelease(ctx, f.g.Store, socket, actor, target, "climate", digest, version) == nil {
+				t.Fatal("stale operator intent replayed")
+			}
+		})
+	}
+}
+
 func TestGrantExactReleaseAndDurableReconfigure(t *testing.T) {
 	f := setup(t, "/run/absent.sock")
 	ctx := context.Background()

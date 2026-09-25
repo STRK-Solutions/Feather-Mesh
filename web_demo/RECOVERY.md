@@ -55,6 +55,18 @@ leaves the job unresolved; repeat only this same explicit abort after restoring
 the failed dependency. The exact completed abort is idempotent. An unrelated
 job/hash and an already completed normal operation cannot be aborted this way.
 
+For an operator-authorized dataset assignment, run the installed gateway as
+`feam-gateway` with `-mode grant -config /etc/feam/services/gateway/config.json
+-input REVIEWED_JSON`. The owner-only input contains `actor_id` (an active
+administrator), `account_id` (an active regular user), `bundle`, the exact
+approved `digest`, and the current `grant_version`. The pipeline service must
+be available: this command resolves that exact release through its normal IPC
+before committing the audited grant and queuing controller reconfiguration.
+It does not perform a browser login or acknowledge reconfiguration. Verify the
+pending update completes and the workspace becomes ready before participant
+use. A lost reply requires state inspection; the old version cannot be replayed.
+
+
 ## Inactive-file warning
 
 The daemon records a warning after 27 days of inactivity for stopped

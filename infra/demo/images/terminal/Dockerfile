@@ -11,6 +11,7 @@ COPY model-adapter /usr/local/bin/model-adapter
 COPY binary.sha256 /opt/feam/binary.sha256
 RUN cd /usr/local/bin && sha256sum --check /opt/feam/binary.sha256 && chmod 0755 feam ttyd model-adapter
 COPY feather-mesh/ /opt/feam/workspace/
+RUN chmod 0555 /opt/feam/workspace/scripts/tui_agent_stage1_demo.sh
 ENV PATH=/opt/feam/venv/bin:/usr/local/bin:/usr/bin:/bin \
     FEAM_EXECUTABLE=/usr/local/bin/feam FEAM_WORKSPACE=/opt/feam/workspace \
     FEAM_CACHE_DIR=/workspace/cache XDG_STATE_HOME=/workspace/state \
