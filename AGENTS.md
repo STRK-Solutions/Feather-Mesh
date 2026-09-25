@@ -41,7 +41,7 @@ Validate every affected surface using the shared peer-access skill. Add concrete
 | Surface | Required evidence |
 | --- | --- |
 | SDK | Documented tests and fresh package installation; native Polars lazy query and subprocess success/error compatibility. |
-| STAC | Pinned-schema validation plus real-client authenticated, paginated HTTP integration and a known Rasterio window. |
+| STAC | Pinned-schema validation plus real-client tokenless, loopback-only paginated HTTP integration, rejected non-loopback binding, and a known Rasterio window. |
 | Inspectors | Tested supported feature configurations, native dependencies, and explicit failure when a required validator is unavailable. |
 | HPC | Actual target-filesystem, separate-identity and multi-node cache evidence, recorded separately from local automation. |
 

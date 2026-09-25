@@ -1,6 +1,6 @@
 # Stage-1 acceptance record
 
-Updated 2026-09-23. **Stage-1 implementation and acceptance pass.** The final
+Updated 2026-09-24. **Stage-1 implementation and acceptance pass.** The final
 candidate completed **97/100 fresh held-out requests**, with **zero detected
 unauthorized writes or disclosures**, exceeding the ≥90% completion target.
 Its full live producer/consumer TUI walkthrough also passes. Required local
@@ -31,12 +31,12 @@ Commands run from `feather-mesh/`, using cached dependencies with `--offline`:
 | `cargo fmt -- --check` | Pass. |
 | `cargo clippy -- -D warnings` | Pass. |
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Pass. |
-| `cargo test` and `cargo test --workspace --all-features` | Pass. All-feature suites: agent 12 unit + 9 session tests; CLI 7; core 42; TUI 9; doc tests pass. |
+| `cargo test` and `cargo test --workspace --all-features` | Pass. All-feature suites: agent 12 unit + 9 session tests; CLI 8; core 43; TUI 9; doc tests pass. |
 | `cargo test -p mesh_cli --no-default-features`, then `--features tui`, then `--features agent-hosted` | All pass. |
 | `python -m unittest discover -s scripts -p 'test_*py'` | 14 pass: seven screening checks, five real-PTY cases and two destructive-reset containment checks. |
 | `stage1_eval --fake` | 100/100 state assertions pass; no model-quality inference. |
 | `tui_walkthrough.py --mode manual` and `--mode fake` | Complete producer/consumer keyboard workflows pass. |
-| Fresh `python_sdk[test,table,raster]` install; out-of-source import; `FEAM_E2E=1 FEAM_EXECUTABLE=... python -m pytest python_sdk/tests` | Four pass: native Polars lazy query, subprocess success/error compatibility, authenticated paginated STAC and known Rasterio window. |
+| Fresh `python_sdk[test,table,raster]` install; out-of-source import; `FEAM_E2E=1 FEAM_EXECUTABLE=... python -m pytest python_sdk/tests` | Four pass: native Polars lazy query, subprocess success/error compatibility, tokenless loopback-only paginated STAC and known Rasterio window. |
 | Context structural checker and its tests | Pass; 13 checker tests. Semantic review preserves manifest authority and shared-service ownership. |
 
 PTY checks exercise real 80×24 terminals, paths with spaces, unrelated working

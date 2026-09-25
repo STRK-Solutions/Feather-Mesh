@@ -152,8 +152,6 @@ enum CacheCommand {
 #[derive(Debug, Subcommand)]
 enum StacCommand {
     Serve {
-        #[arg(long)]
-        token_file: PathBuf,
         #[arg(long, default_value = "127.0.0.1:8080")]
         addr: std::net::SocketAddr,
     },
@@ -618,11 +616,8 @@ fn run_peer(cli: Cli, project_root: PathBuf) -> PeerResult<()> {
             print_peer(&teams, cli.format)
         }
         Command::Stac {
-            command: StacCommand::Serve { token_file, addr },
-        } => {
-            let token = mesh_core::stac_http::read_bearer_token(token_file)?;
-            mesh_core::stac_http::serve(project, token, addr)
-        }
+            command: StacCommand::Serve { addr },
+        } => mesh_core::stac_http::serve(project, addr),
         Command::Tui { .. } => unreachable!("TUI dispatch occurs before project routing"),
     }
 }
