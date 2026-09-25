@@ -69,12 +69,14 @@ fi
 "$feam" --project "$provider" init --namespace climate --serving-dir serving --owner-team Climate
 mkdir -p "$provider/serving/datasets/observations/v1" \
   "$provider/serving/datasets/observations/v2" \
+  "$provider/serving/datasets/guided-observations/v1" \
   "$provider/serving/datasets/temperature/v1"
 cp "$fixtures/table/part-000.parquet" "$provider/serving/datasets/observations/v1/part-000.parquet"
 cp "$fixtures/table/part-001.parquet" "$provider/serving/datasets/observations/v1/part-001.parquet"
 cp "$fixtures/table/part-000.parquet" "$provider/serving/datasets/observations/v2/part-000.parquet"
 cp "$fixtures/table/part-001.parquet" "$provider/serving/datasets/observations/v2/part-001.parquet"
 cp "$fixtures/table/unregistered.parquet" "$provider/serving/datasets/observations/v1/unregistered.parquet"
+cp "$fixtures/table/part-000.parquet" "$provider/serving/datasets/guided-observations/v1/data.parquet"
 cp "$fixtures/raster/temperature.tiff" "$provider/serving/datasets/temperature/v1/temperature.tiff"
 
 cat > "$provider/observations-v1.json" <<'JSON'
@@ -83,6 +85,9 @@ JSON
 sed 's#"version":"v1"#"version":"v2"#; s#observations/v1#observations/v2#g' "$provider/observations-v1.json" > "$provider/observations-v2.json"
 cat > "$provider/temperature-v1.json" <<'JSON'
 {"schema_version":1,"namespace":"climate","product_id":"temperature","name":"Demo temperature","version":"v1","data_kind":"raster","data_format":"geotiff","description":"Synthetic Stage-1 raster","intended_use":"TUI and Rasterio demo","limitations":"none","owner_team":"Climate","producer":"Feather Mesh demo","contact":"demo@example.test","usage_policy":"internal","classification":"internal","quality":"production","assets":[{"id":"data","path":"datasets/temperature/v1/temperature.tiff","role":"data","media_type":"image/tiff; application=geotiff"}],"lineage":[],"raster":{"datetime":"2026-01-01T00:00:00Z","bbox":[-76.0,45.0,-75.0,46.0],"semantics":{"band_1":"synthetic temperature"}}}
+JSON
+cat > "$provider/guided-product.json" <<'JSON'
+{"schema_version":1,"namespace":"climate","product_id":"guided-observations","name":"Guided observations","version":"v1","data_kind":"table","data_format":"parquet","description":"Guided tutorial table","intended_use":"Disposable guided tutorial practice","limitations":"none","owner_team":"Climate","producer":"Feather Mesh demo","contact":"demo@example.test","usage_policy":"internal","classification":"internal","quality":"production","assets":[{"id":"data","path":"datasets/guided-observations/v1/data.parquet","role":"data","media_type":"application/vnd.apache.parquet"}],"lineage":[],"table":{"column_meanings":{"station_id":"synthetic station identifier","temperature":"synthetic temperature"},"column_units":{"station_id":"not_applicable","temperature":"celsius"},"partition_columns":[]}}
 JSON
 
 "$feam" --project "$provider" serve "$provider/serving" --metadata "$provider/observations-v1.json"

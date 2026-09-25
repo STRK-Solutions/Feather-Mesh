@@ -23,6 +23,25 @@ lifecycle, focus, rendering, review screens, and local confirmations;
 serialization policy; `mesh_core::services` owns catalog/operation DTOs and
 all peer rules. Neither the TUI nor the agent can edit a manifest directly.
 
+## Menu and view contract
+
+Catalog renders the product/version list beside selected product metadata.
+Lineage renders the same selectable list beside the product's version lineage. Peers, Operations,
+Help, Teams, and Cache are exclusive full-width views; Catalog-only open,
+example, and paging controls do nothing there. Each view and the modal review screen retain independent
+scroll positions, and asynchronous view results update their originating view
+without stealing focus.
+
+With `agent-hosted`, Assistant is an additional menu even when its profile is
+off or invalid. Prompt submission selects it. Streaming and completed output,
+user prompts, run state, and tool summaries remain available when navigating
+away and back; completion in another menu marks Assistant unread instead of
+changing focus. Retained rendered transcript text is bounded to 1 MiB by
+removing the oldest complete entries, resets on project/profile changes, and
+is not persisted automatically. Agent-produced drafts remain in Catalog and
+do not replace the Assistant transcript. All rendered content remains subject
+to terminal-control sanitization.
+
 ## Catalog contract
 
 `feam.catalog.v1` exposes `CatalogQuery` and `CatalogPage`. The initial
