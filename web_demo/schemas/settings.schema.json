@@ -1,0 +1,426 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://feam.invalid/web/v1/settings.schema.json",
+  "title": "FEAM web v1 settings",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "mode": {
+      "enum": [
+        "test",
+        "production"
+      ]
+    },
+    "site": {
+      "enum": [
+        "ubuntu",
+        "cloud"
+      ]
+    },
+    "public_admission": {
+      "type": "boolean"
+    },
+    "live_inference": {
+      "type": "boolean"
+    },
+    "storage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "root": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^/(home|srv|mnt)/feam-service-data$"
+        },
+        "parent_uuid": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "workspace_slots": {
+          "const": 10
+        },
+        "reset_spares": {
+          "const": 2
+        },
+        "workspace_gib": {
+          "const": 2
+        },
+        "datasets_gib": {
+          "const": 200
+        },
+        "operations_gib": {
+          "const": 5
+        },
+        "traces_gib": {
+          "const": 20
+        },
+        "runtime_gib": {
+          "const": 20
+        }
+      },
+      "required": [
+        "root",
+        "parent_uuid",
+        "workspace_slots",
+        "reset_spares",
+        "workspace_gib",
+        "datasets_gib",
+        "operations_gib",
+        "traces_gib",
+        "runtime_gib"
+      ]
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "issuer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^https://[a-z0-9-]+\\.cloudflareaccess\\.com$"
+        },
+        "portal_hostname": {
+          "type": "string",
+          "format": "hostname"
+        },
+        "admin_hostname": {
+          "type": "string",
+          "format": "hostname"
+        },
+        "portal_audience": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "admin_audience": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "workspace_audience": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "roster_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^/etc/feam/secrets/[a-z0-9.-]+$"
+        }
+      },
+      "required": [
+        "issuer",
+        "portal_hostname",
+        "admin_hostname",
+        "portal_audience",
+        "admin_audience",
+        "workspace_audience",
+        "roster_ref"
+      ]
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "backend": {
+          "enum": [
+            "fake",
+            "openrouter"
+          ]
+        },
+        "name": {
+          "const": "deepseek/deepseek-v4.1-flash"
+        },
+        "provider": {
+          "const": "deepinfra/fp8"
+        },
+        "fallbacks": {
+          "const": false
+        },
+        "automatic_retries": {
+          "const": 0
+        },
+        "global_concurrency": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "per_user_concurrency": {
+          "const": 1
+        },
+        "request_timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120
+        },
+        "key_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^/etc/feam/secrets/[a-z0-9.-]+$"
+        }
+      },
+      "required": [
+        "backend",
+        "name",
+        "provider",
+        "fallbacks",
+        "automatic_retries",
+        "global_concurrency",
+        "per_user_concurrency",
+        "request_timeout_seconds",
+        "key_ref"
+      ]
+    },
+    "research": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "archive": {
+          "enum": [
+            "r2",
+            "private-git",
+            "unconfigured"
+          ]
+        },
+        "retention_days": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "reviewer_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 36,
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "maxItems": 20
+        },
+        "support_contact_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^/etc/feam/secrets/[a-z0-9.-]+$"
+        },
+        "batch_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300
+        },
+        "batch_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8388608
+        }
+      },
+      "required": [
+        "archive",
+        "retention_days",
+        "reviewer_ids",
+        "support_contact_ref",
+        "batch_seconds",
+        "batch_bytes"
+      ]
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "I1": {
+          "enum": [
+            "pending",
+            "ready"
+          ]
+        },
+        "I2": {
+          "enum": [
+            "pending",
+            "ready"
+          ]
+        },
+        "I3": {
+          "enum": [
+            "pending",
+            "ready"
+          ]
+        },
+        "I4": {
+          "enum": [
+            "pending",
+            "ready"
+          ]
+        },
+        "I5": {
+          "enum": [
+            "pending",
+            "ready"
+          ]
+        },
+        "I6": {
+          "enum": [
+            "pending",
+            "ready"
+          ]
+        },
+        "I7": {
+          "enum": [
+            "pending",
+            "ready"
+          ]
+        }
+      },
+      "required": [
+        "I1",
+        "I2",
+        "I3",
+        "I4",
+        "I5",
+        "I6",
+        "I7"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "mode",
+    "site",
+    "public_admission",
+    "live_inference",
+    "storage",
+    "identity",
+    "model",
+    "research",
+    "inputs"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "test"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "public_admission": {
+            "const": false
+          },
+          "live_inference": {
+            "const": false
+          },
+          "model": {
+            "properties": {
+              "backend": {
+                "const": "fake"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "live_inference": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "mode": {
+            "const": "production"
+          },
+          "model": {
+            "properties": {
+              "backend": {
+                "const": "openrouter"
+              }
+            }
+          },
+          "inputs": {
+            "properties": {
+              "I1": {
+                "const": "ready"
+              },
+              "I3": {
+                "const": "ready"
+              },
+              "I4": {
+                "const": "ready"
+              },
+              "I6": {
+                "const": "ready"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "public_admission": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "mode": {
+            "const": "production"
+          },
+          "inputs": {
+            "properties": {
+              "I1": {
+                "const": "ready"
+              },
+              "I2": {
+                "const": "ready"
+              },
+              "I3": {
+                "const": "ready"
+              },
+              "I6": {
+                "const": "ready"
+              },
+              "I7": {
+                "const": "ready"
+              }
+            }
+          },
+          "research": {
+            "properties": {
+              "archive": {
+                "enum": [
+                  "r2",
+                  "private-git"
+                ]
+              },
+              "retention_days": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3650
+              },
+              "reviewer_ids": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

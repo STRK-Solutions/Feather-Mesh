@@ -1,0 +1,23 @@
+---
+- name: Inspect demo hosts without installation or reconfiguration
+  hosts: demo
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Run the reviewed read-only Python probes
+      ansible.builtin.raw: |
+        python3 - <<'FEAM_READ_ONLY_PREFLIGHT'
+        {{ lookup('ansible.builtin.file', '../scripts/preflight.py') }}
+        FEAM_READ_ONLY_PREFLIGHT
+      register: preflight
+      changed_when: false
+      # These probes are read-only; check mode must collect evidence too.
+      check_mode: false
+      no_log: true
+
+    - name: Report only per-probe exit codes without private inventory
+      ansible.builtin.debug:
+        msg: "{{ item.key }}: exit={{ item.value.returncode }}"
+      loop: "{{ (preflight.stdout | from_json).probes | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"

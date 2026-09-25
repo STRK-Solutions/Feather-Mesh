@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "deployment_id": "00000000-0000-4000-8000-000000000001",
+  "run_id": "00000000-0000-4000-8000-000000000002",
+  "activation_generation": 1,
+  "site": "ubuntu",
+  "desired": "stopped",
+  "state": "prepared",
+  "public_selected": false,
+  "release_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "config_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "seed_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+  "inventory_ref": "ubuntu-example",
+  "parent_uuid": "00000000-0000-4000-8000-000000000003",
+  "policy_revision": 1,
+  "allocation_id": "00000000-0000-4000-8000-000000000004",
+  "credential_refs": {
+    "tunnel": "tunnel-example",
+    "model": "model-example",
+    "membership": "membership-example"
+  },
+  "archive": {
+    "pending_batches": 0,
+    "verified_manifest_sha256": null
+  },
+  "updated_at": "2026-09-25T00:00:00Z"
+}

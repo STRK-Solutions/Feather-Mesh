@@ -1,0 +1,50 @@
+{
+  "algorithm": "sha256",
+  "artifacts": {
+    ".github/workflows/web-demo.yml": "76d812ffe2cd0a8ab91e531bd0722aefb09848f4228b2d2446897de19b887798",
+    "docs/ubuntu_web_dev_demo_contract.md": "9b6fbd554b0b003bfbf13893295af1bb42657b0886523ba6db9e636852a0c058",
+    "infra/demo/.gitignore": "56203b24c018b337fb6b95306ad81108e6811d17326bac6ab05cddc2d26d35a8",
+    "infra/demo/README.md": "4632897c0894c32a22c553be36466a22dca027306f595a647436ea517ddaf26f",
+    "infra/demo/ansible/inventories/example.yml": "e247b2ad1c35fa0dd21e1fed5c566d1f23921ed6e6541dafe50c0f7bf474d760",
+    "infra/demo/ansible/preflight.yml": "f7c4306d62d441effdfe81b04bd29bb60bd8b44cc027469ed7fc76ed26192ca7",
+    "infra/demo/examples/deployment.json": "994e6a85fa68a1b37504615bb32843180fb23c9aebf76e2ac484758722098f7f",
+    "infra/demo/examples/event-envelope.json": "476e85b31bb6d8937ed25e5e14fa054054f796a3730dca36abdb408ee8a43497",
+    "infra/demo/examples/lifecycle-request.json": "6c2b04a2c0c1c45afddeca53e6cff2ac8a233291926c580ebfd0dc1f413873f4",
+    "infra/demo/examples/project-ledger.json": "1843c0044357fef72480d144771af64bb14d97b389b881fded251c7ace64152e",
+    "infra/demo/examples/settings.json": "112903e68b0e7ed50cf841923ff45c5d57084813ca5441a1466cbc3fb5d0b5a9",
+    "infra/demo/requirements-dev.lock": "ab13b816941cca94b1598426d2c32d954826644a616cd95859fc1789b56cd755",
+    "infra/demo/scripts/check.py": "c1bd9ba491b0cf355952c03b6cb9332ecc256d1a6dd155061800c05552550984",
+    "infra/demo/scripts/disposable_vm.py": "b5506331db18cb98ac04a03293986fbd7632bd9a60236e0a2589aeabad710955",
+    "infra/demo/scripts/linux_checks.py": "007ce831137bc3519ba83aaa3fd84e13736e583e74b01359b78c97b5004df003",
+    "infra/demo/scripts/native_build.sh": "1512b4ace08ebb16b990369873201bded2429d5df09bc1c9bcd2717c893d5f66",
+    "infra/demo/scripts/preflight.py": "a65ff6ae29dc21370dd8573485a5aebebd83193408f9489c632af375c8716425",
+    "infra/demo/scripts/ubuntu-vm-packages.lock.json": "669f1cd673066fe7aaa1931cad9ecff02bc3cd897681998dfe55f48151074c26",
+    "infra/demo/tests/full_vm_probe.sh": "69c5ac808480b11dc859e5723463adcc4f0a60e62c0ad70f1b0fc0f29c993f36",
+    "infra/demo/toolchain.json": "be4306e9e9bbc9c604f4961abac9e905dd12448c06ac3a01417f9cc6ed615c34",
+    "infra/demo/toolchain.md": "82044ab08dd4e1e30facb9ea991a138dc16e21ab6ea5ed64ada1355d53c228c0",
+    "web_demo/README.md": "c8368c51ad1e482c0d5092051c82cafe1a00c74e1bc970eb236de005ee14b0ad",
+    "web_demo/schemas/deployment.schema.json": "4420d440ebf1dc100f913662d39c430aff414a13ad535e69184865f385b67ed5",
+    "web_demo/schemas/event-envelope.schema.json": "0ec818fd09f59b81b1f66d9dbe9590e6b5bb3e3bd49f30f4c2cb04843c6edf41",
+    "web_demo/schemas/lifecycle-request.schema.json": "694cdc23f7ada41decebfca01fe874bd91a7167820bef3a61e258b4e76750a33",
+    "web_demo/schemas/project-ledger.schema.json": "48003d204caf2426720b2e782f11eac078dbdf6d08387f8fe32c50d95c7a05fc",
+    "web_demo/schemas/settings.schema.json": "ca160164dc5456fbde2f56cbdddfcb3dcf7bc7cfa120b14fccf28754cfc43575",
+    "web_demo/tests/test_contracts.py": "092dad7ce321aff6ee03eb82d9bc4ab0b996dedd99f4fe47a83cb2a63e166d2e",
+    "web_demo/validate.py": "5d5b9be5e2369efff760a5f74b90f9306a515bb4ee20170aaa5e1fb26c98a72f"
+  },
+  "history": [
+    {
+      "recorded_on": "2026-09-25",
+      "reason": "Owner-run privileged preflight closes W0; operator guidance updated, preserving the prior digest.",
+      "previous_artifacts": {
+        "infra/demo/README.md": "128beb5c38add320620de4b0a4f2c585d8e421d4557fbd3e4ebb47dc09c04c42"
+      }
+    },
+    {
+      "recorded_on": "2026-09-25",
+      "reason": "Pre-merge verification after the owner switched the demo domain back to 613202690.xyz; retain the prior operator-guide digest.",
+      "previous_artifacts": {
+        "infra/demo/README.md": "8d1d2c120149a0240cf36bbf5005fa5cbd76f14d72894bb6d0744c7c9dedcac7"
+      }
+    }
+  ]
+}

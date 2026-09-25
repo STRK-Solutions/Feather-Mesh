@@ -1,0 +1,47 @@
+name: Web demo baseline
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: infra/demo/requirements-dev.lock
+      - name: Install locked development tools
+        run: python -m pip install -r infra/demo/requirements-dev.lock
+      - name: Check W0 contracts and read-only preflight syntax offline
+        run: python infra/demo/scripts/check.py
+
+  native-feam-artifact:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: feather-mesh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.94.0
+      - name: Verify native target and build hosted-capable FEAM
+        run: |
+          test "$(uname -m)" = x86_64
+          rustc -vV
+          cargo build --locked --release -p mesh_cli --features agent-hosted
+          sha256sum target/release/mesh_cli > target/release/mesh_cli.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: feam-ubuntu-24.04-amd64
+          path: |
+            feather-mesh/target/release/mesh_cli
+            feather-mesh/target/release/mesh_cli.sha256
+          retention-days: 7
