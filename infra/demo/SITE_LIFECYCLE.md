@@ -85,7 +85,11 @@ the mount. It verifies the 32 MiB root-owned tmpfs, the single UID 2101 daemon,
 its exact mount namespace and an absent or identical target. When needed, it
 clones only that host mount as a detached mount and attaches it at `/run/feam`
 inside the existing daemon namespace. A repeated invocation reports
-`already_visible`; a foreign mount fails closed. Future boot ordering requires
+`already_visible`; a foreign mount fails closed.
+When RootlessKit started after the host mount, its runner-owned relative
+`.roNNN/feam` copy-up alias is also accepted only after a read-only check inside
+the daemon's user and mount namespaces proves the exact host device and inode.
+The helper preserves that alias. Future boot ordering requires
 `run-feam.mount` before the user manager, so the live repair does not require a
 Docker or W1 restart. Verify the actual W1 container identities and states after
 any one-time repair.

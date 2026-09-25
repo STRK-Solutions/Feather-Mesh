@@ -306,7 +306,7 @@
   ansible.builtin.command:
     argv: [/usr/local/sbin/feam-rootless-run-mount]
   register: services_rootless_mount
-  changed_when: (services_rootless_mount.stdout | from_json).status == 'bound'
+  changed_when: services_rootless_mount.rc == 0 and (services_rootless_mount.stdout | from_json).status == 'bound'
   when: not ansible_check_mode
 
 - name: Verify current owned inputs and provision fixed runtime directories

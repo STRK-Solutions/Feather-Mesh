@@ -139,7 +139,11 @@ def inspect(pid, info, device):
     if not target.exists() and not target.is_symlink():
         require(not target_mounts(pid, device), 'visible daemon FEAM mount without target')
         return ns, False
-    require(not target.is_symlink(), 'foreign daemon FEAM target')
+    if target.is_symlink():
+        verify_copyup_link(pid, target, info, device)
+        require(daemon() == pid and os.stat(ns_path).st_ino == ns.st_ino,
+                'runner namespace changed during copy-up verification')
+        return ns, True
     actual = target.stat()
     visible = target_mounts(pid, device)
     require(len(visible) == 1, 'foreign daemon FEAM target is not a verified mount')
@@ -148,6 +152,28 @@ def inspect(pid, info, device):
             fields[2] == device and (actual.st_dev, actual.st_ino) == (info.st_dev, info.st_ino),
             'foreign daemon FEAM mount; refuse replacement')
     return ns, True
+
+
+def verify_copyup_link(pid, target, info, device):
+    """Verify RootlessKit's existing copy-up alias without replacing it.
+
+    When dockerd starts after the host FEAM mount, RootlessKit can expose it
+    through a relative .roNNN/feam symlink. A host-side proc-root stat alone is
+    insufficient: resolve it inside the daemon's actual user/mount namespaces.
+    """
+    link = target.lstat()
+    require(link.st_uid == RUNNER_UID and link.st_gid == RUNNER_UID and
+            re.fullmatch(r'\.ro[0-9]+/feam', os.readlink(target)) is not None,
+            'foreign daemon FEAM copy-up link')
+    require(not target_mounts(pid, device), 'copy-up link has an unexpected visible mount')
+    result = subprocess.run([
+        NSENTER, f'--user=/proc/{pid}/ns/user', f'--mount=/proc/{pid}/ns/mnt',
+        '--setuid', '0', '--setgid', '0', '--',
+        '/usr/bin/stat', '-Lc', '%d:%i', '/run/feam'],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10, check=False)
+    require(result.returncode == 0 and
+            result.stdout.strip() == f'{info.st_dev}:{info.st_ino}'.encode(),
+            'copy-up link does not expose the exact host FEAM mount')
 
 
 def mapped_command(mount_fd, user_fd, source_fd, argv):
