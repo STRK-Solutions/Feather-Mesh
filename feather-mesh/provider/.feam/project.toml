@@ -1,0 +1,5 @@
+schema_version = 1
+namespace = "climate"
+serving_dir = "serving"
+owner_teams = ["Climate"]
+peers = []

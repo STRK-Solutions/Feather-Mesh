@@ -4,6 +4,7 @@ pub mod operation_journal;
 pub mod peer_access;
 pub mod registry_service;
 pub mod requests;
+pub mod table_preview;
 
 pub use registry_service::{
     ConsumeReceipt, ConsumeRequest, InitResponse, LineageReference, LineageResponse, ProductDetail,

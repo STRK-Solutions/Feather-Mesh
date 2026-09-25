@@ -1,0 +1,4 @@
+﻿{ schema_version:1,namespace:climate,product_id:observations,name:Demo observations,version:v1,data_kind:table,data_format:parquet,description:Synthetic Stage-1 table,intended_use:TUI and SDK demo,limitations:none,owner_team:Climate,producer:Feather Mesh demo,contact:demo@example.test,usage_policy:internal,classification:internal,quality:production,assets:[{id:part-000,path:datasets/observations/v1/part-000.parquet,role:data,media_type:application/vnd.apache.parquet},{id:part-001,path:datasets/observations/v1/part-001.parquet,role:data,media_type:application/vnd.apache.parquet}],lineage:[],table:{column_meanings:{station_id:synthetic station identifier,temperature:synthetic temperature},column_units:{station_id:not_applicable,temperature:celsius},partition_columns:[]}}\\n
+
+
+

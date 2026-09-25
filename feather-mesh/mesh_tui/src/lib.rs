@@ -33,6 +33,8 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap};
 use ratatui::{Frame, Terminal};
 use thiserror::Error;
+pub mod tutorial;
+use tutorial::TutorialController;
 
 #[cfg(feature = "agent-hosted")]
 use mesh_agent::{
@@ -86,12 +88,15 @@ pub fn run(mut options: TuiOptions) -> Result<(), TuiError> {
     let tick = Duration::from_millis(25);
     let terminating = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let mut signals = Vec::new();
-    for signal in [
-        signal_hook::consts::SIGINT,
-        signal_hook::consts::SIGTERM,
-        signal_hook::consts::SIGHUP,
-    ] {
-        signals.push(signal_hook::flag::register(signal, terminating.clone())?);
+    let mut signal_consts = Vec::new();
+    signal_consts.push(signal_hook::consts::SIGINT);
+    signal_consts.push(signal_hook::consts::SIGTERM);
+    #[cfg(unix)]
+    {
+        signal_consts.push(signal_hook::consts::SIGHUP);
+    }
+    for sig in signal_consts {
+        signals.push(signal_hook::flag::register(sig, terminating.clone())?);
     }
     loop {
         app.poll_core();
@@ -339,6 +344,7 @@ struct App {
     draft: Option<serde_json::Value>,
     quit_when_idle: bool,
     no_color: bool,
+    tutorial: Option<TutorialController>,
     #[cfg(feature = "agent-hosted")]
     agent: HostedAgentState,
 }
@@ -375,6 +381,7 @@ impl App {
             draft: None,
             quit_when_idle: false,
             no_color: std::env::var_os("NO_COLOR").is_some(),
+            tutorial: None,
             #[cfg(feature = "agent-hosted")]
             agent: hosted_agent,
         }
@@ -487,6 +494,13 @@ impl App {
             Err(error) => {
                 self.status = error;
                 self.detail = Some(self.status.clone());
+            }
+        }
+        // If a detail is not already shown, and a tutorial is active, show summary.
+        if self.detail.is_none() {
+            if let Some(ctrl) = &self.tutorial {
+                let summary = format!("Tutorial step: {:?}", ctrl.checkpoint.step);
+                self.detail = Some(summary);
             }
         }
     }
@@ -654,6 +668,8 @@ impl App {
         }
         false
     }
+
+    
 
     #[cfg(feature = "agent-hosted")]
     fn handle_agent_input(&mut self, code: KeyCode) -> bool {
@@ -949,8 +965,56 @@ impl App {
                 }
             },
             ["help"] => self.section = Section::Help,
+            ["tutorial"] | ["tutorial", "start"] => {
+                let root = self.options.project_root.clone();
+                let path = root.join(".feam").join("tutorials").join("tutorial.json");
+                self.tutorial = Some(TutorialController::new(path));
+                self.status = "Tutorial started; use :tutorial resume or :tutorial reset".into();
+            }
+            ["tutorial", "resume"] => {
+                let root = self.options.project_root.clone();
+                let path = root.join(".feam").join("tutorials").join("tutorial.json");
+                self.tutorial = Some(TutorialController::new(path));
+                self.status = "Tutorial resumed".into();
+            }
+            ["tutorial", "reset"] => {
+                let root = self.options.project_root.clone();
+                let path = root.join(".feam").join("tutorials").join("tutorial.json");
+                let mut ctrl = TutorialController::new(path);
+                let _ = ctrl.reset();
+                self.tutorial = Some(ctrl);
+                self.status = "Tutorial reset".into();
+            }
+            ["tutorial", "advance"] => {
+                if let Some(ctrl) = &mut self.tutorial {
+                    ctrl.advance();
+                    let _ = ctrl.save_checkpoint();
+                    self.status = format!("Advanced to {:?}", ctrl.checkpoint.step);
+                } else {
+                    self.status = "No active tutorial; start with :tutorial start".into();
+                }
+            }
+            ["tutorial", "preview"] => {
+                if let Some(ctrl) = &self.tutorial {
+                    let assets = ctrl.checkpoint.selected_assets.clone();
+                    let request = mesh_core::services::table_preview::TablePreviewRequest {
+                        assets,
+                        columns: Vec::new(),
+                        limit: 25,
+                    };
+                    let _ = self.job("Running table preview…", false, move || {
+                        match mesh_core::services::table_preview::run_preview(request) {
+                            Ok(result) => Ok(CoreUpdate::Detail(serde_json::to_string_pretty(&result).unwrap())),
+                            Err(e) => Err(e),
+                        }
+                    });
+                } else {
+                    self.status = "No active tutorial; start with :tutorial start".into();
+                }
+            }
             _ => self.status = "Unknown command or arguments; ? shows command help. Quote paths containing spaces.".into(),
         }
+        // tutorial command handling fallthrough is above; no need to return a value here.
     }
     fn show_draft(&mut self) {
         self.detail = self
