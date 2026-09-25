@@ -1,0 +1,95 @@
+{
+  "artifact_sha256": {
+    "broker": "ff8da07fff092526d63ff7ba0cec1ee92291f8fa01a81acd0d8b44b03c70c611",
+    "collector": "310e36ff6ab8ff5ecf9a23750402c9d838bd1ba75000058fe668fea39b39cc02",
+    "controller": "6fb5f5f9d59a3384973443412f690e236027e361cc0477c37ad4d7ff9a15095f",
+    "feam": "359cc328a37074fec958bb4ee1351393aa4bb8d5c9bc4cf8afae29c8da7653d1",
+    "gateway": "c59f8a974a8032dcec98a9fd9c1a042cc28f7bea881a50edd27920787186d543",
+    "pipeline": "651bae3cdbd5383e235fd74c6f4e15827e2626aa61f6ef87b48c62d68de610d0",
+    "reconciler": "cd204b09b95eb0c3e7e36c96afd04aec5ee9246d0feb69efe2582e7bf2e6d872"
+  },
+  "broker_mode": "fake",
+  "collector_archive": {
+    "baseline_initialized": true,
+    "baseline_sha256": "117dcd9398f63df1b6c1b318f5cf539dd2c58b94f5bc0ccdbc0e2bb039e46022",
+    "directory": "/home/feam-service-data/traces/collector/archive",
+    "initial_inventory_count": 0,
+    "initial_ledger_sha256": "356f4ba062bdd6ec1fe7f9977fbccf20cc33dd2f82b13abe1080a2a23b63d02a",
+    "initial_proof_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mode": "local",
+    "mode_octal": "0700",
+    "owner_uid": 2105
+  },
+  "config_sha256": {
+    "broker": "acabd3754765dc9587923b48f4b37e36003e408858fa1a92c171aa7fb9100a47",
+    "collector": "cd15f39bc85051ecddfde9ad5d4f4321562888383dad4b8d9896601aa3e20557",
+    "controller": "944d9291305f0f35499c9e22201b824c35012d70cd034620c56d0f4ab0c88bb8",
+    "gateway": "730f8736a6caa6f1c372da8e58b22250804eb3a9ebbff43e264241a544bb02d4",
+    "pipeline": "427613d07edaa7fc9e131676f3327dbc0b0bf3e3bbe2b1c360ae4a391eb48314",
+    "reconciler": "1753199310f501994f70c340c12f9ea3970b4270830f51707ac61fa6f8ea156a"
+  },
+  "controller_assignment": {
+    "A": "slot-03",
+    "B": "slot-04",
+    "free_spares": 2,
+    "free_workspace_slots": 6,
+    "initial_workspace_state": "stopped"
+  },
+  "environment": "Ubuntu 24.04 amd64 private FEAM host",
+  "frontend_uid": 2109,
+  "gateway_bootstrap": {
+    "account_readback_sha256": "dea461fac8e0ae31ad576ad183c6ff78a6871f77029e105a4b1054afb7401fe9",
+    "admin_count": 1,
+    "initial_edge_ready": false,
+    "user_count": 2,
+    "workspace_count": 2
+  },
+  "limitations": [
+    "All application units were started privately, but disabled on boot in this snapshot.",
+    "Cloudflare Access applications and closed membership are staged; public DNS routes remain disabled. Browser validation is separate.",
+    "Initial archive inventory is empty; synthetic capture, stopped retention and independently verified Mac copy remain subsequent acceptance steps."
+  ],
+  "observed_at": "2026-09-25T09:25:00.300571+00:00",
+  "private_evidence": {
+    "final_install_log": ".local/demo-deployment/functional-proposal/u04-final-install.log",
+    "initial_archive_ledger": ".local/demo-deployment/functional-proposal/u04-archive-ledger-initial.json",
+    "initial_archive_proof": ".local/demo-deployment/functional-proposal/u04-archive-proof-initial.json",
+    "runtime_readback": ".local/demo-deployment/functional-proposal/u04-runtime-readback.json",
+    "service_verification_log": ".local/demo-deployment/functional-proposal/u04-runtime-verify.log",
+    "slot_acl_install_log": ".local/demo-deployment/functional-proposal/u04-controller-acl-install.log"
+  },
+  "protocol": "feam.u04-private-services.v1",
+  "release_sha256": "de2b0f26bdc7783bf41a0133305b72557d3fa7f176b9388db847262a1becfed5",
+  "runtime_manifest_sha256": "de7f005c9975069dbf6bed240d486c55bd0737f983d850a7c4592c97cb88fedf",
+  "runtime_verifier": "six of six PASS for UID, mount, binary, config, socket and archive scope",
+  "services": {
+    "broker": "active,disabled",
+    "collector": "active,disabled",
+    "controller": "active,disabled",
+    "gateway": "active,disabled",
+    "pipeline": "active,disabled",
+    "reconciler": "active,disabled"
+  },
+  "verified_mounts": [
+    "operations",
+    "traces",
+    "datasets",
+    "slot-03 through slot-12"
+  ],
+  "w1_preservation": {
+    "excluded_slots": [
+      "slot-01",
+      "slot-02"
+    ],
+    "no_w1_stop_reset_delete_or_reclamation_performed": true,
+    "occupied_top_level_entries_after": [
+      8,
+      5
+    ],
+    "occupied_top_level_entries_before": [
+      8,
+      5
+    ]
+  },
+  "workspace_count": 2
+}

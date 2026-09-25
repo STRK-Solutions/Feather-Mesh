@@ -1,0 +1,34 @@
+{
+  "protocol": "feam.u03-w1-runtime-recovery.v1",
+  "observed_utc": "2026-09-25T12:20:58Z",
+  "scope": "Recovery of the pre-existing private W1 generation-2 terminal after participant service manifest reconvergence",
+  "cause": "The Ansible services role restarted feam-service-runtime.service when the runtime manifest or helper changed. That required oneshot pulled down user@2101.service and rootless Docker, cleanly stopping the unrelated running W1 container before the fake site stop.",
+  "repair": "The six explicit service layout calls remain before the runtime oneshot task; the task now ensures that the oneshot is started without restarting it on manifest changes. One fixed W1 start operation restored the existing generation-2 container. No container recreation, reset, deletion, or dataset mutation was used.",
+  "readback": {
+    "generation": 2,
+    "active_slot": "slot-02",
+    "retained_generation_1": true,
+    "same_generation_2_container_id_before_and_after": true,
+    "same_approved_image_and_private_w1_label": true,
+    "generation_2_running": true,
+    "generation_1_remains_stopped": true,
+    "generation_2_exit_during_regression": "clean, exit code 0, not OOM",
+    "generation_2_restarted_utc": "2026-09-25T12:17:13.865177917Z",
+    "private_terminal_gateway_identity_http_status": 200,
+    "finite_w1_mount_identity_and_headroom_verify": "passed"
+  },
+  "site_and_archive_preservation": {
+    "synthetic_operator_vault_revision": 47,
+    "desired": "stopped",
+    "phase": "stopped_verified",
+    "mac_copy_objects_reverified": 8,
+    "destruction_authorized": false,
+    "ordinary_stop_and_copy_evidence": "u03-fake-capture-archive.json"
+  },
+  "validation": {
+    "focused_w7_unittest": "8 passed",
+    "ansible_services_syntax_check": "passed",
+    "git_diff_check": "passed"
+  },
+  "limitation": "The earlier W1 running-state interruption remains a recorded regression. This addendum verifies recovery of the same container and terminal socket; it does not erase the interruption or claim a fresh W1 browser walkthrough."
+}

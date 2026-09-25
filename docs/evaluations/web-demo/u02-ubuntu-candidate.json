@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "environment": "UBUNTU-existing-host",
+  "protocol": "feam.pipeline.candidate-review.v1",
+  "status": "prepared-and-verified-awaiting-exact-hash-approval",
+  "snapshot_phase": "before owner approval and promotion; later outcome is recorded in u02-ubuntu-release.json",
+  "job_id": "00000000-0000-4000-8000-000000000404",
+  "bundle": "demo-climate",
+  "canonical_job_sha256": "5b34ed3fa00c5ccf8d8d6e822ee3ca5c2f1d62fa825dc6bf8cbae96c83d39a10",
+  "candidate_sha256": "9894f3498b7d0828d3358b6dd415f6ee0ba298442bca7f615987af147a2aef41",
+  "complete_candidate_bytes": 76623,
+  "data_asset_bytes": 61860,
+  "manifest_revision": 2,
+  "pipeline_status": {
+    "state": "prepared",
+    "manifest_outcome": "committed",
+    "approval_hash": "",
+    "promotion_outcome": "not_attempted"
+  },
+  "approved_input": {
+    "private_inbox": "/home/feam-service-data/datasets/pinned-intake-5b34ed3fa00c5ccf",
+    "job_file_sha256": "659d9eae664752edc9dbad4a1beb4e5d642d6da99892789664e1b19163bd6d10",
+    "eccc_sha256": "b946900d707076e05d2b3e1d8d3a128877675495a6bd38f6bf62f42f3cb4b4e7",
+    "aafc_sha256": "189d91d5614d4a39ad44726f6d5816043e111e34746a58fb99318a86861780f4"
+  },
+  "native_tools": {
+    "pipeline_sha256": "651bae3cdbd5383e235fd74c6f4e15827e2626aa61f6ef87b48c62d68de610d0",
+    "feam_sha256": "359cc328a37074fec958bb4ee1351393aa4bb8d5c9bc4cf8afae29c8da7653d1",
+    "converter_sha256": "4a911a7097c5d71d3ba2a9e4d63b17c82daa22f4e2cf97330b5b4af699997ede",
+    "python_release_sha256": "0c7703afe7fe3a6fcdb361c97eeae261d3c1142090adfef760c66ea92c7b59df",
+    "pipeline_source_inputs_current": "25 pipeline-related Go archive members match the current worktree by content, with no extra Go files; a subsequent native Go rebuild reproduced the same pipeline binary hash"
+  },
+  "inventory": [
+    {"path": "provenance/00000000-0000-4000-8000-000000000404-january-maximum-normal.json", "bytes": 2378, "sha256": "d64574b07de39cfda899184105c09fc8939c4eaa0d61f389ba262a32f50ae727"},
+    {"path": "provenance/00000000-0000-4000-8000-000000000404-ottawa-daily.json", "bytes": 2181, "sha256": "250fb697018d583995b270bf7b4f1571197712498525f0fe68493dac3524d563"},
+    {"path": "provider/.feam/project.toml", "bytes": 104, "sha256": "4f192125eed12db0d4b3a0a6f657d46fb1e978a4b279f836bdbd9461d59b203f"},
+    {"path": "provider/serving/datasets/january-maximum-normal/v1991-2020/normal.tiff", "bytes": 53096, "sha256": "1ad6f06833920b02408d9482a46f01d54d27c795aeefed8e5f311c0dc992e11e"},
+    {"path": "provider/serving/datasets/ottawa-daily/v2023/observations.parquet", "bytes": 8764, "sha256": "0d95da831ec907acf40967b97e0ce5b75f72c1ddaf5ec2991e2de9ace2d93a3c"},
+    {"path": "provider/serving/manifest.json", "bytes": 10100, "sha256": "1c4576d9cd20d905ea01614a0b97363cef020f37bd8b7afd21c6af4ca4854ef4"}
+  ],
+  "verification": {
+    "feam_integrity_resolution": "both exact registered products resolved with manifest revision 2",
+    "installed_sdk": "pure-Python supported SDK installed in a separate verification target over the locked native reader environment",
+    "polars": "LazyFrame; 365 rows; 2023-01-01 values 3.2, 0.0, 1.6, 0.3; last precipitation flag T",
+    "rasterio": "512x512 EPSG:4326; nodata preserved; known 2x2 window at pixel 255 and four corresponding source pixels verified",
+    "stac": "real pystac-client over tokenless 127.0.0.1; climatology interval item found, outside interval empty",
+    "report_private_path": "/home/feam-service-data/datasets/pipeline/staging/00000000-0000-4000-8000-000000000404/reports/ubuntu-verify.json"
+  },
+  "promoted": false,
+  "assigned": false,
+  "private_logs": [
+    ".local/demo-deployment/u02-candidate-prepare.log",
+    ".local/demo-deployment/u02-native-reader-verify.log"
+  ],
+  "review_notes": [
+    "The Ubuntu candidate has a fresh hash and different GeoTIFF bytes from the Mac candidate; scientific sample checks agree. Approval must name the Ubuntu candidate hash exactly.",
+    "No release promotion, participant assignment, public route or live inference occurred."
+  ]
+}

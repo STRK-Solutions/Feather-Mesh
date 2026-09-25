@@ -1,0 +1,21 @@
+{
+  "date": "2026-09-25",
+  "environment": "EDGE-R2",
+  "bucket": "feam-research-web-demo",
+  "location": "ENAM",
+  "storage_class": "Standard",
+  "public_managed_domain_enabled": false,
+  "custom_domains": [],
+  "research_retention_seconds": 2592000,
+  "incomplete_multipart_retention_seconds": 86400,
+  "synthetic_probe_bytes": 167,
+  "synthetic_probe_put_list_delete": "passed",
+  "bucket_empty_after_probe": true,
+  "checksum_retrieval": "pending: connected API tool cannot return raw object bodies",
+  "collector_credentials": "received on Mac: owner-owned 0600 JSON file in 0700 secrets directory; required fields nonempty; token scope and live S3 access not tested",
+  "account_mfa": "enabled: subsequently verified through account API",
+  "real_participant_data_uploaded": false,
+  "independent_archive_acceptance": false,
+  "approval": "Owner-approved private R2 Standard archive, 30-day retention, 1 GiB application cap, USD1 validation ceiling",
+  "collector_credentials_copied_to_ubuntu": false
+}

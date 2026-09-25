@@ -1,0 +1,37 @@
+{
+  "protocol": "feam.websocket-transport-repair.v1",
+  "date": "2026-09-25",
+  "status": "deployed-real-browser-websockets-passed",
+  "observed_failure": {
+    "terminal_http_status": 200,
+    "authenticated_websocket_status": 502,
+    "missing_origin_websocket_status": 502,
+    "browser_terminal": "immediate disconnect before terminal input",
+    "connector_transport": "http2",
+    "connector_version": "2026.9.3",
+    "exact_journal_error": "http: no Host in request URL",
+    "matching_journal_entries": 14,
+    "zone_websockets_enabled": true
+  },
+  "repair": {
+    "connector_transport": "quic",
+    "scope": "existing connector only; Unix origin and exact Access routes retained"
+  },
+  "validation": {
+    "offline_checks": "pass",
+    "connector_ready": "HTTP200; four active QUIC connections; no error from new process",
+    "real_browser_terminal": "both user sessions render FEAM and keep WebSockets open",
+    "authenticated_edge_probe": "25 of 25 passed",
+    "ansible": "ok30 changed3 failed0",
+    "public_origin_bypass": "no host TCP80/443; noJWT Unix requests401"
+  },
+  "references": [
+    "https://github.com/cloudflare/cloudflared/issues/560",
+    "https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/run-parameters/"
+  ],
+  "probe_repair": {
+    "reason": "Cloudflare returned two legitimate Server-Timing header lines",
+    "change": "ignore telemetry headers without weakening rejection of duplicate authority headers",
+    "focused_tests_passed": 12
+  }
+}

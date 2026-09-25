@@ -1,8 +1,10 @@
 # Ubuntu web demo environment
 
-Status: proposed design, including the IaC evaluation and deployment contract; deployment artifacts and services remain unimplemented.
+Status: architecture and requirements. W0/W1 are accepted and later service/IaC components have substantial implementation; the [workplan](ubuntu_web_dev_demo_workplan.md) and [acceptance index](ubuntu_web_dev_demo_acceptance.md) own current status and evidence.
 
-Updated: 2026-09-25. The owner switched the upcoming demo back to `613202690.xyz` and confirmed that Cloudflare shows the domain as Active. The portal is `feam.613202690.xyz`, with separate first-level admin/workspace hostnames. Owner decisions require on-demand, disposable demos on either Ubuntu or a low-cost cloud host, with no fixed demo hours, Canadian-region requirement, or cloud recovery workflow. These decisions supersede the earlier 15-minute failover design. Ubuntu preflight evidence is recorded in the [workplan](ubuntu_web_dev_demo_workplan.md#8-execution-record); runtime provisioning remains pending.
+Updated: 2026-09-25. **Current delivery is a functional demo on the existing Ubuntu machine.** Keep Cloudflare Access/Tunnel and OpenRouter; shelve R2 and all cloud-host work. The owner has deferred lengthy capacity, benchmark, reboot, clean-VM and recovery exercises. The [Ubuntu functional milestone](ubuntu_web_dev_demo_workplan.md#ubuntu-functional-milestone) defines the required short checks and completion gate, superseding the broader delivery gates below. Deferred architectural material is retained for future work and must not block this milestone.
+
+The portal remains `feam.613202690.xyz`, with separate first-level admin/workspace hostnames. Use on-demand operation, the existing Ubuntu runtime/storage and a protected local research archive; verify a private Mac copy before destructive teardown. Explicit local archive support and verified-copy lifecycle are implemented with local tests; their actual Ubuntu acceptance remains part of U.03/U.04.
 
 Implementation sequence and progress: use the [development workplan](ubuntu_web_dev_demo_workplan.md) for checkable tasks, Mac versus Ubuntu execution boundaries, dependencies, and evidence gates. This design remains the architectural source of truth; task completion is recorded in the workplan.
 
@@ -12,7 +14,7 @@ Use this Ubuntu machine to run a small, invite-only FEAM service: **Cloudflare T
 
 Keep infrastructure inexpensive while reserving model spending for the purpose of the demo. Cloudflare lists a **$0 Zero Trust plan for up to 50 users**, enough for 10 demo users and a small number of admins. The Ubuntu deployment needs no rented VM, managed database, email service, analytics service, or managed pipeline service; cloud fallback has separate costs. **Hosted inference is a separate, expected usage cost**, alongside domain, electricity, internet, and backup storage. The edge-plan baseline was checked on 2026-09-23; the domain/source comparisons were checked on 2026-09-24. Recheck external prices and limits before deployment. [Cloudflare pricing](https://www.cloudflare.com/plans/)
 
-Make the installation reproducible with **Ansible for Ubuntu configuration, systemd for ordinary service supervision, and Terraform CLI for Cloudflare and disposable cloud resources**. An operator chooses Ubuntu or cloud, starts a fresh demo from versioned configuration and seed data, and tears it down when finished. There is no automatic host failover, synchronized demo database, recovery runner, standby VM, or recovery-time promise. See [On-demand deployment lifecycle](#on-demand-deployment-lifecycle).
+Use **Ansible for Ubuntu configuration, systemd for service supervision, and Terraform CLI for the required Cloudflare browser access**. Reuse the existing Ubuntu deployment and versioned artifacts. Cloud-host/research-storage Terraform, cloud tunnels and fresh-host recreation are shelved or deferred as recorded in the workplan. See [On-demand deployment lifecycle](#on-demand-deployment-lifecycle).
 
 Access email PIN login is accepted by the owner; clickable magic links are not required. Use `feam.613202690.xyz` in the owner's active Cloudflare zone; registration stays at Spaceship. See [Domain and hostname choice](#domain-and-hostname-choice).
 
@@ -26,7 +28,7 @@ Confirmed requirements:
 - A dataset-loading pipeline prepares datasets on the demo host and makes them accessible to selected sandboxes.
 - Phase 1 provides powerful hosted model assistance as the normal demo experience, captures user usage patterns, and produces evidence and reusable, eligible examples for Phase 2 SLM development.
 - Prefer free and low-cost options. Email allowlisting with passwordless login is a suitable authentication direction.
-- Reproduce the installation through IaC on Ubuntu or a low-cost cloud host. Run on demand with disposable contents; ordinary restarts within an active deployment remain safe.
+- Deploy through the existing Ubuntu IaC and run on demand; preserve authorization, spending and files across ordinary service restarts. Full recreation and alternative cloud-host acceptance are deferred.
 
 ### Confirmed cohort and deployment decisions
 
@@ -40,11 +42,11 @@ Confirmed requirements:
 | Project model allowance | US$100 total, following OpenRouter's default currency. Pause new requests until an admin increases the allowance; no automatic monthly reset. |
 | Participation | Owner confirms consent has already been obtained. Do not add a participant-notice or repeat-consent onboarding gate for this cohort. |
 | Domain | Use `feam.613202690.xyz`, `admin.613202690.xyz` and `u-<opaque-id>.613202690.xyz`. Owner confirms Cloudflare Active status; public DNS returns the assigned Cloudflare nameservers. Route, HTTPS, Tunnel and Access verification remain W8 work. |
-| Cloud service | Operator-started alternative host for the same ten-user demo; choose by total cost and measured responsiveness. Canada is not mandatory. No automatic cloud recovery or 15-minute target. |
+| Cloud service | Shelved, including provider work, VM/volume/IP resources, cloud tunnels, cloud images and acceptance. R2 is also shelved. Cloudflare browser access and OpenRouter remain active dependencies. |
 | Demo contents | Workspaces and runtime demo state are disposable. Recreate from current private enrollment/policy configuration and approved seeds; no cross-host copy or live migration. Keep project spending independent of disposable state. |
 | Operating schedule | On demand, with explicit start/stop/teardown; no advertised hours required. |
-| Research preservation | Collected research traces and reviewed exports survive demo shutdown and teardown in separate durable storage. Retention duration and export reviewers remain to be configured. |
-| Setup and accounts | SSH key access is verified. Owner reports no workload requiring preservation, will run reviewed sudo bootstrap commands, and will supply the OpenRouter key when needed. No cloud account exists yet. |
+| Research preservation | 30-day retention; Saif is sole reviewer and Phase 2 owner. Protected Ubuntu archive survives ordinary stop. A verified private Mac copy, including provenance/deletion metadata, is required before destructive teardown. R2 is shelved; current implementation needs a local archive mode. |
+| Setup and accounts | Dedicated `feam-deploy` SSH and noninteractive sudo are verified; use reviewed FEAM scope. Private policy/vault and project ledger exist on the Mac. Model key and finite run allocation remain due for the live smoke. No cloud account work is needed. |
 
 The exact nine email addresses are retained in the ignored local planning file `.local/demo-deployment/participants.yaml`, with owner-only permissions. This is not executable IaC or an encrypted backup. Move it into encrypted operator configuration before provisioning; do not commit identities into this public design, Terraform configuration/state, images, or research exports. Bootstrap all four admins and five users idempotently by exact identity, then let the control database and membership reconciler own changes. Repeated provisioning must not recreate removed accounts or overwrite later roles. No invitations or account creation have been performed.
 
@@ -555,7 +557,7 @@ A proposed initial target is readiness within five minutes after the OS, require
 
 ## On-demand deployment lifecycle
 
-The operator runs the environment only when needed, selecting either the existing Ubuntu machine or a disposable cloud VM. The latest owner decision supersedes cloud failover, a 15-minute recovery target, Canadian-only regions, off-host replication, activation leases, automatic promotion/handback, standing recovery runners and recovery-backup acceptance gates. Cloud is an alternative fresh deployment, not a replica of Ubuntu.
+The active deployment is the existing Ubuntu machine. Use ordinary start/stop and retain its state during the functional milestone. Cloud provisioning, host switching, destructive recreation and the broader lifecycle exercises below are deferred material; follow U.01–U.07 for current work. No automatic failover or recovery-time target applies.
 
 ### Start, stop and teardown
 
@@ -569,6 +571,8 @@ Only one deployment serves the public hostnames at a time. Switching requires st
 
 ### Cloud size, region and cost
 
+**Shelved in full.** The retained sizing rationale below is for a future explicitly resumed scope. Do not research providers, request credentials, provision resources or perform cloud validation for the functional Ubuntu demo.
+
 Start from **8 x86-64 vCPUs and 16 GiB RAM**, subject to measured ten-user performance. CPU count alone does not establish equivalent capacity or responsiveness. Keep the same ten workspaces, hosted model queue, bounded ingestion, dashboard and isolation features. Prefer eastern North America for the Ottawa cohort: Toronto, New York/New Jersey and nearby US regions are candidates. Canada is not mandatory. Europe is a cost comparison; select it only if measured terminal responsiveness makes the savings worthwhile. Measure the actual browser/Cloudflare/host path and hosted-model latency separately.
 
 The current full-quota storage plan still needs about **320 GiB of service storage plus OS/scratch**. Disposable contents do not reduce concurrently promised quotas. Quote a separate disposable data volume if the instance disk cannot provide this; account for providers quoting decimal GB rather than GiB. A smaller seed-only storage profile would require a separate explicit quota decision.
@@ -579,9 +583,9 @@ Prefer hourly cloud compute that can be deleted after use. A powered-off VM may 
 
 Keep the small current operator configuration, credentials, Terraform state and project spend allocations outside disposable compute. User/permission removals and consent restrictions must not be undone by recreation. Maintain current private configuration through the admin/operator export workflow before ending a normal run; on uncertain loss, review it before reactivation. This is operator-managed configuration, not continuous database replication.
 
-The owner explicitly requires **collected research traces and reviewed exports to survive demo shutdown** and accepts intermittent uploads, including a Git repository if suitable. Store sanitized traces, exports, provenance and deletion lineage outside disposable hosts and Terraform compute state. A private Cloudflare R2 Standard bucket is the proposed default, subject to account/price approval. A separate private Git repository is an alternative for small batches if selected; do not put participant traces in the public source repository. Implement one selected archive destination, not both by default. This archive does not restore workspaces or replicate the application database.
+The owner requires **collected research traces and reviewed exports to survive shutdown and teardown**. The collector and service configuration support explicit `archive_mode: local` at `/home/feam-service-data/traces/collector/archive`, using the directory adapter on the verified, bounded traces filesystem. The same redaction, reviewer restrictions, retention and deletion lineage apply. A same-host archive survives service stop but does not establish protection against host loss. The [local implementation evidence](evaluations/web-demo/u03-collector-local-archive.md) and [operator lifecycle](../infra/demo/SITE_LIFECYCLE.md) distinguish tested support from pending actual-host acceptance. R2 remains a separate explicit mode and is shelved for this delivery.
 
-Upload bounded trace batches during a run and expose the persisted watermark. Proposed initial batching is every five minutes or 8 MiB, whichever comes first, with a bounded local spool and content hashes for idempotent retries. On normal shutdown, drain collection, flush pending batches and verify checksums/manifest completeness before confirming archival success or deleting the source. A failed archive may stop compute services but blocks destructive teardown of its only copy. Retrieve traces and reviewed exports after deleting a test VM to prove preservation. Restrict archive credentials to collector/operator identities; sandboxes cannot read research history. Abrupt host loss may lose the unuploaded tail; report it relative to the last confirmed upload, with no zero-loss disaster recovery promise. Retention duration, deletion rules and reviewers remain configuration decisions; shutdown itself is never a research-deletion trigger.
+Flush bounded batches to the protected local archive and expose its persisted status accurately. At session end and before destructive teardown, quiesce capture and copy the retained archive, provenance and deletion ledger into owner-only Mac storage; verify the full inventory and content hashes before authorizing removal of any sole Ubuntu copy. Do not depend on a continuously connected Mac to run the demo. Apply the settled 30-day retention and withdrawal restrictions to both retained copies; shutdown itself is not a deletion trigger. Demonstrate one small synthetic copy/readback for the functional milestone. Destructive host-loss/recreation proof and research-corpus preparation are deferred. R2 and private-Git archive integration are shelved; preserve existing R2 resources and credentials without further operations.
 
 ## Operations
 
@@ -622,9 +626,9 @@ Estimate model spending from measured requests per task, tasks per user, and bil
 
 ## Delivery milestones and acceptance
 
-The owner decisions and private planning roster are recorded; the existing Stage-1 model evaluation is linked above. All web/IaC delivery milestones below remain future work. Document creation did not install services, register a domain, create external accounts, deploy infrastructure, download datasets, send invitations, or run a new live model/load test.
+**Current delivery is accepted at workplan U.G.** It requires a brief deployed browser/data/model walkthrough, two-user/admin isolation checks, local capture plus a verified Mac copy, and usable operator start/stop instructions. Full ten-user, p95, held-out quality, reboot, clean-VM, fault/recreation and cloud/R2 acceptance are deferred. Existing W0/W1 evidence is retained; changing this scope does not mark any pending runtime check as passed.
 
-These milestones implement Phase 1; Phase 2 SLM development follows the evidence workflow above.
+The table and scenarios below retain the **extended design** for later hardening. They are not additional prerequisites for the functional Ubuntu milestone. Phase 2 SLM work remains outside this delivery.
 
 | Milestone | Deliverable | Exit condition |
 | --- | --- | --- |
@@ -637,7 +641,7 @@ These milestones implement Phase 1; Phase 2 SLM development follows the evidence
 | 6. Cohort handoff | Operator start/stop/teardown, pinned release/rollback, same-host restart rules and reviewed Phase 2 export procedure | Intentional stop remains stopped; run budgets survive recreation; export handling is configured. |
 | 7. Cloud alternative acceptance | Priced provider/region, disposable compute/storage, shared Ansible and current seed/configuration | Fresh deployment, equivalent ten-user service and complete billable-resource teardown proven; no recovery-time requirement. |
 
-Required acceptance scenarios:
+Extended acceptance scenarios (deferred except for the bounded checks explicitly selected by U.01–U.07):
 
 1. **Authentication and roles:** bootstrap the exact private four-admin/five-user roster with no public signup; repeat converge must not resurrect removed identities. Allowed email succeeds; unlisted email is denied; expired/replayed PIN fails; forged headers and wrong-audience JWTs fail. A regular user cannot open admin APIs, run dataset jobs, change grants/model budgets, or export others' traces. Admin provisioning allocates no workspace. Removal closes sessions within 30 seconds and revokes capabilities. Verify PIN delivery and browser/WebSocket access from the actual Ottawa institutional networks.
 2. **Ownership and origins:** users A and B attempt each other's guessed hostname/IDs, reset endpoints, downloads if introduced, and WebSocket upgrades. All fail. Cross-origin/sibling-origin CSRF and terminal upgrade attempts fail. Sandbox-controlled responses cannot obtain portal authentication material. Direct origin/port access offers no authentication bypass.
@@ -659,18 +663,18 @@ A successful localhost page or ten open idle tabs is insufficient evidence of te
 - [x] Small Canadian government climate sources, GeoTIFF `.tiff` rasters and Parquet-only tables remain the dataset direction.
 - [x] Selected DeepSeek/OpenRouter profile and US$100 project allowance remain; owner will supply the key when needed.
 - [x] Dedicated `feam-deploy` SSH key access and noninteractive root sudo verified on 2026-09-25 after owner setup. The agent can execute reviewed, authorized Ubuntu work without manual sudo handoffs; preserve the FEAM resource scope and separate reboot approval.
-- [x] On-demand Ubuntu or cloud, disposable demo contents, no scheduled hours, no cloud recovery workflow, no Canadian-region restriction.
+- [x] Ubuntu-only functional delivery; Cloudflare access and OpenRouter retained. Cloud hosts and R2 shelved; lengthy tests deferred. U.G replaces the broader delivery prerequisite.
 - [x] Cloudflare account exists; owner purchased `613202690.xyz` at Spaceship.
 - [x] Owner selected `613202690.xyz` again and confirmed Cloudflare Active status on 2026-09-25; public DNS returns its assigned Cloudflare nameservers.
-- [x] Owner confirms Cloudflare Zero Trust onboarding is complete on 2026-09-25. Account MFA and scoped access remain to be verified for W8.
-- [x] Owner connected Cloudflare to Codex on 2026-09-25; the agent sees Cloudflare tools in the session. [Connection setup](ubuntu_web_dev_demo_workplan.md#cloudflare-connected-to-codex-2026-09-25) is complete; account/zone permissions and automation authentication have not been tested.
+- [x] Cloudflare Zero Trust onboarding, account/zone read access and account MFA are recorded as verified. Runtime/automation write credentials and actual Access login remain pending.
+- [x] Owner connected Cloudflare to Codex on 2026-09-25. Reuse that connection and the existing domain; request only demonstrated missing scoped capabilities for the Ubuntu route.
 - [ ] Verify the existing connection's intended account, zone and DNS/Tunnel/Access permissions, plus Terraform/runtime authentication. Request only missing scoped capabilities; configure and verify the selected routes, HTTPS, Tunnel and Access, and retain domain renewal terms for handoff.
-- [ ] Approve a low-cost provider/region and complete instance/storage/IP estimate; create the selected account and authorize a bounded deployment test.
+- [ ] Shelved: cloud provider/region/account/size/budget work and deployment testing.
 - [ ] Supply the OpenRouter credential privately and approve finite live-test/per-user/request budgets.
-- [ ] Pin approved source objects, subsets, licenses and checksums; agent prepares the proposal.
-- [x] Collected research traces and reviewed exports survive shutdown/teardown; prefer eastern North American compute for latency.
-- [ ] Configure durable research storage, retention duration, reviewers, support contact and Phase 2 ownership. No demo-hours decision is required.
+- [ ] Prepare the exact Ubuntu release from already approved, acquired and staged climate objects for candidate approval/promotion.
+- [x] Retain research across stop/teardown; 30-day retention, sole reviewer/Phase 2 owner and private support contact are settled.
+- [ ] Implement the protected Ubuntu archive and verified Mac-copy path in U.03. R2 transfer and live S3 checks are shelved.
 - [x] W0 preflight, disposable Linux test target and exact future service path/mount scope verified; owner-run privileged output reviewed.
 - [x] Implement/test W1 runtime/storage roles and run the reviewed owner sudo bootstrap; mount identity, account/subordinate-ID collisions and ownership were checked. Actual Ubuntu enforcement, browser manual/fake flows, persistence/reset and unchanged converge pass; shared-host reboot remains later.
 
-The IaC, image, portal, pipeline and broker/collector can be implemented and tested offline while external inputs are settled. The domain purchase is complete; paid cloud deployment, billable inference, public exposure and invitations remain explicit subsequent operations. Completion requires actual Ubuntu and cloud lifecycle/capacity evidence, not an automatic recovery drill.
+Complete the short Ubuntu path in the workplan while preparing concrete edge/model inputs. Public activation, finite live inference and invitations retain their existing authorization boundaries. Functional completion is U.G; cloud, extended capacity and reboot gates do not block it.

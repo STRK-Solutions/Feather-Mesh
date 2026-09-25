@@ -1,0 +1,162 @@
+{
+  "protocol": "feam.u07-updated-release.v1",
+  "date": "2026-09-25",
+  "status": "deployed_live_with_bounded_browser_evidence",
+  "source_commits": {
+    "guided_transport": "87a9576",
+    "operator_grant_and_image_permission": "3fa8963",
+    "mount_reconverge": "ef21c57",
+    "pipeline_acl_reconverge": "5be03d8"
+  },
+  "native_go": {
+    "source_sha256": "2812621523dab3d47ee44ac32a380282fe46c0b7d2e1927e1b6398fe04545642",
+    "checks": [
+      {
+        "command": "go test -race ./...",
+        "exit": 0,
+        "output_lines": 23
+      },
+      {
+        "command": "go vet ./...",
+        "exit": 0,
+        "output_lines": 0
+      }
+    ],
+    "artifact_sha256": {
+      "broker": "27c4274bb7baddd48909eca3e6b010b46988786f2c7a6e92b36e718abcf1cf74",
+      "capture-fixture": "a55ba8d3308ad9c671ab4594d04f26e48bfa632eec5375208d9dd8f88877e978",
+      "collector": "1e9f50075f38fee60234d544d965fc0fce9e2a56b3daa1d7ec9d759a828a160d",
+      "controller": "3b703ca2443ba14f90e9f44f86b64774290871e3910807a709d81af5e8df4c48",
+      "gateway": "eca6fb1e13cb27a9a78b288947b06be5cf06bdb3bc7cced2d5361778f2623960",
+      "model-adapter": "dd143bf0bc8f011fe550e9c6b8db8e51d547d3061909551be9a69b908143ae68",
+      "pipeline": "651bae3cdbd5383e235fd74c6f4e15827e2626aa61f6ef87b48c62d68de610d0",
+      "private-terminal": "e13b6ea766e3ab028ce73ba8f351b501c2f04e38349b5ec72c141a40a4ad4838",
+      "project-budget": "c4f83f627b61ef04124d11ad78fca04b444e145c532fc527c454f6adfcb83cfb",
+      "reconciler": "91b4f49661a5d7cb298d3f229e67bc74149c7ac842aaf015796bc07129851f5a"
+    }
+  },
+  "native_rust": {
+    "source_sha256": "c2ddcdece3e97aba45da9e2b818cefb37ded108e1e36cf798c725c6cbc17502b",
+    "feam_sha256": "9e1465238a5bee23f2dfbce1e909042be6e03ab6dcd9d0e68cf8b5ff70acd330",
+    "build": "cargo build --locked --release -p mesh_cli --features agent-hosted --jobs 2",
+    "build_exit": 0,
+    "help_exit": 0
+  },
+  "participant_image": {
+    "image_id": "sha256:53644f8c841441a83440076218df0a2c683f477f6390f370d7fe6bd799c71878",
+    "source_sha256": "0c9301673c6316aaa44838934b8960319100a2bc071cb22eee410fc20cb30e92",
+    "binary_sha256": {
+      "feam": "9e1465238a5bee23f2dfbce1e909042be6e03ab6dcd9d0e68cf8b5ff70acd330",
+      "model-adapter": "dd143bf0bc8f011fe550e9c6b8db8e51d547d3061909551be9a69b908143ae68",
+      "ttyd": "8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55"
+    },
+    "previous_image_unchanged": true,
+    "containers_unchanged": true
+  },
+  "image_smoke": {
+    "existing_containers_unchanged": true,
+    "final_path_symlink": true,
+    "hosted_adapter_loopback": true,
+    "hosted_check": true,
+    "hosted_ttyd_unix": true,
+    "image_id": "sha256:53644f8c841441a83440076218df0a2c683f477f6390f370d7fe6bd799c71878",
+    "known_raster_window": true,
+    "native_lazyframe": true,
+    "previous_image_unchanged": true,
+    "protocol": "feam.takeover-final-image-smoke.v1",
+    "sdk_installed": true
+  },
+  "mac_checks": [
+    "cargo fmt --all -- --check",
+    "cargo test --workspace --all-features",
+    "cargo clippy --workspace --all-targets --all-features -- -D warnings",
+    "cargo test -p mesh_cli --no-default-features",
+    "cargo test -p mesh_cli --features tui",
+    "cargo test -p mesh_cli --features agent-hosted",
+    "go test -race ./...",
+    "go vet ./...",
+    "go build -trimpath ./cmd/...",
+    "python infra/demo/scripts/check.py",
+    "agent-context structural checker"
+  ],
+  "failed_attempts": [
+    "Initial local test socket restrictions; checks passed with loopback permission. Two new test assertions were corrected before final validation.",
+    "First image built but elapsed Docker Status text made the preservation assertion fail; independent stable ID/name/state/image readback proved preservation without build replay.",
+    "First image SDK smoke found source-transfer mode loss on the setup script. A new recipe explicitly marks it executable; the rejected image is retained.",
+    "Next hosted smoke fixture omitted releases.json. The synthetic empty release list was added and isolated smoke passed; no model request occurred.",
+    "Ansible check mode could not copy binaries into its uncreated release directory.",
+    "First actual install stopped before broker initialization when the old helper rejected the legitimate RootlessKit copy-up alias. Read-only mount proof informed the tested correction.",
+    "Automatic approval review rejected service start and exact real Access group reconciliation, requesting explicit current-session authorization. The action did not execute. Owner then explicitly approved exact roster reconciliation; the same scoped retry succeeded.",
+    "Saved participant application tokens were older than the one-hour POST limit. Normal Cloudflare SSO renewal issued fresh app sessions; then real browser Start succeeded.",
+    "Initial automated data-read paste reached A before its new terminal was ready. No test ran; after inspecting the shell, the corrected bounded command passed.",
+    "First maintenance converge changed only the pipeline ACL mask. The tested recipe correction passed a second real converge with changed=0."
+  ],
+  "browser_admin": "Fresh admin session expired; owner is unavailable for PIN sign-in. No authentication bypass; authorized grants use the tested audited operator command. Earlier real admin browser evidence remains separate.",
+  "pending": [
+    "fresh_admin_browser_acceptance_unavailable"
+  ],
+  "installed": {
+    "native_hashes_and_configs_verified": true,
+    "services_stopped": "historical install checkpoint; later started",
+    "new_broker_requests": 0,
+    "new_assignments": 5,
+    "retained_image_upgrades": 2,
+    "retained_files_slots_and_grants_preserved": true,
+    "pending_truthful_controller_snapshots": 0
+  },
+  "cohort": {
+    "admins": 4,
+    "users": 7,
+    "all_active_and_edge_ready": true,
+    "exact_real_groups_verified": true,
+    "workspaces": 7,
+    "all_exact_release_granted": true,
+    "grants_through_audited_operator_command": 6,
+    "prior_grant_preserved": true,
+    "admins_have_no_workspace": true,
+    "pending_jobs": 0,
+    "pending_snapshots": 0
+  },
+  "browser": {
+    "real_saved_participant_sessions": 2,
+    "normal_Cloudflare_SSO_renewal": true,
+    "stale_application_tokens_denied_POST_before_renewal": true,
+    "both_browser_start_actions_completed": true,
+    "cross_user_terminal_http": 403,
+    "all_private_role_ownership_checks_passed": true,
+    "dataset_reads": {
+      "both_users": true,
+      "installed_SDK": true,
+      "Polars_lazy_rows": 365,
+      "Rasterio_shape": [
+        512,
+        512
+      ],
+      "Rasterio_crs": "EPSG:4326",
+      "known_window": "pixel 255,255 2x2",
+      "read_only": true,
+      "independent_marker_readback": true
+    },
+    "viewport": {
+      "desktop": [
+        1440,
+        1000
+      ],
+      "font_px": 18,
+      "fills_viewport": true,
+      "native_Mac_Retina_scale": 2,
+      "screenshot": "u07-terminal-viewport.png",
+      "minimum_TUI": "80 columns x 24 rows; narrow mobile viewport shows minimum-size notice",
+      "failed_fixture": "Playwright default device scale 1 mismatched this Retina display and rendered WebGL at half size; matching native scale 2 fixed the fixture without changing deployed code."
+    },
+    "fresh_admin_PIN_login": "unavailable; earlier real admin login/grant/reset/revocation evidence retained separately"
+  },
+  "maintenance_evidence": "u07-live-maintenance.json",
+  "ci": {
+    "pull_request": "https://github.com/STRK-Solutions/Feather-Mesh/pull/64",
+    "initial_failure": "All Terraform modules lacked the Linux amd64 h1 provider checksum. Read-only init installed the signed package but subsequent validation rejected its cache.",
+    "correction": "terraform providers lock -platform=linux_amd64 -platform=darwin_arm64 for the existing pinned versions; only one verified h1 hash added per module.",
+    "local_validation": "All three modules passed read-only init, fmt, validate and credential-free mock tests.",
+    "remote_results": "See PR checks; CodeRabbit skipped automated review because the change exceeds its file limit."
+  }
+}

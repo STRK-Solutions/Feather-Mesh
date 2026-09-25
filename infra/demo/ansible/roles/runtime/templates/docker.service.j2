@@ -15,6 +15,6 @@ TimeoutStopSec=60
 Delegate=yes
 KillMode=mixed
 LimitNOFILE=65536
-TasksMax=512
+TasksMax={{ feam_runner_tasks_max | default(512) }}
 [Install]
 WantedBy=default.target

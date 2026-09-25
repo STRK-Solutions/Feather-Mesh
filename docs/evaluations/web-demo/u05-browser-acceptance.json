@@ -1,0 +1,81 @@
+{
+  "approved_cohort": {
+    "administrator": 1,
+    "cloudflare_group_include_counts_after_disable": {
+      "administrator": 1,
+      "regular_user": 1
+    },
+    "cloudflare_group_include_counts_at_activation": {
+      "administrator": 1,
+      "regular_users": 2
+    },
+    "dashboards_http_200": 3,
+    "real_email_pin_signins": 3,
+    "regular_users_initially": 2,
+    "second_regular_alias_disabled_after_revocation_test": true,
+    "second_regular_alias_reenabled": false
+  },
+  "authenticated_matrix": {
+    "cases_passed": 25,
+    "cases_total": 25,
+    "cross_user_same_audience": 403,
+    "missing_origin_websocket": 403,
+    "owner_websocket_upgrade": 101,
+    "owner_workspace_http": 200,
+    "role_and_audience_separation": "portal, admin and workspace audience mismatch denied by Access or local authorization",
+    "second_workspace_owner_http": 200,
+    "sibling_origin_websocket": 403,
+    "unauthenticated_workspace_or_websocket": "Access redirect, no origin admission",
+    "unknown_terminal_route": 404
+  },
+  "browser": {
+    "initial_post_login_redirect_error": "transient ERR_TOO_MANY_REDIRECTS; same authenticated session reload reached dashboard HTTP 200",
+    "native_admin_form_grant": "deployed same-origin policy repair allowed exact release grant to A; B remained ungranted",
+    "two_participant_terminals": "render FEAM with WebSockets connected after connector QUIC repair"
+  },
+  "date": "2026-09-25",
+  "deferred_or_separate": {
+    "dataset_sdk_fake_capture_archive_live_and_stop_copy": "U.03/U.04/U.06/U.07/U.G remain separate and pending",
+    "expired_assertion": "extended expired-token gate deferred; wrong-signature and unsigned-assertion denials passed"
+  },
+  "edge_origin_protection": {
+    "connector_active": true,
+    "connector_enabled_at_boot": false,
+    "connector_transport": "quic",
+    "host_direct_tcp_443_listeners": 0,
+    "host_direct_tcp_80_listeners": 0,
+    "origin_without_jwt_http": 401,
+    "protected_exact_routes": 4,
+    "zone_websockets_on": true
+  },
+  "environment": "real Cloudflare Access browser and Ubuntu gateway/connector",
+  "functional_U05_passed": true,
+  "private_receipt_sha256": {
+    "authenticated_25_case_probe": "4dca6d70fade04e4fbb00b834f5b83872721981b99719b83c1e708a4ef72c7fd",
+    "browser_disable_and_old_token_denial": "504d75cf4f2d16f2788902cc59d1f65410e3ff2a47aa215f626973587040927a",
+    "postactivation_host": "40af0c24c83f0d7a09c5aef185f9a30a507b350aa4bbd79d4c7363e270426f5d"
+  },
+  "protocol": "feam.u05-browser-acceptance.v1",
+  "public_evidence": [
+    "u05-public-activation-proposal.md",
+    "u05-public-activation.json",
+    "u05-browser-form-repair.json",
+    "u05-websocket-transport-repair.json",
+    "u05-runtime-repairs.json"
+  ],
+  "retained_repairs": [
+    "Initial redirect expression field rejected; exact remaining-only redirect repair applied.",
+    "Initial sole IdP was Cloudflare account login; dedicated OTP provider created and only four app allowed_idps changed.",
+    "Chromium Origin: null native form POST received 403 under no-referrer; gateway same-origin policy repair deployed with CSRF checks retained.",
+    "HTTP/2 connector to Unix origin gave WebSocket 502 and 14 no-Host errors; connector-only QUIC repair deployed."
+  ],
+  "revocation": {
+    "action": "second regular staging alias disabled through actual admin browser UI",
+    "current_document_websocket_closed_within_seconds": 0.505983829498291,
+    "disabled_alias_left_disabled": true,
+    "limit_seconds": 30,
+    "old_portal_jwt_http": 403,
+    "old_workspace_jwt_http": 403,
+    "other_approved_accounts_remain_active": true
+  }
+}

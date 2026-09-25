@@ -1,0 +1,10 @@
+[Unit]
+Description=Bounded FEAM private IPC and workspace configuration
+Before=feam-gateway.service feam-controller.service feam-broker.service feam-collector.service feam-pipeline.service feam-reconciler.service
+[Mount]
+What=tmpfs
+Where=/run/feam
+Type=tmpfs
+Options=rw,nosuid,nodev,noexec,size=32M,mode=0755,uid=0,gid=0
+[Install]
+WantedBy=multi-user.target

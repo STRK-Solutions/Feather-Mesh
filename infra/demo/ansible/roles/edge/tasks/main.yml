@@ -1,0 +1,248 @@
+---
+- name: Require fixed native target and explicit connector activation
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Ubuntu'
+      - ansible_facts.distribution_version == '24.04'
+      - ansible_facts.architecture == 'x86_64'
+      - not (feam_edge_start | bool or feam_edge_enable | bool) or feam_edge_activate | bool
+      - not feam_edge_activate | bool or feam_edge_readiness_sha256 is match('^[0-9a-f]{64}$')
+      - not feam_edge_activate | bool or feam_edge_account_id is match('^[0-9a-f]{32}$')
+      - not feam_edge_activate | bool or feam_edge_tunnel_id is match('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+      - feam_edge_token_source == '' or feam_edge_token_source is match('^/')
+
+- name: Inspect current connector before changing its installation
+  ansible.builtin.command:
+    argv: [systemctl, show, feam-edge.service, --property=ActiveState, --value]
+  register: edge_service_status
+  changed_when: false
+  check_mode: false
+  failed_when: edge_service_status.rc not in [0, 1, 4]
+
+- name: Reject implicit changes to a running connector
+  ansible.builtin.assert:
+    that: edge_service_status.stdout not in ['active', 'activating', 'reloading', 'deactivating'] or feam_edge_stop | bool
+    fail_msg: A running connector requires a reviewed stop before reconfiguration.
+
+- name: Stop the connector only when explicitly requested
+  ansible.builtin.systemd_service:
+    name: feam-edge.service
+    state: stopped
+  when: feam_edge_stop | bool and edge_service_status.stdout in ['active', 'activating', 'reloading', 'deactivating']
+
+- name: Read existing frontend name and numeric account records
+  ansible.builtin.command:
+    argv: [getent, passwd, '{{ item }}']
+  loop: [feam-edge, '2109']
+  register: edge_passwd
+  changed_when: false
+  check_mode: false
+  failed_when: edge_passwd.rc not in [0, 2]
+
+- name: Reject frontend account collisions before user creation
+  ansible.builtin.assert:
+    that:
+      - item.rc == 2 or item.stdout is match('^feam-edge:[^:]*:2109:2109:[^:]*:/nonexistent:/usr/sbin/nologin$')
+  loop: '{{ edge_passwd.results }}'
+  loop_control:
+    label: '{{ item.item }}'
+
+- name: Read existing frontend name and numeric group records
+  ansible.builtin.command:
+    argv: [getent, group, '{{ item }}']
+  loop: [feam-edge, '2109']
+  register: edge_groups
+  changed_when: false
+  check_mode: false
+  failed_when: edge_groups.rc not in [0, 2]
+
+- name: Reject frontend group collisions or additional members
+  ansible.builtin.assert:
+    that: item.rc == 2 or item.stdout is match('^feam-edge:[^:]*:2109:$')
+  loop: '{{ edge_groups.results }}'
+  loop_control:
+    label: '{{ item.item }}'
+
+- name: Inspect fixed installation paths without following symlinks
+  ansible.builtin.stat:
+    path: '{{ item }}'
+    follow: false
+  loop:
+    - /opt/feam
+    - /opt/feam/edge
+    - /etc/feam
+    - /etc/feam/edge
+    - /etc/feam/edge/config.json
+    - /etc/feam/edge/tunnel-token
+    - /usr/local/sbin/feam-edge-preflight
+    - /etc/systemd/system/feam-edge.service
+    - /etc/feam/services/runtime.json
+  register: edge_paths
+
+- name: Reject symlinked or foreign installation paths
+  ansible.builtin.assert:
+    that:
+      - not item.stat.exists or (not item.stat.islnk | default(false) and item.stat.uid == 0)
+      - not item.stat.exists or not item.stat.wgrp | default(false)
+      - not item.stat.exists or not item.stat.woth | default(false)
+  loop: '{{ edge_paths.results }}'
+  loop_control:
+    label: '{{ item.item }}'
+
+- name: Verify participant gateway identity before any connector installation
+  ansible.builtin.slurp:
+    src: /etc/feam/services/runtime.json
+  register: edge_service_manifest
+  no_log: true
+
+- name: Require the reviewed dedicated frontend ACL identity
+  ansible.builtin.assert:
+    that:
+      - (edge_service_manifest.content | b64decode | from_json).protocol == 'feam.services.v1'
+      - (edge_service_manifest.content | b64decode | from_json).frontend_uid == 2109
+    fail_msg: Reapply the reviewed W7 service manifest with frontend UID 2109 before installing the connector.
+  no_log: true
+
+- name: Inspect prior connector ownership record
+  ansible.builtin.stat:
+    path: /etc/feam/edge/config.json
+    follow: false
+  register: edge_prior
+
+- name: Read prior connector ownership record
+  ansible.builtin.slurp:
+    src: /etc/feam/edge/config.json
+  register: edge_prior_config
+  when: edge_prior.stat.exists
+  no_log: true
+
+- name: Refuse an unrelated connector installation
+  ansible.builtin.assert:
+    that: (edge_prior_config.content | b64decode | from_json).protocol == 'feam.edge.v1'
+  when: edge_prior.stat.exists
+  no_log: true
+
+- name: Reject existing edge artifacts without an ownership record
+  ansible.builtin.assert:
+    that: edge_prior.stat.exists or not item.stat.exists
+  loop: >-
+    {{ edge_paths.results | selectattr('item', 'in',
+    ['/usr/local/sbin/feam-edge-preflight', '/etc/systemd/system/feam-edge.service', '/etc/feam/edge/tunnel-token']) | list }}
+  loop_control:
+    label: '{{ item.item }}'
+
+- name: Create the dedicated non-login connector group
+  ansible.builtin.group:
+    name: feam-edge
+    gid: 2109
+    system: true
+
+- name: Create the dedicated non-login connector account
+  ansible.builtin.user:
+    name: feam-edge
+    uid: 2109
+    group: feam-edge
+    groups: ''
+    append: false
+    system: true
+    home: /nonexistent
+    create_home: false
+    shell: /usr/sbin/nologin
+    password_lock: true
+
+- name: Create owned connector directories
+  ansible.builtin.file:
+    path: '{{ item.path }}'
+    state: directory
+    owner: root
+    group: root
+    mode: '{{ item.mode }}'
+  loop:
+    - {path: /opt/feam/edge, mode: '0755'}
+    - {path: /etc/feam/edge, mode: '0700'}
+
+- name: Install the fixed-scope binary and activation guard
+  ansible.builtin.copy:
+    src: '{{ role_path }}/../../../scripts/edge_preflight.py'
+    dest: /usr/local/sbin/feam-edge-preflight
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Check whether the pinned executable is already installed
+  ansible.builtin.stat:
+    path: /opt/feam/edge/cloudflared-2026.9.3
+    follow: false
+  register: edge_binary
+
+- name: Fetch and verify the exact bounded official native executable
+  ansible.builtin.command:
+    argv: [/usr/local/sbin/feam-edge-preflight, fetch]
+  changed_when: not edge_binary.stat.exists
+  when: not ansible_check_mode
+
+- name: Inspect the optional host-local tunnel credential source
+  ansible.builtin.stat:
+    path: '{{ feam_edge_token_source }}'
+    follow: false
+  register: edge_token_input
+  when: feam_edge_token_source != ''
+  no_log: true
+
+- name: Require a private root-owned regular token source
+  ansible.builtin.assert:
+    that:
+      - edge_token_input.stat.isreg | default(false)
+      - not edge_token_input.stat.islnk | default(false)
+      - edge_token_input.stat.uid == 0
+      - edge_token_input.stat.mode == '0600'
+      - edge_token_input.stat.size <= 16384
+  when: feam_edge_token_source != ''
+  no_log: true
+
+- name: Install the tunnel credential without exposing it to service configuration
+  ansible.builtin.copy:
+    src: '{{ feam_edge_token_source }}'
+    remote_src: true
+    dest: /etc/feam/edge/tunnel-token
+    owner: root
+    group: root
+    mode: '0600'
+  when: feam_edge_token_source != ''
+  no_log: true
+  diff: false
+
+- name: Write the reviewed root-only activation record
+  ansible.builtin.copy:
+    content: >-
+      {{ {'protocol': 'feam.edge.v1', 'active': feam_edge_activate | bool,
+      'account_id': feam_edge_account_id, 'tunnel_id': feam_edge_tunnel_id,
+      'readiness_sha256': feam_edge_readiness_sha256} | to_nice_json }}
+    dest: /etc/feam/edge/config.json
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+  diff: false
+
+- name: Install the sandboxed connector unit
+  ansible.builtin.template:
+    src: feam-edge.service.j2
+    dest: /etc/systemd/system/feam-edge.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check the complete activation record before starting or enabling
+  ansible.builtin.command:
+    argv: [/usr/local/sbin/feam-edge-preflight, ready]
+  changed_when: false
+  when: feam_edge_activate | bool and not ansible_check_mode
+
+- name: Reload the unit and apply only the explicit startup selection
+  ansible.builtin.systemd_service:
+    name: feam-edge.service
+    daemon_reload: true
+    enabled: '{{ feam_edge_enable | bool }}'
+    state: '{{ "started" if feam_edge_start | bool else "stopped" }}'
+  when: not ansible_check_mode

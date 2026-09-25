@@ -92,7 +92,7 @@ The common service used by `serve` and `validate-metadata` requires:
   types; every path must be a regular file below the serving root;
 - publication timestamp, and `lineage`, which may be an explicit empty list;
 - table column meanings/units (or an explicit `unknown`/`not_applicable`) and
-  declared partition columns; or raster observation time, spatial extent, and
+  declared partition columns; or raster scientific instant/interval, spatial extent, and
   per-asset scientific semantics.
 
 `data_kind` (`table` or `raster`) and `data_format` (`parquet` or `geotiff`)
@@ -109,6 +109,15 @@ The Rust TIFF decoder must open every asset and the service requires GeoTIFF
 georeferencing tags plus producer-supplied scientific time/extent; an extension
 alone is never accepted. If an inspector is not available or rejects a file,
 publication fails with `unsupported_format` and no manifest change.
+
+Raster time accepts exactly one RFC 3339 `datetime` string, or `datetime: null`
+with both `start_datetime` and `end_datetime` strings in chronological order.
+Retrieval, modification and publication times never substitute for scientific
+time. Climatologies retain their interval and aggregation semantics. Existing
+instant JSON is unchanged; absent interval fields are omitted on serialization.
+This additive v1 metadata extension requires an interval-capable FEAM binary
+where interval releases are mounted; older strict readers fail closed on these
+new fields instead of guessing an observation time.
 
 ## Filesystem and resolution rules
 
@@ -159,10 +168,13 @@ The STAC projection is derived from active raster manifest records. It pins STAC
 core **1.1.0** and STAC API **1.0.0** conformance URIs: Core, Collections,
 OGC API Features/GeoJSON, and Item Search. A namespace-qualified product is a
 Collection; version-distinguishing granules are Items; data/mask/quality files
-are named Assets. Items include GeoJSON geometry/bbox, RFC 3339 observation time,
+are named Assets. Items include GeoJSON geometry/bbox, RFC 3339 scientific time,
 projection/raster properties where known, and `feam:` ownership/version/
 provenance properties. Projection remains native CRS when already WGS84; other
 CRS transforms are rejected until a deterministic transformer is introduced.
+Interval Items use STAC `datetime: null`, `start_datetime` and `end_datetime`.
+Collection extents span all active versions, and temporal queries use inclusive
+interval overlap with parsed offsets, including open-ended query intervals.
 
 `feam stac serve --project ROOT [--addr 127.0.0.1:PORT]` is an unauthenticated,
 metadata-only service. The core rejects every bind address except the exact IPv4

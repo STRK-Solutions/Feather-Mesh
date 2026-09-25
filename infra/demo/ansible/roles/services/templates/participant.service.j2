@@ -1,0 +1,73 @@
+[Unit]
+Description=FEAM {{ item }} private service
+Requires=run-feam.mount feam-service-runtime.service
+After=run-feam.mount feam-service-runtime.service network-online.target
+BindsTo=run-feam.mount
+RequiresMountsFor=/home/feam-service-data/operations /home/feam-service-data/traces /home/feam-service-data/datasets
+{% if item == 'controller' %}
+Requires=user@2101.service
+After=user@2101.service feam-gateway.service feam-broker.service feam-collector.service feam-pipeline.service
+BindsTo=user@2101.service
+{% elif item != 'gateway' %}
+After=feam-gateway.service
+{% endif %}
+StartLimitIntervalSec=60
+StartLimitBurst=3
+[Service]
+Type=simple
+User=feam-{{ item }}
+Group=feam-{{ item }}
+WorkingDirectory={{ services_state_roots[item] }}
+ExecStartPre=+/usr/local/sbin/feam-services-runtime prepare --service {{ item }}
+ExecStart=/opt/feam/services/{{ feam_services_release_sha256 }}/{{ item }} {{ services_commands[item] }}
+ExecStartPost=+/usr/local/sbin/feam-services-runtime socket-acls --service {{ item }}
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=30
+TimeoutStopSec=60
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_UNIX{% if item != 'controller' %} AF_INET AF_INET6{% endif %}
+
+ReadWritePaths={{ services_state_roots[item] }} -/run/feam/services/{{ item }}
+{% for workspace in feam_workspace_ids %}
+{% if item == 'controller' %}
+ReadWritePaths=-/run/feam/workspaces/{{ workspace }}/config
+{% elif item == 'gateway' %}
+ReadWritePaths=-/run/feam/workspaces/{{ workspace }}/terminal
+{% elif item == 'broker' %}
+ReadWritePaths=-/run/feam/workspaces/{{ workspace }}/model
+{% elif item == 'collector' %}
+ReadWritePaths=-/run/feam/workspaces/{{ workspace }}/events
+{% endif %}
+{% endfor %}
+{% if item == 'controller' %}
+ReadOnlyPaths=-/home/feam-service-data/datasets/pipeline/releases
+{% endif %}
+Slice=feam-{{ 'pipeline' if item == 'pipeline' else 'control' }}.slice
+MemoryMax={{ services_memory_max[item] }}
+MemorySwapMax=0
+TasksMax={{ 128 if item == 'pipeline' else 96 }}
+LimitNOFILE=1024
+LimitCORE=0
+StandardOutput=journal
+StandardError=journal
+LogRateLimitIntervalSec=30
+LogRateLimitBurst=100
+[Install]
+WantedBy=multi-user.target

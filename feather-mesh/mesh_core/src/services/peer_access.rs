@@ -11,7 +11,7 @@ use std::path::{Component, Path, PathBuf};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use parquet::file::reader::{FileReader, SerializedFileReader};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -362,7 +362,12 @@ pub struct TablePublication {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RasterPublication {
-    pub datetime: String,
+    #[serde(default)]
+    pub datetime: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start_datetime: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub end_datetime: Option<String>,
     pub bbox: [f64; 4],
     #[serde(default)]
     pub semantics: BTreeMap<String, String>,
@@ -434,7 +439,12 @@ pub struct RasterDescriptor {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub crs: Option<String>,
     pub nodata: Option<String>,
-    pub datetime: String,
+    #[serde(default)]
+    pub datetime: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start_datetime: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub end_datetime: Option<String>,
     pub bbox: [f64; 4],
     pub semantics: BTreeMap<String, String>,
 }
@@ -1346,7 +1356,11 @@ fn validate_publication_fields(project: &Project, request: &PublicationRequest) 
     ) {
         (DataKind::Table, DataFormat::Parquet, Some(_), None) => {}
         (DataKind::Raster, DataFormat::Geotiff, None, Some(raster)) => {
-            non_blank("raster.datetime", &raster.datetime)?;
+            raster_time_bounds(
+                raster.datetime.as_deref(),
+                raster.start_datetime.as_deref(),
+                raster.end_datetime.as_deref(),
+            )?;
             if raster.bbox[0] > raster.bbox[2] || raster.bbox[1] > raster.bbox[3] {
                 return Err(validation(
                     "raster.bbox",
@@ -1435,9 +1449,45 @@ fn inspect_geotiff(path: &Path, profile: &RasterPublication) -> PeerResult<Raste
         crs,
         nodata,
         datetime: profile.datetime.clone(),
+        start_datetime: profile.start_datetime.clone(),
+        end_datetime: profile.end_datetime.clone(),
         bbox: profile.bbox,
         semantics: profile.semantics.clone(),
     })
+}
+
+/// Exactly one scientific instant or a complete closed interval. Modification,
+/// retrieval and publication timestamps are never substitutes for this metadata.
+pub fn raster_time_bounds(
+    datetime: Option<&str>,
+    start: Option<&str>,
+    end: Option<&str>,
+) -> PeerResult<(DateTime<Utc>, DateTime<Utc>)> {
+    let parse = |value: &str| {
+        DateTime::parse_from_rfc3339(value)
+            .map(|time| time.with_timezone(&Utc))
+            .map_err(|_| validation("raster.datetime", "scientific time must be RFC 3339"))
+    };
+    match (datetime, start, end) {
+        (Some(value), None, None) => {
+            let instant = parse(value)?;
+            Ok((instant, instant))
+        }
+        (None, Some(start), Some(end)) => {
+            let (start, end) = (parse(start)?, parse(end)?);
+            if start > end {
+                return Err(validation(
+                    "raster.datetime",
+                    "interval start must not follow end",
+                ));
+            }
+            Ok((start, end))
+        }
+        _ => Err(validation(
+            "raster.datetime",
+            "supply datetime alone or null datetime with both start_datetime and end_datetime",
+        )),
+    }
 }
 
 fn epsg_from_geo_keys(keys: &[u16]) -> Option<u16> {

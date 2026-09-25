@@ -1,0 +1,22 @@
+{
+  "protocol": "feam.u04-live-transition-preparation.v1",
+  "status": "prepared locally; not rendered or applied to Ubuntu",
+  "renderer": "infra/demo/scripts/u04_service_configs.py",
+  "private_pending_input": ".local/demo-deployment/functional-proposal/u04-render-input-live-pending.json",
+  "private_pending_input_sha256": "319eee82f4841813e6891c22726dab4ea97fc94eddf7017b010bda98e3248165",
+  "required_before_render": [
+    "issue the already-approved finite live allocation from the primary project ledger after private/browser prerequisites",
+    "completed synthetic browser capture and ordinary stopped archive with verified private Mac copy"
+  ],
+  "credentials_prepared": "The existing 32-byte primary Ed25519 verification key is present; the owner-supplied OpenRouter key was staged byte-identically in an owner-only private directory without a provider request.",
+  "prepared_behavior": [
+    "reject fake/live run or allocation ID reuse and verify the real signed allocation",
+    "retain owner-only fake allocation and verification-key copies for audit",
+    "separate live broker ledger, capability database and drain receipt paths",
+    "live broker mode and private provider key, with start and enable false",
+    "controller endpoints and collector policy synthetic=false",
+    "broker-only initialization with both new database paths and WAL/SHM companions required absent, plus separate post-init repeat variables"
+  ],
+  "runtime_followup": "Freshly restart both workspaces and verify regenerated event.json synthetic=false before live requests; carry archive ledger and retained Mac copies into the separate primary-project lifecycle vault.",
+  "validation": "five focused renderer tests and full locked web-demo offline check passed"
+}

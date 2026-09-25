@@ -35,14 +35,16 @@ rustc -vV
 cargo --version
 [[ -f source.tar && -f source.tar.sha256 ]]
 sha256sum --check source.tar.sha256
-if [[ ! -d source ]]; then
-  mkdir source
-  tar -xf source.tar -C source
-  cp source.tar.sha256 extracted-source.sha256
+source_digest=$(sha256sum source.tar | cut -d ' ' -f1)
+source_directory="source-$source_digest"
+if [[ ! -d "$source_directory" ]]; then
+  mkdir "$source_directory"
+  tar -xf source.tar -C "$source_directory"
+  cp source.tar.sha256 "$source_directory/extracted-source.sha256"
 else
-  cmp source.tar.sha256 extracted-source.sha256
+  cmp source.tar.sha256 "$source_directory/extracted-source.sha256"
 fi
-cd source/feather-mesh
+cd "$source_directory/feather-mesh"
 cargo build --locked --release -p mesh_cli --features agent-hosted --jobs 2
 sha256sum "$CARGO_TARGET_DIR/release/mesh_cli" > "$build_scope/mesh_cli.sha256"
 file "$CARGO_TARGET_DIR/release/mesh_cli"

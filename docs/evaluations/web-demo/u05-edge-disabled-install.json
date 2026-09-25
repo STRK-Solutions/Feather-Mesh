@@ -1,0 +1,41 @@
+{
+  "date": "2026-09-25",
+  "environment": "UBUNTU-disabled-edge-install",
+  "scope": "Existing Ubuntu host; dedicated feam-deploy inventory; connector installation only",
+  "private_inputs": ".local/demo-deployment/functional-proposal/edge-disabled-inventory.yml, edge-disabled-vars.json, edge_disabled_install.py and edge-disabled-outputs.json",
+  "precondition": "Read-only SSH verified feam.services.v1 runtime manifest frontend_uid=2109 before Ansible mutation; the Cloudflare selected_site output was disabled.",
+  "selection": {
+    "feam_edge_activate": false,
+    "feam_edge_start": false,
+    "feam_edge_enable": false,
+    "feam_edge_stop": false,
+    "token_source": ""
+  },
+  "ansible_check": "ok=21 changed=6 failed=0 skipped=9; check mode only",
+  "ansible_first_apply": "ok=23 changed=7 failed=0 skipped=7",
+  "ansible_repeat_apply": "ok=25 changed=0 failed=0 skipped=5",
+  "host_checks": {
+    "edge_uid_gid": "2109:2109",
+    "binary": "/opt/feam/edge/cloudflared-2026.9.3",
+    "binary_sha256": "77e26d8d900e0b8469f416239d14b5f296525fdf79fee6f511ef55609e3fbac2",
+    "binary_bytes": 40122749,
+    "binary_owner_mode": "root:0555",
+    "unit": "loaded, inactive, disabled",
+    "activation_record": false,
+    "token_present": false,
+    "edge_processes": 0,
+    "edge_listeners": 0,
+    "participant_services": "gateway, controller, broker, collector, pipeline and reconciler inactive"
+  },
+  "private_evidence_sha256": {
+    "check_log": "6c639e5d06a3d01e584b3e3a080f19cebe5d2efa0b0db762f1f8b0a720696497",
+    "first_apply_log": "b4837a12516317169ef0c953ecc50987c9b65be166db55546dc64eb218e79c79",
+    "repeat_apply_log": "23ff9095d714e76bd75d938b033478c199d7174be80e5544b49f21bf43ec7be0",
+    "host_evidence": "e24fd1d2132f07ca30d92c3294247b68c06cd24fe554b28a50523e24610caf11"
+  },
+  "limitations": [
+    "No connector was started or enabled; no tunnel credential was installed.",
+    "No DNS, public Access route or browser acceptance is established by this disabled installation.",
+    "The listener check confirms no cloudflared or edge metrics listener, not absence of unrelated host listeners."
+  ]
+}

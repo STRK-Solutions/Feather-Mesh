@@ -33,6 +33,10 @@ pub struct AgentConfig {
 pub struct AgentProfile {
     pub backend: String,
     pub base_url: String,
+    /// Additional trust only for the installed HTTPS IPv4-loopback broker
+    /// adapter. This never extends trust for external router endpoints.
+    #[serde(default)]
+    pub loopback_ca_file: Option<PathBuf>,
     pub model: String,
     pub api_key_env: String,
     /// An explicit name for the locally enforced serialization policy.
@@ -204,6 +208,24 @@ impl AgentProfile {
             }
         }
         validate_endpoint(&self.base_url).map_err(|message| invalid(profile, message))?;
+        if let Some(path) = &self.loopback_ca_file {
+            let authority = self
+                .base_url
+                .strip_prefix("https://")
+                .map(|rest| rest.split('/').next().unwrap_or_default());
+            let exact_loopback = authority.is_some_and(|authority| {
+                authority == "127.0.0.1"
+                    || authority
+                        .strip_prefix("127.0.0.1:")
+                        .is_some_and(|port| port.parse::<u16>().is_ok_and(|value| value > 0))
+            });
+            if !path.is_absolute() || !exact_loopback {
+                return Err(invalid(
+                    profile,
+                    "loopback_ca_file requires an absolute certificate path and HTTPS 127.0.0.1 endpoint",
+                ));
+            }
+        }
         Ok(())
     }
 }
@@ -252,6 +274,7 @@ mod tests {
         let profile = AgentProfile {
             backend: "router".into(),
             base_url: "https://openrouter.ai/api/v1".into(),
+            loopback_ca_file: None,
             model: "example/model".into(),
             api_key_env: "FEAM_ROUTER_API_KEY".into(),
             context_policy: "synthetic-demo".into(),
@@ -280,5 +303,30 @@ mod tests {
             .validate("demo")
             .is_err()
         );
+    }
+
+    #[test]
+    fn extra_ca_is_scoped_to_exact_https_loopback() {
+        let mut profile: AgentProfile = serde_json::from_value(serde_json::json!({
+            "backend":"router", "base_url":"https://127.0.0.1:8443/v1",
+            "model":"fixture", "api_key_env":"UNUSED", "context_policy":"metadata-only",
+            "loopback_ca_file":"/run/feam/model/ca.pem"
+        }))
+        .unwrap();
+        profile.validate("phase1-demo").unwrap();
+        for endpoint in [
+            "https://openrouter.ai/api/v1",
+            "http://127.0.0.1:8443/v1",
+            "https://localhost:8443/v1",
+            "https://127.0.0.1.invalid/v1",
+            "https://127.0.0.1:8443@outside.invalid/v1",
+            "https://127.0.0.1:0/v1",
+        ] {
+            profile.base_url = endpoint.into();
+            assert!(profile.validate("phase1-demo").is_err(), "{endpoint}");
+        }
+        profile.base_url = "https://127.0.0.1:8443/v1".into();
+        profile.loopback_ca_file = Some("relative.pem".into());
+        assert!(profile.validate("phase1-demo").is_err());
     }
 }

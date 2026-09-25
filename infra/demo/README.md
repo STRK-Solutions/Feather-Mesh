@@ -3,7 +3,10 @@
 W0 introduces read-only preflight, sanitized examples, validation and a bounded
 disposable-VM probe. W1 adds scoped account/storage/rootless-runtime roles, a
 terminal image and the private operator proxy; see the [W1 runbook](W1.md).
-Production lifecycle services and Terraform modules remain planned. See [contract](../../docs/ubuntu_web_dev_demo_contract.md),
+The [participant service recipe](W7.md), [operator vault](OPERATOR.md),
+[lifecycle recovery](../../web_demo/RECOVERY.md), and [Terraform modules](terraform/README.md)
+provide the later deployment components. Their local checks do not establish
+Ubuntu, edge, or cloud acceptance. See [contract](../../docs/ubuntu_web_dev_demo_contract.md),
 [toolchain](toolchain.md) and [acceptance](../../docs/ubuntu_web_dev_demo_acceptance.md).
 
 ## Local checks
@@ -195,14 +198,14 @@ pinned pip wheel and does not alter system Python.
 | Input | Current state / next gate |
 | --- | --- |
 | I1 | W0 preflight and W1 owner-run scoped bootstrap passed. Actual runner enforcement, browser manual/fake flows, persistent storage, lingering and unchanged converge are verified. Dedicated deployment SSH and noninteractive sudo passed on 2026-09-25; authorized Ubuntu work no longer needs manual sudo handoffs. Private inventory/evidence retained locally. Shared-host reboot still requires an approved window. |
-| I2 | Owner selected `feam.613202690.xyz` with `admin` and `u-<opaque-id>` siblings, confirmed Cloudflare Active status/Zero Trust onboarding, and connected Cloudflare to Codex on 2026-09-25. Cloudflare tools are available; use the existing connection first. Account/zone permissions, Terraform/runtime authentication, MFA and route/HTTPS/Tunnel/Access configuration remain unverified. Request only missing scoped capabilities and retain renewal terms for handoff; see the [connection record](../../docs/ubuntu_web_dev_demo_workplan.md#cloudflare-connected-to-codex-2026-09-25). |
-| I3 | Operator-held state and project/run allocation contract defined; actual encrypted storage/ledger/archive setup pending W5–W7. |
-| I4 | Selected route fixed; key, current prices and finite live budget pending W8. No live inference now. |
-| I5 | Cloud account/provider and bounded exact purchase approval pending W9. W0 does not create paid resources. |
-| I6 | Existing consent and trace survival confirmed; retention, reviewers, support and Phase 2 owner pending before real capture/export. |
-| I7 | Exact source objects, licenses, subsets and checksums pending W4 real imports. |
+| I2 | Selected account/zone and Cloudflare MFA verified through the existing connection. Edge Terraform, connector recipe and probes pass local checks; actual route/HTTPS/Access/Tunnel and runtime/automation authentication remain pending. |
+| I3 | Encrypted operator vault and durable US$100 project budget exist on the Mac. Owner confirmed zero prior charges; no finite run allocation issued. Independent collector archive acceptance remains pending. |
+| I4 | Selected route fixed; model key, current prices and finite live budget pending W8. No live inference now. |
+| I5 | Bounded NYC3 proposal was approved, then DigitalOcean was shelved by the owner. No compute resources created; do not resume allocation implicitly. |
+| I6 | Retention 30 days; Saif is sole reviewer and Phase 2 owner; private support contact supplied. Private ENAM R2 bucket and policy exist. S3 credentials received locally; Ubuntu transfer, token scope and collector readback remain pending. |
+| I7 | Exact ECCC/AAFC acquisition approved and complete; local readers pass and pinned sources are staged on Ubuntu. Exact Ubuntu release promotion and mounted-reader proof remain pending. |
 
-`settings.json` deliberately marks all deployment inputs pending because a
+The example `settings.json` deliberately marks deployment inputs pending because a
 partial decision is not a completed readiness gate. Keep current private
 records outside disposable compute. Never commit real inventories, secrets,
 Terraform state/plans, raw traces, roster or private preflight JSON. The existing

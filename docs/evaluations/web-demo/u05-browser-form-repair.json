@@ -1,0 +1,46 @@
+{
+  "protocol": "feam.browser-form-repair.v1",
+  "date": "2026-09-25",
+  "status": "deployed-real-browser-grant-passed",
+  "actual_failure": {
+    "authenticated_admin_get": 200,
+    "referrer_policy": "no-referrer",
+    "chromium_form_origin": "null",
+    "csrf_cookie_present": true,
+    "csrf_cookie_matches_form": true,
+    "sec_fetch_site": "same-origin",
+    "form_result": 403,
+    "grant_mutated": false
+  },
+  "repair": {
+    "referrer_policy": "same-origin",
+    "csrf_validation_unchanged": true,
+    "null_and_cross_origin_still_rejected": true,
+    "source": [
+      "web_demo/internal/gateway/gateway.go",
+      "web_demo/internal/gateway/gateway_test.go"
+    ]
+  },
+  "validation": {
+    "mac_gateway_race": "pass after allowing required local Unix sockets",
+    "mac_gateway_vet": "pass",
+    "real_chromium_loopback_form_regression": {
+      "old_policy_origin_null": true,
+      "new_policy_origin_matches_server": true
+    },
+    "native_build": "full Ubuntu race tests, vet, gateway build passed",
+    "deployed_admin_grant": "real Chromium fresh dashboard and exact release grant succeeded"
+  },
+  "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Referrer-Policy",
+  "retained_attempts": [
+    "initial gateway tests could not bind Unix sockets in sandbox; rerun with required permission passed",
+    "both real admin grant attempts failed403 before mutation"
+  ],
+  "deployed": {
+    "source_sha256": "6f5daf80e77811210718252804adcbe930c03b9c45913bf0ef6f572d4a1837f8",
+    "gateway_sha256": "297b938d11a92695ff4f3f2bf962480c22688f012e4c2f275cdf9b331a0a41e6",
+    "runtime_manifest_sha256": "33feac6c5433aaa9da0a5acf4e50ec33c9d5a074da0281f24965af5f5f284c8c",
+    "only_gateway_restarted": true,
+    "other_artifacts_and_configs_unchanged": true
+  }
+}

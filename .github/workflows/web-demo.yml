@@ -37,6 +37,9 @@ jobs:
           test "$(uname -m)" = x86_64
           rustc -vV
           cargo build --locked --release -p mesh_cli --features agent-hosted
+          cargo build --locked --release -p mesh_agent --features hosted --example broker_probe
+          cargo run --locked --quiet -p mesh_agent --example tool_schemas > /tmp/feam-tools.json
+          cmp /tmp/feam-tools.json ../web_demo/internal/broker/tools.json
           sha256sum target/release/mesh_cli > target/release/mesh_cli.sha256
       - uses: actions/upload-artifact@v4
         with:
@@ -44,10 +47,12 @@ jobs:
           path: |
             feather-mesh/target/release/mesh_cli
             feather-mesh/target/release/mesh_cli.sha256
+            feather-mesh/target/release/examples/broker_probe
           retention-days: 7
 
-  private-terminal:
+  web-services:
     runs-on: ubuntu-24.04
+    needs: native-feam-artifact
     defaults:
       run:
         working-directory: web_demo
@@ -57,10 +62,53 @@ jobs:
         with:
           go-version: '1.27.1'
           cache-dependency-path: web_demo/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: feam-ubuntu-24.04-amd64
+          path: ${{ runner.temp }}/feam-native
+      - name: Install locked native readers and fresh SDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends acl
+          python -m pip install --require-hashes -r importers/requirements-linux.lock
+          python -m pip install --no-deps --no-build-isolation ../feather-mesh/python_sdk
+          chmod 0755 "$RUNNER_TEMP/feam-native/mesh_cli" "$RUNNER_TEMP/feam-native/examples/broker_probe"
       - name: Check formatting, race tests and vet
+        env:
+          FEAM_BROKER_PROBE: ${{ runner.temp }}/feam-native/examples/broker_probe
         run: |
           test -z "$(gofmt -l cmd internal)"
           go test -race ./...
           go vet ./...
-      - name: Build private Unix-socket terminal proxy
-        run: go build -trimpath ./cmd/private-terminal
+      - name: Verify actual FEAM candidate publication and native converters
+        run: |
+          export FEAM_PIPELINE_FEAM="$RUNNER_TEMP/feam-native/mesh_cli"
+          export FEAM_PIPELINE_PYTHON="$(command -v python)"
+          export FEAM_PIPELINE_CONVERTER="$PWD/importers/convert.py"
+          go test -race -tags=pipeline_integration ./internal/pipeline
+          python -m unittest discover -s importers/tests -v
+      - name: Build separate host services and private adapters
+        run: go build -trimpath ./cmd/...
+
+  terraform:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        module: [edge, research-storage, cloud-host]
+    defaults:
+      run:
+        working-directory: infra/demo/terraform/${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.14.5'
+      - name: Validate locked providers and mock ownership checks
+        run: |
+          terraform init -backend=false -input=false -lockfile=readonly
+          terraform fmt -check -recursive
+          terraform validate
+          terraform test

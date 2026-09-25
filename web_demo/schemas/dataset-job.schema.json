@@ -1,0 +1,417 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://feather-mesh.invalid/schemas/dataset-job.v1.json",
+  "title": "Closed approved pipeline job; Go enforces cross-field and destination rules",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol",
+    "id",
+    "bundle",
+    "namespace",
+    "parent_digest",
+    "importer_version",
+    "sources",
+    "products",
+    "limits",
+    "policy"
+  ],
+  "properties": {
+    "protocol": {
+      "const": "feam.pipeline.v1"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[a-f0-9-]{36}$"
+    },
+    "bundle": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,62}$"
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,62}$"
+    },
+    "parent_digest": {
+      "anyOf": [
+        {
+          "const": ""
+        },
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      ]
+    },
+    "importer_version": {
+      "const": "1"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "importer",
+          "url",
+          "sha256",
+          "upstream_version",
+          "retrieved_at",
+          "license",
+          "attribution",
+          "station",
+          "start_date",
+          "end_date",
+          "scientific_time",
+          "bbox",
+          "resampling",
+          "variable",
+          "unit",
+          "max_bytes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,62}$"
+          },
+          "importer": {
+            "enum": [
+              "eccc-csv",
+              "aafc-geotiff"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 4096
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "upstream_version": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "retrieved_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "license": {
+            "const": "https://open.canada.ca/en/open-government-licence-canada"
+          },
+          "attribution": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "station": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "start_date": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "end_date": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "scientific_time": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "start",
+              "end",
+              "evidence"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "dates-in-source",
+                  "instant",
+                  "climatology-interval"
+                ]
+              },
+              "start": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "end": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "evidence": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            }
+          },
+          "bbox": {
+            "type": "array",
+            "maxItems": 4,
+            "items": {
+              "type": "number"
+            }
+          },
+          "resampling": {
+            "enum": [
+              "none",
+              "nearest"
+            ]
+          },
+          "variable": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "unit": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "max_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 67108864
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "importer": {
+                  "const": "eccc-csv"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "bbox": {
+                  "maxItems": 0
+                },
+                "resampling": {
+                  "const": "none"
+                },
+                "scientific_time": {
+                  "properties": {
+                    "kind": {
+                      "const": "dates-in-source"
+                    }
+                  }
+                },
+                "url": {
+                  "pattern": "^https://climate\\.weather\\.gc\\.ca(?::443)?/climate_data/bulk_data_e\\.html(?:\\?.*)?$"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "bbox": {
+                  "minItems": 4
+                },
+                "resampling": {
+                  "const": "nearest"
+                },
+                "scientific_time": {
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "instant",
+                        "climatology-interval"
+                      ]
+                    }
+                  }
+                },
+                "url": {
+                  "pattern": "^https://agriculture\\.canada\\.ca(?::443)?/atlas/data_donnees/[^?%]+\\.tiff?$"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "products": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "id",
+          "version",
+          "name",
+          "description",
+          "intended_use",
+          "limitations",
+          "producer",
+          "contact",
+          "asset_id"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,62}$"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,62}$"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,62}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "intended_use": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "limitations": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "producer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "contact": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "asset_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,62}$"
+          }
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_bytes",
+        "output_bytes",
+        "candidate_bytes",
+        "elapsed_seconds",
+        "redirects",
+        "archive_entries",
+        "expanded_bytes"
+      ],
+      "properties": {
+        "source_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "output_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 262144000
+        },
+        "candidate_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 262144000
+        },
+        "elapsed_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300
+        },
+        "redirects": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "archive_entries": {
+          "const": 0
+        },
+        "expanded_bytes": {
+          "const": 0
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "audience",
+        "model_metadata",
+        "model_payload",
+        "research_eligible"
+      ],
+      "properties": {
+        "audience": {
+          "const": "invited-users"
+        },
+        "model_metadata": {
+          "type": "boolean"
+        },
+        "model_payload": {
+          "const": false
+        },
+        "research_eligible": {
+          "type": "boolean"
+        }
+      }
+    },
+    "withdrawal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targets",
+        "reason"
+      ],
+      "properties": {
+        "targets": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,62}$"
+              },
+              "version": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,62}$"
+              }
+            }
+          }
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      }
+    }
+  }
+}

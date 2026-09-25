@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-25",
+  "environment": "UBUNTU-native-build",
+  "architecture": "linux-amd64",
+  "go": "1.27.1",
+  "source_sha256": "ed1f2decdb9931effb97e391cf8b4d317c5e8a0248296cc9aaf6684917b0cf55",
+  "source_bytes": 993280,
+  "source_files": 164,
+  "approval": "Owner explicitly approved this exact snapshot and bounded native build after initial automatic-review rejection.",
+  "transfer": "completed; source digest verified; previous archive preserved",
+  "build_limits": {
+    "GOMAXPROCS": 2,
+    "GOFLAGS": "-p=2"
+  },
+  "script": "infra/demo/scripts/native_web_build.sh",
+  "commands": [
+    "go test -race ./...",
+    "go vet ./...",
+    "go build -trimpath -o <owned-output>/<component> ./cmd/<component>"
+  ],
+  "components": [
+    "private-terminal",
+    "gateway",
+    "controller",
+    "broker",
+    "model-adapter",
+    "project-budget",
+    "reconciler",
+    "pipeline",
+    "collector",
+    "capture-fixture"
+  ],
+  "exit_code": 0,
+  "model_adapter_sha256": "997b77c56bf1b658eeabfa0c3d1cc9d9e2701ac18905f18f8fb8229dd25f2ddf",
+  "private_log": ".local/demo-deployment/w7-native-web-build.log",
+  "private_log_sha256": "9a99c6833028a2fed8a3bae13c09b108f2b9a141fe3d9bf6afeab1cfcadd1024",
+  "limitations": [
+    "Approved native source predates final collector archive-metadata carryover changes; it is baseline evidence, not the current deployable release.",
+    "Optional native Rust broker probe was not wired into this Go invocation; no complete Ubuntu broker-path claim.",
+    "No participant image build or service installation/startup completed."
+  ],
+  "runtime_acceptance": false
+}

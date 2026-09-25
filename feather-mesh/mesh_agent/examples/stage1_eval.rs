@@ -51,7 +51,9 @@ impl Fixture {
         raster.data_format = DataFormat::Geotiff;
         raster.table = None;
         raster.raster = Some(RasterPublication {
-            datetime: "2026-01-01T00:00:00Z".into(),
+            datetime: Some("2026-01-01T00:00:00Z".into()),
+            start_datetime: None,
+            end_datetime: None,
             bbox: [-76.0, 45.0, -75.0, 46.0],
             semantics: BTreeMap::from([("band_1".into(), "temperature".into())]),
         });

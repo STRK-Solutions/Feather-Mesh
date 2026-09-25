@@ -1,0 +1,73 @@
+{
+  "protocol": "feam.web.export.v1",
+  "id": "ccb1bcec-d9fe-4d88-befc-24a01af52176",
+  "reviewer": "automated-synthetic-fixture",
+  "purpose": "reviewed-feam-workflows",
+  "created_at": "2026-09-25T07:13:44.231992Z",
+  "expires_at": "2026-10-25T07:13:44.231992Z",
+  "split": "held_out",
+  "synthetic": true,
+  "examples": [
+    {
+      "event": {
+        "protocol": "feam.web.event.v1",
+        "event_id": "00000000-0000-4000-8000-000000000002",
+        "stream_id": "00000000-0000-4000-8000-000000000003",
+        "sequence": 1,
+        "deployment_id": "00000000-0000-4000-8000-000000000004",
+        "workspace_id": "00000000-0000-4000-8000-000000000005",
+        "generation": 1,
+        "participant_id": "00000000-0000-4000-8000-000000000001",
+        "conversation_id": "00000000-0000-4000-8000-000000000006",
+        "request_id": "00000000-0000-4000-8000-000000000007",
+        "proposal_id": null,
+        "occurred_at": "2026-09-25T07:13:44.231084Z",
+        "kind": "outcome",
+        "trust": "independently_verified",
+        "software_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "profile_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "dataset_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "payload_sha256": "f9bfb7c8b12b7e2c586f77d7eec0f47625ac5368f0dc39df266b337e389148b9",
+        "payload": {
+          "outcome": "committed",
+          "receipt_sha256": "e264bb3a2f0b9880e562b17e608bb2c8cfe986fc46719406688c33c62a2d2137",
+          "task_template": "synthetic-resolve",
+          "dataset_family": "synthetic-climate"
+        },
+        "synthetic": true
+      },
+      "event_sha256": "849fe29308852c8e3ddbea30010a820c55340747baa5f5b3f5f26f006be75d7e",
+      "label": "verified_success"
+    },
+    {
+      "event": {
+        "protocol": "feam.web.event.v1",
+        "event_id": "00000000-0000-4000-8000-000000000008",
+        "stream_id": "00000000-0000-4000-8000-000000000003",
+        "sequence": 2,
+        "deployment_id": "00000000-0000-4000-8000-000000000004",
+        "workspace_id": "00000000-0000-4000-8000-000000000005",
+        "generation": 1,
+        "participant_id": "00000000-0000-4000-8000-000000000001",
+        "conversation_id": "00000000-0000-4000-8000-000000000006",
+        "request_id": "00000000-0000-4000-8000-000000000007",
+        "proposal_id": null,
+        "occurred_at": "2026-09-25T07:13:44.231084Z",
+        "kind": "review",
+        "trust": "client_reported",
+        "software_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "profile_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "dataset_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "payload_sha256": "5f28da85fbe875ff28b3ae0c216209c1b50ea925bece8353f112acbe7f0f21f6",
+        "payload": {
+          "decision": "denied",
+          "task_template": "synthetic-resolve",
+          "dataset_family": "synthetic-climate"
+        },
+        "synthetic": true
+      },
+      "event_sha256": "22d1165f5d2b9ce3883a49a7a7261527ef66392d14b8a045000b7272b80f2001",
+      "label": "negative_client_reported"
+    }
+  ]
+}

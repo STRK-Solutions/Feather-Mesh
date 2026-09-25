@@ -1,0 +1,116 @@
+{
+  "collector_reviewer_denials": {
+    "all_archive_directory_reads_denied": true,
+    "all_events_database_reads_denied": true,
+    "all_research_export_socket_connections_denied": true,
+    "deployed_capture_flow_tested": false,
+    "initial_capture_event_count": 0,
+    "targets_verified_to_exist": true,
+    "tested_nonreviewer_categories": [
+      "untrusted_host",
+      "gateway_service",
+      "frontend_service",
+      "mapped_workspace_identity"
+    ]
+  },
+  "container_boundaries": {
+    "all_capabilities_dropped": true,
+    "approved_image_digest_match": true,
+    "both_exact_running_containers": true,
+    "cpu_fraction": 0.5,
+    "deployment_workspace_generation_labels_match": true,
+    "in_container_user": "1000:1000",
+    "memory_mib": 512,
+    "memory_swap_mib": 512,
+    "mount_categories_exact": [
+      "workspace_writable",
+      "terminal_socket_writable",
+      "model_socket_read_only",
+      "event_socket_read_only",
+      "hosted_configuration_read_only"
+    ],
+    "network_mode": "none",
+    "no_new_privileges": true,
+    "pids_limit": 128,
+    "privileged": false,
+    "read_only_rootfs": true,
+    "restart_policy": "none",
+    "ungranted_dataset_mount_present": false
+  },
+  "environment": "actual Ubuntu 24.04 private demo host",
+  "first_start_and_recovery": {
+    "A_container_created": false,
+    "A_generation_after_abort": 2,
+    "A_initial_start": "accepted_then_unknown",
+    "W1_original_container_identities_and_prior_states_preserved": true,
+    "durable_outcome": "explicit_reconciliation_required",
+    "durable_state_after_abort": "failed",
+    "fresh_A_start": "completed_running_generation_2",
+    "fresh_B_start": "completed_running_generation_1",
+    "observed_cause": "existing rootless Docker daemon could not see the later private runtime mount under its copied-up run namespace",
+    "repair": "reviewed detached mount attached only in the pinned daemon namespace; repeat visibility check passed",
+    "unknown_job_resolution": "exact request-hash-bound operator abort, no blind replay"
+  },
+  "not_claimed": [
+    "email PIN login",
+    "public HTTPS or WebSocket",
+    "browser role isolation",
+    "live model request",
+    "verified Mac archive copy",
+    "full U.04 acceptance"
+  ],
+  "observed_utc": "2026-09-25T09:56:10Z",
+  "private_receipt_sha256": {
+    "collector_denials": "cb82c8dd1a969eb05eb3688e2972f875434bb84a998542bd28a5fa5072bce0db",
+    "exact_container_inspection": "c3fb49142a44d12c9120a7135719888f8f3f3b1edd409df48b745f9d861853b2",
+    "first_unknown_start": "72e603d63d8b6b53d5c48205e1e4693d3988d1ac93b7e5bbb1bc9d4223744327",
+    "hash_bound_abort_readback": "c4601660121258dcda3710f7d99af9d4cf05438f9256ff643c1e42291d27ea38",
+    "initial_active_accounts": "6021dcae4ca1f14db401379dee2f573ebdcb63091c0665ced69c7eff0ad83a91",
+    "two_running_terminals": "7001816955a78e859a0af9d6edb4da8b382abb36f525828ae4127258e9ba2f83"
+  },
+  "private_workspace_status": {
+    "A": {
+      "generation": 2,
+      "state": "running",
+      "terminal_unix_http": 200
+    },
+    "B": {
+      "generation": 1,
+      "state": "running",
+      "terminal_unix_http": 200
+    },
+    "pending_gateway_snapshots": 0,
+    "pending_jobs": 0
+  },
+  "protocol": "feam.u04-private-workspaces.v1",
+  "related_public_evidence": [
+    "u04-private-services.json",
+    "u04-rootless-run-mount-repair.json",
+    "u02-ubuntu-release.json"
+  ],
+  "remaining_U04": [
+    "real admin browser grant of exact release to A and B direct-path denial",
+    "browser start/stop/reconnect and reviewed reset",
+    "deployed fake request, local review/cancel and correlated capture/flush/readback",
+    "ordinary service stop/start, unchanged converge and retained files/grants/reservations"
+  ],
+  "scope": "two participant workspaces, six private services, no public browser route",
+  "service_and_identity": {
+    "actual_access_membership_sync": true,
+    "admin_to_A_http": 403,
+    "broker_recording_configured": true,
+    "broker_status_http": 200,
+    "control_sockets_present": 5,
+    "cross_owner_B_to_A_http": 403,
+    "exact_release_resolve_http": 200,
+    "gateway_browser_socket_present": true,
+    "owner_A_authorize_http": 200,
+    "private_units_active": 6,
+    "staged_accounts_active": {
+      "A": true,
+      "B": true,
+      "admin": true
+    },
+    "untrusted_broker_socket": "permission_denied"
+  }
+}

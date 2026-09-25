@@ -1087,6 +1087,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "sha2",
  "tempfile",
  "thiserror",
  "tiff",
@@ -1132,6 +1133,7 @@ dependencies = [
 name = "mesh_tui"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "crossterm",
  "mesh_agent",
  "mesh_core",
@@ -1139,7 +1141,9 @@ dependencies = [
  "ratatui",
  "serde",
  "serde_json",
+ "sha2",
  "signal-hook",
+ "socket2",
  "tempfile",
  "thiserror",
  "tiff",

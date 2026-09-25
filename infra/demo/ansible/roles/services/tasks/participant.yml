@@ -1,0 +1,409 @@
+---
+- name: Require reviewed native service scope and explicit lifecycle inputs
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Ubuntu'
+      - ansible_facts.distribution_version == '24.04'
+      - ansible_facts.architecture == 'x86_64'
+      - feam_root == '/home/feam-service-data'
+      - feam_services_release_sha256 is match('^[0-9a-f]{64}$')
+      - feam_service_artifacts.keys() | sort == services_artifact_names | sort
+      - feam_service_configs.keys() | sort == services_names | sort
+      - feam_services_controller_slots is mapping
+      - feam_services_controller_slots | length >= feam_workspace_ids | length + 2
+      - feam_services_controller_slots | length <= 12
+      - feam_service_mount_uuids.keys() | sort == ['datasets', 'operations', 'traces']
+      - feam_workspace_ids | length > 0
+      - feam_workspace_ids | length <= 10
+      - feam_workspace_ids | unique | length == feam_workspace_ids | length
+      - feam_gateway_frontend_uid | int >= 1000
+      - feam_gateway_frontend_uid | int not in range(2101, 2108)
+      - feam_gateway_frontend_uid | int != 200999
+      - feam_services_broker_mode in ['fake', 'live']
+      - feam_services_initialize | difference(services_initialize_args.keys() | list) | length == 0
+      - feam_services_migrate | difference(services_migrate_args.keys() | list) | length == 0
+      - feam_services_initialize | intersect(feam_services_migrate) | length == 0
+
+- name: Validate opaque workspace identities
+  ansible.builtin.assert:
+    that: item is match('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+  loop: '{{ feam_workspace_ids }}'
+
+- name: Verify dedicated service identities before mutation
+  ansible.builtin.command:
+    argv: [id, -u, 'feam-{{ item.key }}']
+  loop: '{{ services_uids | dict2items }}'
+  register: services_identity_checks
+  changed_when: false
+  failed_when: services_identity_checks.rc != 0 or services_identity_checks.stdout | int != item.value
+
+- name: Verify each required mount is its recorded dedicated filesystem
+  ansible.builtin.command:
+    argv: [findmnt, -n, -o, UUID, --mountpoint, '{{ feam_root }}/{{ item.key }}']
+  loop: '{{ feam_service_mount_uuids | dict2items }}'
+  register: services_mount_checks
+  changed_when: false
+  failed_when: services_mount_checks.rc != 0 or services_mount_checks.stdout != item.value
+
+- name: Require only selected new workspace slots for controller read access
+  ansible.builtin.assert:
+    that:
+      - item.key is match('^/home/feam-service-data/slot-(0[1-9]|1[0-2])$')
+      - item.value is match('^[0-9a-f-]{36}$')
+  loop: '{{ feam_services_controller_slots | dict2items }}'
+
+- name: Inspect exact selected workspace slot ownership without following links
+  ansible.builtin.stat:
+    path: '{{ item.key }}'
+    follow: false
+  loop: '{{ feam_services_controller_slots | dict2items }}'
+  register: services_controller_slot_stats
+
+- name: Refuse nonempty ownership changes or replaced slot directories
+  ansible.builtin.assert:
+    that:
+      - item.stat.isdir | default(false)
+      - not item.stat.islnk | default(false)
+      - item.stat.uid == 200999
+  loop: '{{ services_controller_slot_stats.results }}'
+
+- name: Verify each selected slot filesystem UUID before granting inspection
+  ansible.builtin.command:
+    argv: [findmnt, -n, -o, UUID, --mountpoint, '{{ item.key }}']
+  loop: '{{ feam_services_controller_slots | dict2items }}'
+  register: services_controller_slot_mounts
+  changed_when: false
+  failed_when: services_controller_slot_mounts.rc != 0 or services_controller_slot_mounts.stdout != item.value
+
+- name: Allow controller to inspect selected slot directories during initialization
+  ansible.builtin.command:
+    argv: [setfacl, -m, 'u:2103:rx', '{{ item.key }}']
+  loop: '{{ feam_services_controller_slots | dict2items }}'
+  changed_when: false
+
+- name: Validate reviewed artifact digests and config references
+  ansible.builtin.assert:
+    that:
+      - feam_service_artifacts[item].sha256 is match('^[0-9a-f]{64}$')
+      - feam_service_artifacts[item].source is match('^/')
+  loop: '{{ services_artifact_names }}'
+  no_log: true
+
+- name: Inspect native service artifacts before installation
+  ansible.builtin.stat:
+    path: '{{ feam_service_artifacts[item].source }}'
+    checksum_algorithm: sha256
+    follow: false
+  loop: '{{ services_artifact_names }}'
+  register: services_artifact_checks
+  no_log: true
+
+- name: Reject changed or symlinked source artifacts
+  ansible.builtin.assert:
+    that:
+      - item.stat.isreg | default(false)
+      - not item.stat.islnk | default(false)
+      - item.stat.checksum == feam_service_artifacts[item.item].sha256
+  loop: '{{ services_artifact_checks.results }}'
+  no_log: true
+
+- name: Inspect any existing immutable release binaries
+  ansible.builtin.stat:
+    path: '/opt/feam/services/{{ feam_services_release_sha256 }}/{{ item }}'
+    checksum_algorithm: sha256
+    follow: false
+  loop: '{{ services_artifact_names }}'
+  register: services_existing_artifacts
+
+- name: Refuse to replace a different binary under an existing release identity
+  ansible.builtin.assert:
+    that:
+      - not item.stat.exists or (item.stat.isreg | default(false) and item.stat.uid == 0 and item.stat.checksum == feam_service_artifacts[item.item].sha256)
+  loop: '{{ services_existing_artifacts.results }}'
+  loop_control:
+    label: '{{ item.item }}'
+
+- name: Create root-owned release and service configuration parents
+  ansible.builtin.file:
+    path: '{{ item }}'
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /opt/feam/services
+    - '/opt/feam/services/{{ feam_services_release_sha256 }}'
+    - /etc/feam/services
+
+- name: Install exact reviewed native service binaries
+  ansible.builtin.copy:
+    src: '{{ feam_service_artifacts[item].source }}'
+    remote_src: true
+    dest: '/opt/feam/services/{{ feam_services_release_sha256 }}/{{ item }}'
+    owner: root
+    group: root
+    mode: '0555'
+  loop: '{{ services_artifact_names }}'
+  register: services_binaries
+
+- name: Create private configuration directories for each owner
+  ansible.builtin.file:
+    path: '/etc/feam/services/{{ item }}'
+    state: directory
+    owner: 'feam-{{ item }}'
+    group: 'feam-{{ item }}'
+    mode: '0700'
+  loop: '{{ services_names }}'
+
+- name: Create private state directories only after exact mount verification
+  ansible.builtin.file:
+    path: '{{ services_state_roots[item] }}'
+    state: directory
+    owner: 'feam-{{ item }}'
+    group: 'feam-{{ item }}'
+    # The pipeline's named traversal ACL below has an execute mask. Preserve
+    # that mask on reconverge instead of clearing and immediately restoring it.
+    mode: "{{ '0710' if item == 'pipeline' else '0700' }}"
+  loop: '{{ services_names }}'
+
+- name: Create fixed private collector archive on the verified traces filesystem
+  ansible.builtin.file:
+    path: /home/feam-service-data/traces/collector/archive
+    state: directory
+    owner: feam-collector
+    group: feam-collector
+    mode: '0700'
+
+- name: Restrict verified storage ancestors to their named service readers
+  ansible.builtin.command:
+    argv: [setfacl, --set, '{{ item.acl }}', '{{ feam_root }}/{{ item.name }}']
+  loop:
+    - {name: operations, acl: 'u::rwx,g::---,o::---,u:2102:x,u:2103:x,u:2104:x,u:2107:x'}
+    - {name: traces, acl: 'u::rwx,g::---,o::---,u:2105:x'}
+    - {name: datasets, acl: 'u::rwx,g::---,o::---,u:2101:x,u:2103:x,u:2106:x,u:200999:x'}
+  changed_when: false
+
+- name: Preserve pipeline ancestor traversal across repeat converge
+  ansible.builtin.command:
+    argv:
+      - setfacl
+      - --set
+      - 'u::rwx,g::---,o::---,u:2101:x,u:2103:x,u:200999:x'
+      - /home/feam-service-data/datasets/pipeline
+  changed_when: false
+
+- name: Install private reviewed service JSON without logging or diffing it
+  ansible.builtin.copy:
+    src: '{{ feam_service_configs[item].source }}'
+    dest: '/etc/feam/services/{{ item }}/config.json'
+    owner: 'feam-{{ item }}'
+    group: 'feam-{{ item }}'
+    mode: '0600'
+  loop: '{{ services_names }}'
+  register: services_configs
+  no_log: true
+  diff: false
+
+- name: Validate private file destinations stay within one service owner
+  ansible.builtin.assert:
+    that:
+      - item.service in services_names
+      - item.name is match('^[a-z][a-z0-9_.-]{0,63}$')
+      - item.name not in ['config.json', 'runtime.json']
+  loop: '{{ feam_services_private_files }}'
+  no_log: true
+
+- name: Install only explicitly supplied service credentials and current policies
+  ansible.builtin.copy:
+    src: '{{ item.source }}'
+    dest: '/etc/feam/services/{{ item.service }}/{{ item.name }}'
+    owner: 'feam-{{ item.service }}'
+    group: 'feam-{{ item.service }}'
+    mode: '0600'
+  loop: '{{ feam_services_private_files }}'
+  register: services_private
+  no_log: true
+  diff: false
+
+- name: Install the fixed root startup and ACL helper
+  ansible.builtin.copy:
+    src: '{{ playbook_dir }}/../scripts/services_runtime.py'
+    dest: /usr/local/sbin/feam-services-runtime
+    owner: root
+    group: root
+    mode: '0555'
+  register: services_helper
+
+- name: Build exact reviewed hash records without including secret values
+  ansible.builtin.set_fact:
+    services_config_hashes: '{{ services_config_hashes | default({}) | combine({item: feam_service_configs[item].sha256}) }}'
+  loop: '{{ services_names }}'
+  no_log: true
+
+- name: Build exact reviewed artifact record
+  ansible.builtin.set_fact:
+    services_artifact_hashes: '{{ services_artifact_hashes | default({}) | combine({item: feam_service_artifacts[item].sha256}) }}'
+  loop: '{{ services_artifact_names }}'
+
+- name: Record root-owned scope and current configuration hashes
+  ansible.builtin.copy:
+    dest: /etc/feam/services/runtime.json
+    content: >-
+      {{ {'protocol': 'feam.services.v1', 'release_sha256': feam_services_release_sha256,
+      'frontend_uid': feam_gateway_frontend_uid | int, 'mounts': feam_service_mount_uuids,
+      'workspace_ids': feam_workspace_ids, 'config_sha256': services_config_hashes,
+      'artifact_sha256': services_artifact_hashes, 'broker_mode': feam_services_broker_mode} | to_nice_json }}
+    owner: root
+    group: root
+    mode: '0600'
+  register: services_manifest
+  no_log: true
+
+- name: Install bounded private runtime mount and resource slices
+  ansible.builtin.template:
+    src: '{{ item }}.j2'
+    dest: '/etc/systemd/system/{{ item }}'
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - run-feam.mount
+    - feam-control.slice
+    - feam-pipeline.slice
+    - feam-service-runtime.service
+    - feam-service-health.service
+    - feam-service-health.timer
+  register: services_shared_units
+
+- name: Install separate hardened service units
+  ansible.builtin.template:
+    src: participant.service.j2
+    dest: '/etc/systemd/system/feam-{{ item }}.service'
+    owner: root
+    group: root
+    mode: '0644'
+  loop: '{{ services_names }}'
+  register: services_units
+
+- name: Load reviewed unit changes without starting application processes
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: services_shared_units.changed or services_units.changed
+
+- name: Mount bounded private IPC storage
+  ansible.builtin.systemd_service:
+    name: run-feam.mount
+    enabled: '{{ feam_services_enable | bool }}'
+    state: started
+
+- name: Install fixed rootless Docker visibility helper
+  ansible.builtin.copy:
+    src: '{{ playbook_dir }}/../scripts/rootless_run_mount.py'
+    dest: /usr/local/sbin/feam-rootless-run-mount
+    owner: root
+    group: root
+    mode: '0555'
+
+- name: Verify or bind the exact FEAM tmpfs into the existing runner daemon namespace
+  ansible.builtin.command:
+    argv: [/usr/local/sbin/feam-rootless-run-mount]
+  register: services_rootless_mount
+  changed_when: services_rootless_mount.rc == 0 and (services_rootless_mount.stdout | from_json).status == 'bound'
+  when: not ansible_check_mode
+
+- name: Verify current owned inputs and provision fixed runtime directories
+  ansible.builtin.command:
+    argv: [/usr/local/sbin/feam-services-runtime, layout, --service, '{{ item }}']
+  loop: '{{ services_names }}'
+  changed_when: false
+
+- name: Keep fixed boot layout active without cycling the runner manager
+  ansible.builtin.systemd_service:
+    name: feam-service-runtime.service
+    enabled: '{{ feam_services_enable | bool }}'
+    # The six explicit layout calls above apply changed manifests and helpers.
+    # Restarting this required oneshot also stops user@2101 and its rootless
+    # Docker daemon, including unrelated W1 containers.
+    state: started
+
+- name: Inspect only these service states before explicit database operations
+  ansible.builtin.command:
+    argv: [systemctl, show, 'feam-{{ item }}.service', --property=ActiveState, --value]
+  loop: '{{ feam_services_initialize + feam_services_migrate }}'
+  register: services_database_states
+  changed_when: false
+  failed_when: services_database_states.stdout not in ['inactive', 'failed']
+
+- name: Read reviewed broker paths only for an explicit new run initialization
+  ansible.builtin.set_fact:
+    services_broker_initial_config: '{{ lookup("file", feam_service_configs.broker.source) | from_json }}'
+  when: "'broker' in feam_services_initialize"
+  no_log: true
+
+- name: Require two distinct fixed new-run broker database paths
+  ansible.builtin.assert:
+    that:
+      - services_broker_initial_config.ledger is match('^/home/feam-service-data/operations/broker/run-[0-9a-f-]{36}\\.sqlite$')
+      - services_broker_initial_config.capabilities == services_broker_initial_config.ledger | replace('/run-', '/capabilities-')
+      - services_broker_initial_config.receipt_file == services_broker_initial_config.ledger | replace('/run-', '/drain-') | replace('.sqlite', '.json')
+  when: "'broker' in feam_services_initialize"
+  no_log: true
+
+- name: Refuse a partially initialized or colliding broker run
+  ansible.builtin.stat:
+    path: '{{ item }}'
+    follow: false
+  loop:
+    - '{{ services_broker_initial_config.ledger | default("/nonexistent") }}'
+    - '{{ (services_broker_initial_config.ledger | default("/nonexistent")) ~ "-wal" }}'
+    - '{{ (services_broker_initial_config.ledger | default("/nonexistent")) ~ "-shm" }}'
+    - '{{ services_broker_initial_config.capabilities | default("/nonexistent") }}'
+    - '{{ (services_broker_initial_config.capabilities | default("/nonexistent")) ~ "-wal" }}'
+    - '{{ (services_broker_initial_config.capabilities | default("/nonexistent")) ~ "-shm" }}'
+  register: services_broker_initial_paths
+  failed_when: services_broker_initial_paths.stat.exists
+  when: "'broker' in feam_services_initialize"
+  no_log: true
+
+- name: Explicitly initialize only operator-selected new databases
+  become: true
+  ansible.builtin.command:
+    argv: >-
+      {{ ['/usr/sbin/runuser', '-u', 'feam-' + item, '--',
+      '/opt/feam/services/' + feam_services_release_sha256 + '/' + item] + services_initialize_args[item] }}
+  loop: '{{ feam_services_initialize }}'
+  changed_when: true
+  no_log: true
+
+- name: Explicitly migrate only operator-selected compatible databases
+  become: true
+  ansible.builtin.command:
+    argv: >-
+      {{ ['/usr/sbin/runuser', '-u', 'feam-' + item, '--',
+      '/opt/feam/services/' + feam_services_release_sha256 + '/' + item] + services_migrate_args[item] }}
+  loop: '{{ feam_services_migrate }}'
+  changed_when: true
+  no_log: true
+
+- name: Select services whose artifact unit or private configuration changed
+  ansible.builtin.set_fact:
+    services_restart_names: >-
+      {{ ((services_units.results | selectattr('changed') | map(attribute='item') | list)
+      + (services_configs.results | selectattr('changed') | map(attribute='item') | list)
+      + (services_private.results | default([]) | selectattr('changed') | map(attribute='item.service') | list)) | unique | list }}
+  no_log: true
+
+- name: Start authorized services and restart only changed components
+  ansible.builtin.systemd_service:
+    name: 'feam-{{ item }}.service'
+    enabled: '{{ feam_services_enable | bool }}'
+    state: '{{ "restarted" if item in services_restart_names or services_helper.changed else "started" }}'
+  loop: [gateway, pipeline, collector, broker, reconciler, controller]
+  when: feam_services_start | bool
+
+- name: Enable read-only liveness timer only with explicit boot opt-in
+  ansible.builtin.systemd_service:
+    name: feam-service-health.timer
+    enabled: '{{ feam_services_enable | bool }}'
+    state: '{{ "started" if feam_services_enable else "stopped" }}'
+  when: feam_services_start | bool

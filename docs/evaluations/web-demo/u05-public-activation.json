@@ -1,0 +1,207 @@
+{
+  "account_disable": {
+    "actual_admin_browser_action": true,
+    "current_document_websocket_closed_within_seconds": 0.505983829498291,
+    "limit_seconds": 30,
+    "old_portal_and_workspace_jwt_http": 403,
+    "other_two_accounts_active": true,
+    "private_receipt_sha256": "504d75cf4f2d16f2788902cc59d1f65410e3ff2a47aa215f626973587040927a",
+    "second_alias_left_disabled": true
+  },
+  "authenticated_probe": {
+    "cases_passed": 25,
+    "cases_total": 25,
+    "cross_user_same_audience": 403,
+    "missing_or_sibling_origin_websocket": 403,
+    "own_workspace_http": 200,
+    "owner_websocket_upgrade": 101,
+    "passed": true,
+    "private_receipt_sha256": "4dca6d70fade04e4fbb00b834f5b83872721981b99719b83c1e708a4ef72c7fd",
+    "unauthenticated_admission": "Access redirect"
+  },
+  "browser_acceptance_record": "u05-browser-acceptance.json",
+  "browser_authenticated": {
+    "account_disable_disconnect_measured": true,
+    "approved_participants": 3,
+    "authenticated_http_role_matrix_complete": true,
+    "authenticated_websocket_role_matrix_complete": true,
+    "dashboards_http_200_after_reload": 3,
+    "edge_config_changed_for_browser_reload": false,
+    "email_pin_signins_succeeded": 3,
+    "initial_post_login_navigation": "Transient ERR_TOO_MANY_REDIRECTS; same authenticated sessions reached dashboards HTTP 200 after reload",
+    "workspace_grants_complete": false
+  },
+  "browser_login_preparation": {
+    "approved_email_fields_prefilled": true,
+    "code_requests_submitted_by_agent": 0,
+    "fresh_pin_forms_passed": true,
+    "human_email_pin_signins_succeeded": 3,
+    "human_login_pending": false,
+    "isolated_contexts": 3
+  },
+  "configuration_applied": true,
+  "deferred_extended_checks": [
+    "Expired Access assertion explicit probe; wrong-signature and unsigned assertion denials passed"
+  ],
+  "functional_U05_complete": true,
+  "host": {
+    "direct_port_443_listeners": 0,
+    "direct_port_80_listeners": 0,
+    "edge_unit": {
+      "ActiveState": "active",
+      "LoadState": "loaded",
+      "UnitFileState": "disabled"
+    },
+    "metrics_listener_loopback_only": true,
+    "metrics_ready_http": 200,
+    "origin_no_jwt": {
+      "admin.613202690.xyz": {
+        "http": 401
+      },
+      "feam.613202690.xyz": {
+        "http": 401
+      }
+    },
+    "participant_units": {
+      "broker": "active",
+      "collector": "active",
+      "controller": "active",
+      "gateway": "active",
+      "pipeline": "active",
+      "reconciler": "active"
+    },
+    "protocol": "feam.u05-postactivation-host.v1"
+  },
+  "observed_at": "2026-09-25T12:02:48.017345+00:00",
+  "owner_authorization": "Complete the outlined public activation proposal contents, 2026-09-25",
+  "pending": [
+    "U.03/U.04 deployed fake capture/archive and ordinary lifecycle checks",
+    "U.06 bounded live model smoke",
+    "U.07 verified Mac archive copy and operator handoff",
+    "U.G end-to-end functional gate"
+  ],
+  "plans": {
+    "final_nochange_plan_exit": 0,
+    "initial": "fc82a70a2ae1acf9c92bd8ef4b983aee04f3869bfb29632e297455f1b45be830",
+    "pin_provider_repair": "75c5bdaba39e4b6e0ed05106b05ebf3f21efbcf9eca4a569939a0b013082d3c2",
+    "redirect_repair": "67d9834651a28cdea7d5c6752528d6ba90ec696ee575142e3db365ff20dbe220"
+  },
+  "private_receipt_sha256": {
+    "edge-public-v3-redirect-apply-receipt.json": "0ea70b2df163f1484e008887390f2278cd4deefe86021dc25519309dcd884dcd",
+    "edge-public-v4-otp-apply-receipt.json": "83a6bf4031c51ebee7597a8c67b5099441d4d74f0b13f7257071762b41179e85",
+    "functional-edge-authenticated-20260925T114541Z.json": "4dca6d70fade04e4fbb00b834f5b83872721981b99719b83c1e708a4ef72c7fd",
+    "functional-edge-unauthenticated-20260925T112121Z.json": "3c0a41c6fc63d2655e96a20802623549f5b52a98e460b02419bf751d530ce253",
+    "otp-idp-create-receipt.json": "213171b29fd07fd6aa77cb8cafb5b364a56156bb520a2265dc502b1785e6e153",
+    "postactivation-host-20260925T110826Z.json": "59daa658d9a14075eb629d5e15bc7b61491399009d3c3a72808ab755e60ad491",
+    "postactivation-host-20260925T114627Z.json": "40af0c24c83f0d7a09c5aef185f9a30a507b350aa4bbd79d4c7363e270426f5d",
+    "public-activation-owner-approval.json": "2575ea228e883c8a61448b290cdc2b79f955b90516f35f8b2f93f0d365142835",
+    "u05-B-disable-result.json": "504d75cf4f2d16f2788902cc59d1f65410e3ff2a47aa215f626973587040927a",
+    "u05-edge-activation.json": "9950b1776e3112b497018abaa652f5ce060798664ead79c588e5eaee3ec9e933",
+    "u05-otp-app-readback.json": "33393163d440ed9904e95a5b15d6172c06e66c66482acd07fbecbc445e50d58b"
+  },
+  "protocol": "feam.u05-public-activation.v3",
+  "public_unauthenticated_checks": {
+    "cases": [
+      {
+        "case": "portal_without_login",
+        "passed": true,
+        "status": 302
+      },
+      {
+        "case": "forged_email_header",
+        "passed": true,
+        "status": 302
+      },
+      {
+        "case": "admin_without_login",
+        "passed": true,
+        "status": 302
+      },
+      {
+        "case": "workspace_without_login",
+        "passed": true,
+        "status": 302
+      },
+      {
+        "case": "ws_no_login",
+        "passed": true,
+        "status": 302
+      },
+      {
+        "case": "https_redirect_admin.613202690.xyz",
+        "passed": true,
+        "status": 301
+      },
+      {
+        "case": "https_redirect_feam.613202690.xyz",
+        "passed": true,
+        "status": 301
+      },
+      {
+        "case": "https_redirect_workspace_A",
+        "passed": true,
+        "status": 301
+      },
+      {
+        "case": "https_redirect_workspace_B",
+        "passed": true,
+        "status": 301
+      }
+    ],
+    "count": 9,
+    "passed": true
+  },
+  "retained_failures": [
+    "Initial redirect rule rejected with HTTP 400/code 20127; replaced unsupported scheme field with documented ssl predicate in a one-resource create, without replaying successful DNS or ingress.",
+    "Initial identity provider was confirmed type cloudflare and browsers reached account login; created and verified a dedicated onetimepin provider and changed only the four apps allowed_idps. Existing provider retained.",
+    "Three first post-login browser navigations showed ERR_TOO_MANY_REDIRECTS; reloading the same authenticated sessions reached dashboard HTTP 200. No edge configuration repair was needed.",
+    "Deployed gateway same-origin policy repaired Chromium Origin: null form POST 403; exact grant to A then passed without weakening CSRF.",
+    "Cloudflared HTTP/2 to Unix origin produced WebSocket 502 and 14 no-Host journal errors; connector-only QUIC repair yielded authenticated WebSocket 101."
+  ],
+  "scope": {
+    "application_ids_audiences_policies_preserved": true,
+    "connector_transport": "quic",
+    "dns_exact_count": 4,
+    "extra_scoped_dns": 0,
+    "final_unmatched_ingress": "404",
+    "http_redirect": "exact four hosts, 301, preserved path and query",
+    "identity_provider_type": "onetimepin",
+    "membership_after_intentional_disable": {
+      "admin": 1,
+      "users": 1
+    },
+    "membership_at_activation": {
+      "admin": 1,
+      "users": 2
+    },
+    "membership_at_initial_login": {
+      "admin": 1,
+      "users": 2
+    },
+    "membership_changed_only_for_intentional_disable": true,
+    "membership_preserved_through_initial_activation": true,
+    "required_distinct_access_audiences": 4,
+    "second_regular_alias_disabled_after_revoke_test": true,
+    "ubuntu_connector_ready": true,
+    "ubuntu_ingress_exact": true
+  },
+  "urls": {
+    "admin": "https://admin.613202690.xyz",
+    "portal": "https://feam.613202690.xyz"
+  },
+  "validation": [
+    "10 Terraform mock tests passed",
+    "Terraform formatting passed",
+    "Live API scope/type/membership readback passed",
+    "Connector ready and no unauthenticated direct-origin access",
+    "Nine real HTTPS/HTTP redirect and unauthenticated admission probes passed",
+    "Fresh browser email-PIN forms passed",
+    "Final Terraform plan reports no changes",
+    "All three approved participants completed real email-PIN sign-in and reached dashboard HTTP 200 after reload",
+    "Initial transient browser redirect error retained; authenticated WebSocket, grants and revocation remain pending",
+    "25 of 25 actual authenticated HTTP/WebSocket and negative edge probes passed",
+    "Three real email-PIN sign-ins and dashboards HTTP 200",
+    "Admin browser disable closed current document WebSocket in 0.506 seconds; old portal/workspace JWTs returned 403",
+    "Postactivation host and origin bypass readback passed; second regular alias left disabled"
+  ]
+}

@@ -13,6 +13,7 @@ mesh_core = { path = "../mesh_core" }
 reqwest = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, optional = true }
 toml = { workspace = true }
@@ -25,4 +26,8 @@ tempfile = { workspace = true }
 
 [[example]]
 name = "router_connectivity"
+required-features = ["hosted"]
+
+[[example]]
+name = "broker_probe"
 required-features = ["hosted"]

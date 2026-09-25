@@ -1,0 +1,106 @@
+{
+  "protocol": "feam.u06-live-functional-smoke.v1",
+  "date": "2026-09-25",
+  "environment": "real Cloudflare Access Chromium sessions, actual Ubuntu participant containers, OpenRouter live route",
+  "status": "functional_flow_verified_with_recorded_model_failure",
+  "route": {
+    "model": "deepseek/deepseek-v4.1-flash",
+    "provider": "deepinfra/fp8",
+    "fallback": false,
+    "automatic_retry": false,
+    "price_metadata_source": "https://openrouter.ai/api/v1/models/deepseek/deepseek-v4.1-flash/endpoints"
+  },
+  "allocation": {
+    "shared_across_seven_users_usd": 50,
+    "project_ceiling_usd": 100,
+    "per_request_ceiling_usd": 0.03,
+    "output_token_limit": 1024,
+    "expires_at": "2026-09-27T08:00:00Z",
+    "issued_once": true
+  },
+  "tasks": [
+    {
+      "task": 1,
+      "flow": "catalog.search climate discovery",
+      "result": "completed",
+      "provider_requests": 2
+    },
+    {
+      "task": 2,
+      "flow": "exact Ottawa v2023 inspect and resolve",
+      "result": "completed",
+      "provider_requests": 2
+    },
+    {
+      "task": 3,
+      "flow": "exact January normal v1991-2020 / normal inspect and resolve",
+      "result": "completed with explanation limitation",
+      "limitation": "Model correctly distinguished climatology from current weather but understated available descriptive metadata. This smoke is not a scientific-answer quality benchmark.",
+      "provider_requests": 2
+    },
+    {
+      "task": 4,
+      "flow": "model opens locally selected approved stage review",
+      "result": "unknown_handle rejected without mutation",
+      "recovery": "No provider retry. A fresh manual local review copied the approved file exactly once; independent receipt and byte comparison passed.",
+      "provider_requests": 2
+    },
+    {
+      "task": 5,
+      "flow": "explicit selected stage handle opens review; local denial",
+      "result": "awaiting_review then denied; destination and receipt absent",
+      "provider_requests": 1
+    }
+  ],
+  "guided_mode": {
+    "provider_requests": 2,
+    "ordinary_tool_history_preserved": true,
+    "no_new_tool_activity": true,
+    "initial_explanation_completed": true,
+    "real_help_action_observed": true,
+    "advanced_to_next_action": true,
+    "stopped_explicitly": true,
+    "full_fifteen_lesson_walkthrough": false
+  },
+  "accounting": {
+    "provider_requests": 11,
+    "settled_requests": 11,
+    "settled_usd_micros": 3119,
+    "settled_usd": 0.003119,
+    "reserved_usd_micros": 0,
+    "unknown_usd_micros": 0,
+    "recording": true,
+    "all_requests_correlated_with_non_synthetic_broker_request_and_usage": true,
+    "private_receipt_sha256": "377bf0c330dc8f0a3529b1b9668c0c97c895c7e1bcbfbb3fc473ac7a32a9cea7"
+  },
+  "reviewed_copy": {
+    "A_container_running": true,
+    "approved_bytes": 8764,
+    "approved_equals_promoted_source": true,
+    "approved_file_mapped_uid": true,
+    "approved_sha256": "0d95da831ec907acf40967b97e0ce5b75f72c1ddaf5ec2991e2de9ace2d93a3c",
+    "approved_single_file": true,
+    "denied_destination_absent": true,
+    "denied_receipt_absent": true,
+    "manifest_source_digest_matches": true,
+    "promoted_source_bytes": 8764,
+    "promoted_source_sha256": "0d95da831ec907acf40967b97e0ce5b75f72c1ddaf5ec2991e2de9ace2d93a3c",
+    "receipt_asset_digest_matches": true,
+    "receipt_manifest_revision_matches": true,
+    "receipt_mapped_uid": true,
+    "receipt_output_path_exact": true,
+    "receipt_present_regular": true,
+    "receipt_reference_exact": true,
+    "receipt_sha256": "e730e09ee00eecabf70d93913a0d344fbef57d495289cdd160ccd4418020700b",
+    "receipt_single_observations_asset": true,
+    "receipt_version_v2023": true
+  },
+  "claims_excluded": [
+    "five of five model task success",
+    "held-out benchmark",
+    "raw data transmitted to model",
+    "fresh admin email-PIN session",
+    "ten-user capacity",
+    "full guided curriculum"
+  ]
+}

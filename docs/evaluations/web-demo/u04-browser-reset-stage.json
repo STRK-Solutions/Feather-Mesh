@@ -1,0 +1,43 @@
+{
+  "protocol": "feam.u04-browser-reset-stage.v1",
+  "date": "2026-09-25",
+  "environment": "actual Ubuntu private controller and participant workspaces after real browser reviews",
+  "B_reviewed_reset": {
+    "browser_action": "real user B reviewed an explicit discard of B's workspace and confirmed once",
+    "durable_job_state": "completed",
+    "old_generation": 1,
+    "new_generation": 2,
+    "new_slot_distinct_and_assigned": true,
+    "old_slot_retained": true,
+    "old_slot_prior_browser_marker_retained": true,
+    "old_marker_sha256": "982f79f58aab7a41c62bc050d3182307c796c76436763b1cf033da93f75b5783",
+    "new_workspace_prior_browser_marker_absent": true,
+    "B_new_container_running": true,
+    "controller_pending_jobs": 0,
+    "A_unchanged": {
+      "running_generation": 3,
+      "active_exact_release_grants": 1,
+      "prior_browser_marker_sha256": "c1f0a59df3c3170c8cdec48f3da9edf403f65f2ef63f9e1a30ff22cd75c427a0"
+    }
+  },
+  "A_TUI_stage_reviews": {
+    "first_review": "Denied practice copy; destination and adjacent receipt are absent.",
+    "second_review": "Confirmed exact demo-climate ottawa-daily v2023 single-asset copy once.",
+    "approved_output": "one regular file in A's workspace, 8764 bytes",
+    "approved_output_sha256": "0d95da831ec907acf40967b97e0ce5b75f72c1ddaf5ec2991e2de9ace2d93a3c",
+    "promoted_observations_source_sha256": "0d95da831ec907acf40967b97e0ce5b75f72c1ddaf5ec2991e2de9ace2d93a3c",
+    "approved_output_byte_equal_to_promoted_source": true,
+    "adjacent_receipt_sha256": "89ed7d155b49bb2d806aff3f6ec26213a461325799d6531552cd7e549db7d386",
+    "receipt_version": "v2023",
+    "receipt_reference": "product://demo-climate/ottawa-daily",
+    "receipt_manifest_revision_and_asset_digest_match": true,
+    "approved_file_and_receipt_owned_by_mapped_container_uid": true,
+    "implementation_note": "A single-asset stage writes the destination as a file; an older private walkthrough expected a part-000 child and is superseded by this source and host readback."
+  },
+  "independent_read_only_receipt_sha256": {
+    "controller_snapshot": "eca67c640a633b598e086ea78ff32abb8f12da990be2aed9d8a9060cea042a9c",
+    "B_reset_slots_and_markers": "18ac007cce0c14cd06112a4653e6e513843a43029d300fd28098e4a9307a6e11",
+    "A_denied_and_approved_stage": "819de0e13365c108eb51a3098700e4cc80f1f97ee1ff4f8ff6f0f56d118b5fb0"
+  },
+  "scope_note": "The browser actions were performed by the primary operator. This independent readback inspected only the exact controller job, current and retained workspace slots, and named stage/marker files; it did not start, reset, stage or change any workspace."
+}

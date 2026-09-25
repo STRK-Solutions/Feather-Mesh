@@ -662,7 +662,7 @@ fn publication_patch_schema() -> serde_json::Value {
         );
     }
     properties.insert("table".into(),serde_json::json!({"type":"object","additionalProperties":false,"properties":{"column_meanings":string_map,"column_units":string_map,"partition_columns":{"type":"array","items":{"type":"string"}}},"required":["column_meanings","column_units"]}));
-    properties.insert("raster".into(),serde_json::json!({"type":"object","additionalProperties":false,"properties":{"datetime":{"type":"string"},"bbox":{"type":"array","minItems":4,"maxItems":4,"items":{"type":"number"}},"semantics":string_map},"required":["datetime","bbox","semantics"]}));
+    properties.insert("raster".into(),serde_json::json!({"type":"object","additionalProperties":false,"properties":{"datetime":{"type":["string","null"]},"start_datetime":{"type":"string"},"end_datetime":{"type":"string"},"bbox":{"type":"array","minItems":4,"maxItems":4,"items":{"type":"number"}},"semantics":string_map},"required":["datetime","bbox","semantics"],"oneOf":[{"properties":{"datetime":{"type":"string"}},"not":{"anyOf":[{"required":["start_datetime"]},{"required":["end_datetime"]}]}},{"properties":{"datetime":{"type":"null"}},"required":["start_datetime","end_datetime"]}]}));
     properties.insert("lineage".into(),serde_json::json!({"type":"array","items":{"type":"object","properties":{"product":{"type":"string"},"version":{"type":"string"}},"required":["product"],"additionalProperties":false}}));
     serde_json::json!({"type":"object","properties":properties,"additionalProperties":false})
 }

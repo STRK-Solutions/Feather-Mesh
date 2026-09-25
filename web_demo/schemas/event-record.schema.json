@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://feam.invalid/web/v1/event-record.schema.json",
+  "title": "FEAM redacted structured event record",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "protocol": {
+      "const": "feam.web.event.v1"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "stream_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "deployment_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "workspace_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "participant_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "conversation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "proposal_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 36,
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "kind": {
+      "enum": [
+        "request",
+        "proposal",
+        "review",
+        "outcome",
+        "usage",
+        "feedback",
+        "gap",
+        "withdrawal"
+      ]
+    },
+    "trust": {
+      "enum": [
+        "client_reported",
+        "broker_observed",
+        "independently_verified"
+      ]
+    },
+    "software_sha256": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "profile_sha256": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "dataset_sha256": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "payload_sha256": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "tool": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "decision": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "outcome": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "receipt_sha256": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "request_sha256": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "error_code": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "provider": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "provider_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "task_template": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "dataset_family": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "cost_usd_micros": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reserved_usd_micros": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "input_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "output_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "latency_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rating": {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 1
+        },
+        "unknown_cost": {
+          "type": "boolean"
+        }
+      }
+    },
+    "synthetic": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "protocol",
+    "event_id",
+    "stream_id",
+    "sequence",
+    "deployment_id",
+    "workspace_id",
+    "generation",
+    "participant_id",
+    "conversation_id",
+    "request_id",
+    "proposal_id",
+    "occurred_at",
+    "kind",
+    "trust",
+    "software_sha256",
+    "profile_sha256",
+    "dataset_sha256",
+    "payload_sha256",
+    "payload",
+    "synthetic"
+  ]
+}

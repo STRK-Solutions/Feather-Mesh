@@ -9,15 +9,11 @@
 
 - name: Allocate only new ownership-recorded files under an exclusive operator lock
   ansible.builtin.command:
-    argv:
-      - flock
-      - /run/feam-w1-provision.lock
-      - /usr/local/sbin/feam-w1-storage
-      - provision
-      - --parent-uuid
-      - '{{ feam_parent_uuid }}'
-      - --runtime-mib
-      - '{{ feam_runtime_size_mib | string }}'
+    argv: >-
+      {{ ['flock', '/run/feam-w1-provision.lock', '/usr/local/sbin/feam-w1-storage',
+          'provision', '--parent-uuid', feam_parent_uuid, '--runtime-mib',
+          feam_runtime_size_mib | string, '--slot-count', feam_slot_count | default(2) | string]
+          + (['--complete'] if feam_complete_storage | default(false) else []) }}
   register: storage_inventory
   changed_when: storage_inventory.rc == 0 and (storage_inventory.stdout | from_json).changed
 
@@ -30,7 +26,7 @@
     content: |
       [Unit]
       Description=FEAM W1 owned {{ item }} volume
-      RequiresMountsFor=/home
+      RequiresMountsFor={{ feam_root }}
       Before=user@2101.service
       [Mount]
       What={{ feam_root }}/{{ item }}.ext4
@@ -40,7 +36,7 @@
 
       [Install]
       WantedBy=multi-user.target
-  loop: [runtime, slot-01, slot-02]
+  loop: '{{ feam_volume_names | default(["runtime", "slot-01", "slot-02"]) }}'
   register: storage_mount_units
 
 - name: Reload system units after mount definitions change # noqa: no-handler
@@ -54,7 +50,7 @@
     name: '{{ storage_units[item] }}'
     enabled: true
     state: started
-  loop: [runtime, slot-01, slot-02]
+  loop: '{{ feam_volume_names | default(["runtime", "slot-01", "slot-02"]) }}'
 
 - name: Verify actual filesystem and loop backing identities
   ansible.builtin.command:
@@ -63,21 +59,18 @@
 
 - name: Set mounted roots only to their fixed mapped owner
   ansible.builtin.file:
-    path: '{{ feam_root }}/{{ item.name }}'
+    path: '{{ feam_root }}/{{ item }}'
     state: directory
-    owner: '{{ item.uid }}'
-    group: '{{ item.uid }}'
-    mode: '{{ "0700" if item.name == "runtime" else "0710" }}'
-  loop:
-    - {name: runtime, uid: 2101}
-    - {name: slot-01, uid: 200999}
-    - {name: slot-02, uid: 200999}
+    owner: '{{ 2101 if item == "runtime" else 200999 if item.startswith("slot-") else 2106 if item == "datasets" else 0 }}'
+    group: '{{ 2101 if item == "runtime" else 200999 if item.startswith("slot-") else 2106 if item == "datasets" else 0 }}'
+    mode: '{{ "0700" if item == "runtime" else "0710" if item.startswith("slot-") else "0711" }}'
+  loop: '{{ feam_volume_names | default(["runtime", "slot-01", "slot-02"]) }}'
 
 - name: Permit runner traversal of the mapped private volume roots
   ansible.builtin.command:
     argv: [setfacl, -m, 'u:2101:x', '{{ feam_root }}/{{ item }}']
   changed_when: false
-  loop: [slot-01, slot-02]
+  loop: '{{ feam_slot_names | default(["slot-01", "slot-02"]) }}'
 
 - name: Create terminal mount parent
   ansible.builtin.file:

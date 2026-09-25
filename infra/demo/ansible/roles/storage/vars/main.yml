@@ -1,5 +1,18 @@
 ---
 storage_units:
   runtime: 'home-feam\x2dservice\x2ddata-runtime.mount'
+  datasets: 'home-feam\x2dservice\x2ddata-datasets.mount'
+  operations: 'home-feam\x2dservice\x2ddata-operations.mount'
+  traces: 'home-feam\x2dservice\x2ddata-traces.mount'
   slot-01: 'home-feam\x2dservice\x2ddata-slot\x2d01.mount'
   slot-02: 'home-feam\x2dservice\x2ddata-slot\x2d02.mount'
+  slot-03: 'home-feam\x2dservice\x2ddata-slot\x2d03.mount'
+  slot-04: 'home-feam\x2dservice\x2ddata-slot\x2d04.mount'
+  slot-05: 'home-feam\x2dservice\x2ddata-slot\x2d05.mount'
+  slot-06: 'home-feam\x2dservice\x2ddata-slot\x2d06.mount'
+  slot-07: 'home-feam\x2dservice\x2ddata-slot\x2d07.mount'
+  slot-08: 'home-feam\x2dservice\x2ddata-slot\x2d08.mount'
+  slot-09: 'home-feam\x2dservice\x2ddata-slot\x2d09.mount'
+  slot-10: 'home-feam\x2dservice\x2ddata-slot\x2d10.mount'
+  slot-11: 'home-feam\x2dservice\x2ddata-slot\x2d11.mount'
+  slot-12: 'home-feam\x2dservice\x2ddata-slot\x2d12.mount'

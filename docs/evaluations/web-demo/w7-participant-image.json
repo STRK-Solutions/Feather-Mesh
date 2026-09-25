@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "environment": "UBUNTU-native-build",
+  "platform": "linux/amd64",
+  "status": "context-prepared-build-pending",
+  "checkpoint_reason": "User requested graceful wrap-up before image build started.",
+  "source_sha256": "ed1f2decdb9931effb97e391cf8b4d317c5e8a0248296cc9aaf6684917b0cf55",
+  "new_repository_source_transferred": false,
+  "context_relative_to_original_operator_home": "feam-w0-vm/native-build/w7-image-ed1f2decdb9931effb97e391cf8b4d317c5e8a0248296cc9aaf6684917b0cf55/context",
+  "context_size_rounded": "31 MiB",
+  "source_inputs": [
+    "infra/demo/images/terminal",
+    "feather-mesh/python_sdk",
+    "feather-mesh/scripts",
+    "feather-mesh/mesh_core/tests/data"
+  ],
+  "binaries": {
+    "feam": {
+      "sha256": "359cc328a37074fec958bb4ee1351393aa4bb8d5c9bc4cf8afae29c8da7653d1",
+      "source_sha256": "a01aec8aaf89b2be9cbf46ebbd5f22676553be0264d93315db26893acf4b9769"
+    },
+    "model-adapter": {
+      "sha256": "997b77c56bf1b658eeabfa0c3d1cc9d9e2701ac18905f18f8fb8229dd25f2ddf",
+      "source_sha256": "ed1f2decdb9931effb97e391cf8b4d317c5e8a0248296cc9aaf6684917b0cf55"
+    },
+    "ttyd": {
+      "sha256": "8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55",
+      "version": "1.7.7",
+      "extracted_from_existing_image": "sha256:0c4be2a296e46e09447327ff931953b0347be1f9bf54d4c69f63809787f68792"
+    }
+  },
+  "binary_checks": {
+    "sha256": "passed",
+    "elf_linux_amd64": "passed"
+  },
+  "recipe_sha256": {
+    "Dockerfile": "80abd8efdb6339b01e733ddc57385fa35ce08631e7d6921ec1877e907001d0e5",
+    "requirements.lock": "6d0976d87176ca8f57eae18f40a9b282a41cc4e32526b5ca02e24a719c563a89",
+    "entrypoint.sh": "8f9c5fcee2ea2005018ba99c709b33ec733a76b24fc734b3deeb6f86fb8c7abc",
+    "launcher.sh": "d28b8e2470c9bc23ffe715e0f86a2ef54227a3fd00a549a781c6c342b3db2daa",
+    "hosted_check.py": "b339c771e528716ea05672baafe956d8e6dbde8d49ce3b1a0305a1131fc64400",
+    "attach_releases.py": "0ae5ad09ba788c556bfb38922209f30bc4c472f0f01e11f6178ea19d68b6496b",
+    "image_smoke.py": "f7a6b2e913f7a380bd4a32dbdb52df63ab39702eecca93d986e05a391555e262"
+  },
+  "temporary_extraction_containers": {
+    "created": 2,
+    "started": 0,
+    "removed_by_owned_cleanup_trap": 2,
+    "first_attempt": "Docker copy failed from a runner-inaccessible current directory; retained private failure log.",
+    "second_attempt": "Succeeded with accessible working directory."
+  },
+  "existing_w1_inventory_before": {
+    "image_id": "sha256:0c4be2a296e46e09447327ff931953b0347be1f9bf54d4c69f63809787f68792",
+    "feam-w1-g2": "running",
+    "feam-w1-g1": "exited"
+  },
+  "existing_w1_mutations": false,
+  "active_owned_processes_at_checkpoint": 0,
+  "new_image_id": null,
+  "build_started": false,
+  "image_smoke_executed": false,
+  "participant_services_started": false,
+  "public_exposure": false,
+  "billable_inference": false,
+  "runtime_acceptance": false,
+  "private_log_directory": ".local/demo-deployment",
+  "private_logs": [
+    "w7-image-preflight.log",
+    "w7-image-paths.log",
+    "w7-image-sudo.log",
+    "w7-image-daemon-before.log",
+    "w7-image-context.log",
+    "w7-image-context-resume.log"
+  ],
+  "remaining": [
+    "Build an immutable image tag in the dedicated rootless FEAM daemon using the prepared context and bounded build resources.",
+    "Record the resulting image ID and installed package/fixture hashes.",
+    "Run isolated installed-SDK, native LazyFrame, known Rasterio window and final-path symlink checks.",
+    "Verify preserved W1 inventory after image work."
+  ]
+}

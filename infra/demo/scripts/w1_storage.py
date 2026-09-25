@@ -61,7 +61,7 @@ def safe_root(expected_uuid):
         raise ValueError('operator root required')
     if Path('/home').is_symlink() or ROOT.is_symlink():
         raise ValueError('symlink storage root refused')
-    actual = run('findmnt', '-n', '-o', 'UUID', '--target', '/home')
+    actual = run('findmnt', '-n', '-o', 'UUID', '--target', str(ROOT))
     if not expected_uuid or actual != expected_uuid:
         raise ValueError('parent filesystem UUID mismatch')
     if not ROOT.is_dir() or ROOT.stat().st_uid != 0 or ROOT.stat().st_mode & 0o022:
@@ -95,11 +95,24 @@ def save(data):
         os.close(fd)
 
 
-def provision(expected_uuid, runtime_mib, slot_mib):
+def provision(expected_uuid, runtime_mib, slot_mib, slot_count=2, complete=False):
+    if slot_count not in (2, 12):
+        raise ValueError('only the W1 slice or the complete finite pool is supported')
     safe_root(expected_uuid)
     data = load_inventory()
     changed = False
-    specs = {'runtime': runtime_mib, 'slot-01': slot_mib, 'slot-02': slot_mib}
+    specs = {'runtime': runtime_mib, **{f'slot-{i:02d}': slot_mib for i in range(1, slot_count+1)}}
+    if complete:
+        if slot_count != 12 or runtime_mib != 20480:
+            raise ValueError('complete service requires the full reviewed pool and runtime')
+        specs.update(datasets=204800, operations=5120, traces=20480)
+    if not set(data['volumes']).issubset(specs):
+        raise ValueError('converge cannot shrink or discard a recorded pool')
+    for name in specs:
+        if name not in data['volumes']:
+            for candidate in (ROOT/(name+'.ext4'), ROOT/name):
+                if candidate.exists() or candidate.is_symlink():
+                    raise ValueError('unrecorded storage exists; explicit reconciliation required')
     for name, size_mib in specs.items():
         path = ROOT / (name + '.ext4')
         mount = ROOT / name
@@ -136,7 +149,8 @@ def provision(expected_uuid, runtime_mib, slot_mib):
         if path.exists() or path.is_symlink() or mount.exists():
             raise ValueError('unrecorded storage exists; explicit reconciliation required')
         free = os.statvfs(ROOT)
-        if free.f_bavail * free.f_frsize < size + max(512*1024**2, int(free.f_blocks*free.f_frsize*.15)):
+        floor_mib = 20480 if complete else 512
+        if free.f_bavail * free.f_frsize < size + max(floor_mib*1024**2, int(free.f_blocks*free.f_frsize*.15)):
             raise ValueError('insufficient reserved host headroom')
         # Exclusive creation plus a root-only locked Ansible run owns these new
         # bytes. Interrupted allocation is deliberately not resumed/reformatted.
@@ -161,7 +175,9 @@ def provision(expected_uuid, runtime_mib, slot_mib):
 def verify(expected_uuid):
     safe_root(expected_uuid)
     data = load_inventory()
-    if set(data['volumes']) != {'runtime', 'slot-01', 'slot-02'}:
+    allowed = [{'runtime', *[f'slot-{i:02d}' for i in range(1, n+1)]} for n in (2, 12)]
+    allowed.append(allowed[-1] | {'datasets', 'operations', 'traces'})
+    if set(data['volumes']) not in allowed:
         raise ValueError('incomplete finite storage inventory')
     for name, rec in data['volumes'].items():
         backing = ROOT / (name + '.ext4')
@@ -198,11 +214,13 @@ def main():
     p.add_argument('--parent-uuid', required=True)
     p.add_argument('--runtime-mib', type=int, default=4096, choices=[4096, 20480])
     p.add_argument('--slot-mib', type=int, default=2048, choices=[2048])
+    p.add_argument('--slot-count', type=int, default=2, choices=[2, 12])
+    p.add_argument('--complete', action='store_true', help='also reserve 200 GiB datasets, 5 GiB operations and 20 GiB traces')
     a = p.parse_args()
     if not re.fullmatch(r'[a-f0-9-]{36}', a.parent_uuid):
         p.error('explicit UUID required')
     if a.action == 'provision':
-        provision(a.parent_uuid, a.runtime_mib, a.slot_mib)
+        provision(a.parent_uuid, a.runtime_mib, a.slot_mib, a.slot_count, a.complete)
     else:
         verify(a.parent_uuid)
 

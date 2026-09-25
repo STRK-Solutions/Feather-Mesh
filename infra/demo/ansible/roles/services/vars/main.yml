@@ -1,0 +1,47 @@
+---
+services_uids:
+  gateway: 2102
+  controller: 2103
+  broker: 2104
+  collector: 2105
+  pipeline: 2106
+  reconciler: 2107
+services_names: [gateway, controller, broker, collector, pipeline, reconciler]
+services_artifact_names: [gateway, controller, broker, collector, pipeline, reconciler, feam]
+services_commands:
+  gateway: '-mode serve -config /etc/feam/services/gateway/config.json'
+  controller: '-action serve -config /etc/feam/services/controller/config.json'
+  broker: '-config /etc/feam/services/broker/config.json {{ "-fake-provider" if feam_services_broker_mode == "fake" else "-approved-live-provider" }}'
+  collector: '-mode serve -config /etc/feam/services/collector/config.json'
+  reconciler: '-config /etc/feam/services/reconciler/config.json'
+  pipeline: >-
+    serve -root /home/feam-service-data/datasets/pipeline
+    -feam /opt/feam/services/{{ feam_services_release_sha256 }}/feam
+    -python /opt/feam/pipeline/bin/python -converter /opt/feam/importers/convert.py
+    -socket /run/feam/services/pipeline/control.sock -control-socket /run/feam/services/gateway/control.sock
+    -controller-uid 2103 -gateway-uid 2102 --web-demo-acl
+services_state_roots:
+  gateway: /home/feam-service-data/operations/gateway
+  controller: /home/feam-service-data/operations/controller
+  broker: /home/feam-service-data/operations/broker
+  collector: /home/feam-service-data/traces/collector
+  pipeline: /home/feam-service-data/datasets/pipeline
+  reconciler: /home/feam-service-data/operations/reconciler
+services_memory_max:
+  gateway: 256M
+  controller: 256M
+  broker: 512M
+  collector: 512M
+  pipeline: 2G
+  reconciler: 128M
+services_initialize_args:
+  gateway: [-mode, initialize, -config, /etc/feam/services/gateway/config.json]
+  controller: [-action, initialize, -config, /etc/feam/services/controller/config.json]
+  broker: [-initialize, -config, /etc/feam/services/broker/config.json]
+  collector: [-mode, initialize, -config, /etc/feam/services/collector/config.json]
+  pipeline: [initialize, -root, /home/feam-service-data/datasets/pipeline, --web-demo-acl]
+services_migrate_args:
+  pipeline: [migrate, -root, /home/feam-service-data/datasets/pipeline, --web-demo-acl]
+  gateway: [-mode, migrate, -config, /etc/feam/services/gateway/config.json]
+  controller: [-action, migrate, -config, /etc/feam/services/controller/config.json]
+  collector: [-mode, migrate, -config, /etc/feam/services/collector/config.json]

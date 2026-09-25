@@ -1,0 +1,27 @@
+[Unit]
+Description=Read-only FEAM private service liveness checks
+After=feam-service-runtime.service
+Requires=run-feam.mount
+[Service]
+Type=oneshot
+{% for service in services_names %}
+ExecStart=/usr/local/sbin/feam-services-runtime health --service {{ service }}
+{% endfor %}
+TimeoutStartSec=45
+User=root
+Group=root
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+MemoryMax=128M
+MemorySwapMax=0
+TasksMax=16
+LimitCORE=0
+LogRateLimitIntervalSec=60
+LogRateLimitBurst=12

@@ -1,0 +1,35 @@
+---
+- name: Install reviewed native pipeline tools in the owned versioned scope
+  hosts: demo
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Require reviewed source identities
+      ansible.builtin.assert:
+        that:
+          - feam_pipeline_lock_source is match('^/')
+          - feam_pipeline_converter_source is match('^/')
+          - feam_pipeline_lock_sha256 is match('^[0-9a-f]{64}$')
+          - feam_pipeline_converter_sha256 is match('^[0-9a-f]{64}$')
+    - name: Install fixed scoped tool installer
+      ansible.builtin.copy:
+        src: ../scripts/install_pipeline_tools.py
+        dest: /usr/local/sbin/feam-pipeline-tools
+        owner: root
+        group: root
+        mode: '0555'
+    - name: Verify and install exact converter and native dependency lock
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - /usr/local/sbin/feam-pipeline-tools
+          - --lock
+          - '{{ feam_pipeline_lock_source }}'
+          - --lock-sha256
+          - '{{ feam_pipeline_lock_sha256 }}'
+          - --converter
+          - '{{ feam_pipeline_converter_source }}'
+          - --converter-sha256
+          - '{{ feam_pipeline_converter_sha256 }}'
+      register: pipeline_tools_result
+      changed_when: (pipeline_tools_result.stdout_lines | last | from_json).changed

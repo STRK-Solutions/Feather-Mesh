@@ -1,0 +1,46 @@
+{
+  "protocol": "feam.u02-browser-grant.v1",
+  "date": "2026-09-25",
+  "environment": "actual Ubuntu 24.04 participant containers reached through real Cloudflare Access browser sessions",
+  "status": "passed",
+  "release_sha256": "9894f3498b7d0828d3358b6dd415f6ee0ba298442bca7f615987af147a2aef41",
+  "source_and_promotion_evidence": "u02-ubuntu-release.json",
+  "actual_grants": {
+    "A_exact_release_active": 1,
+    "B_exact_release_active": 0,
+    "A_dataset_mount": "exact serving mount present and read-only",
+    "B_dataset_mount": "absent",
+    "container_boundary_evidence": "u05-runtime-repairs.json"
+  },
+  "A_browser_sdk_read": {
+    "installed_sdk": true,
+    "native_polars_lazy_collect_rows": 365,
+    "known_date_and_temperature_precipitation_values": "matched approved source",
+    "known_flag": "matched approved source",
+    "raster_product": "january-maximum-normal",
+    "raster_version": "v1991-2020",
+    "raster_asset_id_from_actual_promoted_manifest": "normal",
+    "native_rasterio_crs": "EPSG:4326",
+    "native_rasterio_shape": [512, 512],
+    "known_raster_window": "pixel 255,255; 2x2 values matched approved source",
+    "serving_manifest_write_denied": true,
+    "browser_result_marker_semantics_verified_independently": true,
+    "result_marker_sha256": "c1f0a59df3c3170c8cdec48f3da9edf403f65f2ef63f9e1a30ff22cd75c427a0"
+  },
+  "B_browser_denial": {
+    "ungranted_manifest_absent": true,
+    "peer_resolution": "PeerUnavailableError",
+    "direct_path_write_unavailable": true,
+    "browser_result_marker_semantics_verified_independently": true,
+    "result_marker_sha256": "982f79f58aab7a41c62bc050d3182307c796c76436763b1cf033da93f75b5783"
+  },
+  "marker_readback": {
+    "both_current_containers_running": true,
+    "both_marker_files_regular_mode_0600": true,
+    "both_markers_owned_by_mapped_container_uid": true,
+    "read_only_scope": "only the named result JSON files under each currently inspected container's workspace mount",
+    "private_receipt_sha256": "0473126e155d74be6d6cdc54237243048eab4c473779e52aeb2949a39cf0043e"
+  },
+  "retained_failed_attempt": "The first A browser raster call guessed asset ID data and returned NotFoundError after its table checks. Reading the exact promoted manifest showed the registered ID normal; the corrected browser read and all assertions then passed.",
+  "limits": "This record closes the U.02 dataset publication, grant and browser read gate. Fake capture, reset, live model interaction and ordinary lifecycle acceptance belong to U.03–U.07."
+}

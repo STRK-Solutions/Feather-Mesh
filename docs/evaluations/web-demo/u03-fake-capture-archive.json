@@ -1,0 +1,72 @@
+{
+  "protocol": "feam.u03-fake-capture-archive.v1",
+  "observed_utc": "2026-09-25T12:13:35Z",
+  "environment": "actual Ubuntu 24.04 participant services and owner-only Mac archive copy",
+  "fake_capture": {
+    "completed_prompt_turns": 2,
+    "completed_broker_requests": 2,
+    "completed_cost_usd_micros_each": 0,
+    "authoritative_collector_evidence": "Each completed request has broker_observed request and usage events with synthetic=true. Supplemental client_reported request events are also synthetic and cannot substitute for broker evidence.",
+    "browser_tool_behavior": "The fixed FakeProvider returned a help__lookup result, then repeated the same tool call; the TUI ended Failed(repeated_tool_call) after two turns. This proves the fake transport, tool result and repeat guard, not a normal final model answer.",
+    "intentional_active_cancellation": "A later fake request was canceled while active. Its durable broker state is unknown with unverified cost, broker_observed request and gap events, and synthetic=true. It was not retried or reconciled to zero.",
+    "external_paid_provider_requests": 0
+  },
+  "research_isolation": {
+    "deployed_reviewer_boundary_checked": true,
+    "untrusted_host_gateway_frontend_and_mapped_workspace_denied": "archive directory, events database and export socket reads were denied; exact targets existed",
+    "evidence": "u04-private-workspaces.json"
+  },
+  "ordinary_stop": {
+    "state": "stopped_verified",
+    "final_operator_vault_revision": 47,
+    "broker_drain_paused": true,
+    "broker_active_reservations_usd_micros": 0,
+    "fake_allocation_after_stop": "unknown; held for independent cost review",
+    "controller_pending_jobs_snapshots_reclaims": 0,
+    "owned_deployment_containers_running": 0,
+    "six_service_units_and_health_timer": "inactive and disabled",
+    "edge_connector": "inactive and disabled after its gateway dependency stopped",
+    "destructive_teardown_authorized": false,
+    "reviewed_repair": "A gateway-only immutable release had left the pipeline config pointing at the old identical FEAM binary. A one-field pipeline path reconverge and fresh six-service verifier passed; the interrupted stop was resumed by its exact retained operation ID. The controller exited status 1 on normal HTTP server close, leaving a disabled failed marker; after confirming MainPID 0, only that systemd marker was reset before copy verification."
+  },
+  "retained_local_archive": {
+    "mode": "private local Ubuntu archive on verified traces mount",
+    "batches": 8,
+    "exports": 0,
+    "deletions": 0,
+    "absent": 0,
+    "full_inventory_verified": true,
+    "archive_inventory_sha256": "f8439190404773a17f5d9662623962012202e03a2e364837be2859c23d84ea30",
+    "provenance_and_deletion_ledger_retained": true
+  },
+  "private_mac_copy": {
+    "directory_mode": "0700",
+    "object_file_mode": "0600",
+    "objects": 8,
+    "full_inventory_and_content_sha256_verified": true,
+    "saved_receipt_matched_fresh_ubuntu_proof_and_ledger": true,
+    "copy_receipt_sha256": "b70a276dcdde9f57ebebf6e240617337235a88a5325c4ebfb2d8a04acb094ca7",
+    "archive_inventory_sha256": "f8439190404773a17f5d9662623962012202e03a2e364837be2859c23d84ea30",
+    "saved_provenance_ledger_sha256": "60a76983ac189ca2bf0ff08f9da0b10471fbc28a84733d43620ea46ea7a8620e"
+  },
+  "spending_boundary": {
+    "primary_real_project_revision": 1,
+    "primary_real_project_runs": 0,
+    "primary_real_project_settled_usd_micros": 0,
+    "live_allocation_issued": false,
+    "live_key_installed": false
+  },
+  "private_receipt_sha256": {
+    "fake_prompt_and_cancellation_review": "58412861b308622f55188ea9f0d5def89fb196e7a6abc7a52997af1e73b0cb76",
+    "original_failed_all_run_correlation": "2f0cda05e0afd0e061f277cf8e83792506e9a8295008cbb03fa2fcfedfd62332",
+    "corrected_all_run_correlation_with_intentional_unknown": "b5a012c266136a0acea52581d3a51054c83e56fee7aae3349bd27abf49a5d84c",
+    "reviewer_denials": "cb82c8dd1a969eb05eb3688e2972f875434bb84a998542bd28a5fa5072bce0db",
+    "browser_fake_result_screenshot": "5919c88a47460614309ab091489f7a9193b3c8187dd3353b0f1e9433dbd4ee1d",
+    "pre_stop_snapshot": "07dae1437afbcffa9ed4b93d1494403ac9a785b8d1934037cd1f49f5a3f88939",
+    "pipeline_repair_apply": "96c1595df780a306f69fe6af0b274ecdb42a56782abe67c6a2dea0fe6afba3a4",
+    "stopped_operator_vault": "96637e397c40db6a5abcfaf48383b1a85311f55188d8290f83f307ef581535dc"
+  },
+  "w1_runtime_limit": "The pipeline-config Ansible reconverge restarted feam-service-runtime.service and, through the user@2101.service dependency, restarted rootless Docker. One pre-existing W1 container exited cleanly before the ordinary site stop; its original container ID and data remain. This W1 state regression is under separate recovery review and is not claimed as preserved-running acceptance. No W1 container was deleted, reinitialized or reset.",
+  "w1_recovery_followup": "u03-w1-runtime-recovery.json records the later same-container restoration and the bounded Ansible fix; the interruption described above remains historical evidence.",
+  "next": "The real primary project allocation, live provider config and first paid request are separate subsequent gates."
+}

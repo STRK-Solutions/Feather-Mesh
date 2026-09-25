@@ -1,0 +1,109 @@
+{
+  "protocol": "feam.u07-live-maintenance.v1",
+  "date": "2026-09-25",
+  "status": "passed",
+  "scope": "ordinary same-allocation maintenance; not full drain/teardown lifecycle",
+  "cycles": 2,
+  "initial_converge": {
+    "changed": 1,
+    "reason": "Existing pipeline traversal ACL mask was cleared then restored; corrected recipe preserves it."
+  },
+  "final_converge": {
+    "ok": 38,
+    "changed": 0,
+    "unreachable": 0,
+    "failed": 0,
+    "initialization": []
+  },
+  "all_six_services_restarted": true,
+  "connector": "existing QUIC active; boot enablement remains disabled",
+  "workspaces_stopped_before_converge": 7,
+  "active_browser_workspaces_after_restart": 2,
+  "workspace_generations_and_files_preserved": true,
+  "browser_reconnect": {
+    "A": {
+      "ready": true,
+      "cols": 134,
+      "rows": 46,
+      "fontSize": 18,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    "B": {
+      "ready": true,
+      "cols": 134,
+      "rows": 46,
+      "fontSize": 18,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 1000
+      }
+    }
+  },
+  "dataset_markers_identical": true,
+  "approved_copy_and_receipt_identical": true,
+  "denied_destination_and_receipt_still_absent": true,
+  "all_accounts_and_role_checks_preserved": true,
+  "broker_before_and_after": {
+    "active": 0,
+    "global_concurrency": 3,
+    "per_user_concurrency": 1,
+    "queued": 0,
+    "recording": true,
+    "usage": {
+      "alert_percent": 0,
+      "allocation_usd_micros": 50000000,
+      "paused": false,
+      "reserved_usd_micros": 0,
+      "settled_usd_micros": 3119,
+      "unknown_usd_micros": 0
+    }
+  },
+  "project_revision": 2,
+  "project_ledger_and_active_allocation_unchanged": true,
+  "no_drain_reallocation_or_replenishment": true,
+  "archive": {
+    "absent": 0,
+    "batches": 13,
+    "bytes": 110257,
+    "deletions": 0,
+    "exports": 0,
+    "protocol": "feam.archive-verification.v1",
+    "sha256": "3a56376b27cb61f6dfb59b9b7846832284e64ea5305a9e2f35265b645f9dcea7",
+    "status": "verified",
+    "verified_at": "2026-09-25T13:40:41.321784084Z"
+  },
+  "independent_mac_copy": {
+    "archive_sha256": "3a56376b27cb61f6dfb59b9b7846832284e64ea5305a9e2f35265b645f9dcea7",
+    "ledger_sha256": "d75b36c719251fe786efc8fb7f650ddb7c8b5298059f4ba0a5a977f76f6ee8b2",
+    "objects": 13,
+    "protocol": "feam.mac-archive-copy.v1",
+    "verified_at": "2026-09-25T13:40:41.805491+00:00"
+  },
+  "retained_mac_copy_count": 3,
+  "prior_fake_archives_and_unknown_cancellation_preserved": true,
+  "destructive_teardown": false,
+  "private_receipt_sha256": "377bf0c330dc8f0a3529b1b9668c0c97c895c7e1bcbfbb3fc473ac7a32a9cea7",
+  "maintenance_script_sha256": "5e3929878c55764451b9184df8e8e504eafd9e3468652d66689ff94a7a9c24ec",
+  "live_vault_revision": 93,
+  "limits": [
+    "No host reboot",
+    "No new full lifecycle drain or successor allocation",
+    "No ten-user capacity test",
+    "No fresh admin browser sign-in"
+  ]
+}

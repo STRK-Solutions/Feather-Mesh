@@ -1,0 +1,81 @@
+{
+  "assigned": false,
+  "environment": "MAC",
+  "namespace": "demo-climate",
+  "products": [
+    {
+      "known_date": "2023-01-01",
+      "known_values": [
+        3.2,
+        0.0,
+        1.6,
+        0.3
+      ],
+      "last_precipitation_flag": "T",
+      "native_lazy_frame": true,
+      "output_bytes": 8764,
+      "output_sha256": "0d95da831ec907acf40967b97e0ce5b75f72c1ddaf5ec2991e2de9ace2d93a3c",
+      "product": "product://demo-climate/ottawa-daily",
+      "rows": 365,
+      "version": "v2023"
+    },
+    {
+      "crs": "EPSG:4326",
+      "known_window": [
+        [
+          -4.975666522979736,
+          -4.980000019073486
+        ],
+        [
+          -4.9676666259765625,
+          -4.977333068847656
+        ]
+      ],
+      "nodata": -3.3999999521443642e+38,
+      "output_bytes": 53282,
+      "output_sha256": "150eee12e07e3232beadcbef7a13af0ba65b5f3770f5b1275226d1bc22e504a8",
+      "product": "product://demo-climate/january-maximum-normal",
+      "shape": [
+        512,
+        512
+      ],
+      "source_crs": "EPSG:4269",
+      "source_pixel_comparison": true,
+      "version": "v1991-2020"
+    }
+  ],
+  "promoted": false,
+  "protocol": "feam.pipeline.verification.v1",
+  "sources": [
+    {
+      "attribution": "Environment and Climate Change Canada; daily climate observations, Ottawa Intl A (6106001), 2023. Source: https://climate.weather.gc.ca/",
+      "bytes": 64158,
+      "id": "eccc",
+      "license": "https://open.canada.ca/en/open-government-licence-canada",
+      "retrieved_at": "2026-09-25T07:06:53.364096Z",
+      "sha256": "b946900d707076e05d2b3e1d8d3a128877675495a6bd38f6bf62f42f3cb4b4e7",
+      "url": "https://climate.weather.gc.ca/climate_data/bulk_data_e.html?format=csv&stationID=49568&Year=2023&Month=1&Day=1&timeframe=2&submit=Download+Data"
+    },
+    {
+      "attribution": "Agriculture and Agri-Food Canada; 30-year Average Maximum Temperature, January 1991-2020 normal. Source: https://open.canada.ca/data/en/dataset/b3fda923-a875-4dde-bb67-873f9684a031",
+      "bytes": 38421434,
+      "id": "aafc",
+      "license": "https://open.canada.ca/en/open-government-licence-canada",
+      "retrieved_at": "2026-09-25T07:06:58.465425Z",
+      "sha256": "189d91d5614d4a39ad44726f6d5816043e111e34746a58fb99318a86861780f4",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/climateNormals/data_donnees/tif/monthly/lt_tx/lt_tx_m01_1991_2020.tif"
+    }
+  ],
+  "stac": {
+    "authentication": "none",
+    "client": "pystac-client",
+    "datetime": null,
+    "end_datetime": "2020-12-31T23:59:59Z",
+    "loopback": "127.0.0.1",
+    "matched_items": 1,
+    "outside_interval_empty": true,
+    "start_datetime": "1991-01-01T00:00:00Z"
+  },
+  "status": "private-candidate-readers-verified",
+  "verified_at": "2026-09-25T07:15:13.651952Z"
+}

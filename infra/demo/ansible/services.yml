@@ -1,0 +1,18 @@
+---
+# Private component deployment only. No public route or implicit initialization.
+- name: Deploy reviewed private FEAM participant services
+  hosts: demo
+  become: true
+  gather_facts: true
+  gather_subset: [min]
+  vars:
+    feam_root: /home/feam-service-data
+    feam_participant_services: true
+    feam_services_start: false
+    feam_services_enable: false
+    feam_services_initialize: []
+    feam_services_migrate: []
+    feam_services_broker_mode: fake
+    feam_services_private_files: []
+  roles:
+    - services

@@ -8,7 +8,18 @@
     "type": {"const": "Feature"},
     "bbox": {"type": "array", "minItems": 4, "maxItems": 4},
     "geometry": {"type": "object"},
-    "properties": {"type": "object", "required": ["datetime"]},
+    "properties": {
+      "type": "object", "required": ["datetime"],
+      "properties": {
+        "datetime": {"type": ["string", "null"], "format": "date-time"},
+        "start_datetime": {"type": "string", "format": "date-time"},
+        "end_datetime": {"type": "string", "format": "date-time"}
+      },
+      "oneOf": [
+        {"properties": {"datetime": {"type": "string"}}, "not": {"anyOf": [{"required": ["start_datetime"]}, {"required": ["end_datetime"]}]}},
+        {"properties": {"datetime": {"type": "null"}}, "required": ["start_datetime", "end_datetime"]}
+      ]
+    },
     "assets": {"type": "object", "minProperties": 1}
   }
 }

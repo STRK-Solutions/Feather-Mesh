@@ -113,6 +113,7 @@ impl ProviderError {
 /// arguments independently.
 pub trait ModelProvider: Send {
     fn set_request_timeout(&mut self, _timeout: std::time::Duration) {}
+    fn set_request_id(&mut self, _request_id: Option<String>) {}
     fn stream(
         &mut self,
         request: ModelRequest,
@@ -173,6 +174,7 @@ pub struct RouterProvider {
     profile: AgentProfile,
     api_key: String,
     client: reqwest::Client,
+    request_id: Option<String>,
 }
 
 #[cfg(feature = "hosted")]
@@ -193,16 +195,37 @@ impl RouterProvider {
                 profile.api_key_env
             )));
         }
-        let client = reqwest::Client::builder()
+        let mut client = reqwest::Client::builder()
             .pool_max_idle_per_host(0)
             .redirect(reqwest::redirect::Policy::none())
-            .use_rustls_tls()
+            .use_rustls_tls();
+        if let Some(path) = &profile.loopback_ca_file {
+            use std::io::Read as _;
+            let file = std::fs::File::open(path).map_err(|_| {
+                ProviderError::Configuration("loopback CA certificate is unavailable".into())
+            })?;
+            let mut pem = Vec::new();
+            file.take(65_537).read_to_end(&mut pem).map_err(|_| {
+                ProviderError::Configuration("loopback CA certificate could not be read".into())
+            })?;
+            if pem.len() > 65_536 {
+                return Err(ProviderError::Configuration(
+                    "loopback CA certificate is too large".into(),
+                ));
+            }
+            let certificate = reqwest::Certificate::from_pem(&pem).map_err(|_| {
+                ProviderError::Configuration("loopback CA certificate is invalid".into())
+            })?;
+            client = client.add_root_certificate(certificate).no_proxy();
+        }
+        let client = client
             .build()
             .map_err(|error| ProviderError::Configuration(error.to_string()))?;
         Ok(Self {
             profile,
             api_key,
             client,
+            request_id: None,
         })
     }
 
@@ -226,6 +249,9 @@ impl RouterProvider {
 
 #[cfg(feature = "hosted")]
 impl ModelProvider for RouterProvider {
+    fn set_request_id(&mut self, request_id: Option<String>) {
+        self.request_id = request_id;
+    }
     fn set_request_timeout(&mut self, timeout: std::time::Duration) {
         self.profile.max_request_seconds = timeout.as_secs().max(1);
     }
@@ -276,7 +302,16 @@ impl RouterProvider {
         let request = crate::disclosure::outbound(request, &self.profile, Some(&self.api_key))?;
         let tool_names = RouterToolNames::new(&request.tools)?;
         let tools = tool_names.schemas(&request.tools)?;
-        let messages = tool_names.messages(&request.messages)?;
+        // Guided turns advertise no tools, but their conversation may contain
+        // completed ordinary turns. Translate only those historical names from
+        // the closed application schema; keep the response allowlist empty.
+        let history_names = if request.tools.is_empty() {
+            RouterToolNames::new(&crate::tools::tool_schemas())?
+        } else {
+            RouterToolNames::new(&request.tools)?
+        };
+        let messages = history_names.messages(&request.messages)?;
+        let tool_choice = if tools.is_empty() { "none" } else { "auto" };
         let mut body = serde_json::json!({
             "model": self.profile.model,
             "max_tokens": self.profile.max_output_tokens,
@@ -284,7 +319,7 @@ impl RouterProvider {
             "reasoning": {"enabled": self.profile.reasoning_enabled},
             "messages": messages,
             "tools": tools,
-            "tool_choice": "auto",
+            "tool_choice": tool_choice,
             "stream": true,
             "stream_options": {"include_usage": true}
         });
@@ -310,17 +345,20 @@ impl RouterProvider {
         if encoded.len() > self.profile.max_request_bytes {
             return Err(ProviderError::TooLarge);
         }
-        let response = self
+        let mut outbound = self
             .client
             .post(self.endpoint()?)
             .bearer_auth(&self.api_key)
             .header("Content-Type", "application/json")
-            .body(encoded)
-            .send()
-            .await
-            .map_err(|error| {
-                ProviderError::Transport(format!("HTTP request failed: {}", error.without_url()))
-            })?;
+            .body(encoded);
+        if self.profile.loopback_ca_file.is_some()
+            && let Some(request_id) = &self.request_id
+        {
+            outbound = outbound.header("X-Request-ID", request_id);
+        }
+        let response = outbound.send().await.map_err(|error| {
+            ProviderError::Transport(format!("HTTP request failed: {}", error.without_url()))
+        })?;
         let status = response.status();
         if !status.is_success() {
             let mut error_bytes = Vec::new();
@@ -756,6 +794,20 @@ mod hosted_tests {
 
     #[test]
     fn router_http_round_trip_maps_names_and_preserves_tool_call_ids() {
+        router_history_round_trip(false, false);
+    }
+
+    #[test]
+    fn router_guided_turn_preserves_ordinary_tool_history_without_advertising_tools() {
+        router_history_round_trip(true, false);
+    }
+
+    #[test]
+    fn router_guided_turn_rejects_new_tool_calls() {
+        router_history_round_trip(true, true);
+    }
+
+    fn router_history_round_trip(guided: bool, returned_tool: bool) {
         use std::io::{BufRead, BufReader, Read, Write};
         use std::net::TcpListener;
         use std::time::{Duration, Instant};
@@ -802,7 +854,13 @@ mod hosted_tests {
                 let mut bytes = vec![0; length];
                 reader.read_exact(&mut bytes).unwrap();
                 let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-                assert_eq!(body["tools"][0]["function"]["name"], "help__lookup");
+                if guided && step == 1 {
+                    assert_eq!(body["tools"], serde_json::json!([]));
+                    assert_eq!(body["tool_choice"], "none");
+                } else {
+                    assert_eq!(body["tools"][0]["function"]["name"], "help__lookup");
+                    assert_eq!(body["tool_choice"], "auto");
+                }
                 assert_eq!(body["provider"]["allow_fallbacks"], false);
                 let events = if step == 0 {
                     vec![
@@ -827,9 +885,16 @@ mod hosted_tests {
                         body["messages"][2]["content"],
                         "\"An explicit version is required.\""
                     );
-                    vec![
-                        serde_json::json!({"choices":[{"delta":{"content":"Choose an explicit version."},"finish_reason":"stop"}]}),
-                    ]
+                    if returned_tool {
+                        vec![serde_json::json!({"choices":[{"delta":{"tool_calls":[{
+                            "index":0,"id":"forbidden-guided-call","type":"function",
+                            "function":{"name":"help__lookup","arguments":"{\"topic\":\"resolve\"}"}
+                        }]},"finish_reason":"tool_calls"}]})]
+                    } else {
+                        vec![
+                            serde_json::json!({"choices":[{"delta":{"content":"Choose an explicit version."},"finish_reason":"stop"}]}),
+                        ]
+                    }
                 };
                 let mut response = events
                     .into_iter()
@@ -842,6 +907,7 @@ mod hosted_tests {
         let profile = AgentProfile {
             backend: "router".into(),
             base_url: format!("http://{address}"),
+            loopback_ca_file: None,
             model: "synthetic/model".into(),
             api_key_env: "UNUSED_OFFLINE_TEST_KEY".into(),
             context_policy: "synthetic-demo".into(),
@@ -862,6 +928,7 @@ mod hosted_tests {
             allow_provider_fallbacks: false,
         };
         let mut provider = RouterProvider {
+            request_id: None,
             profile,
             api_key: "synthetic-offline-key".into(),
             client: reqwest::Client::builder()
@@ -915,23 +982,28 @@ mod hosted_tests {
             tool_calls: None,
         });
         let mut text = String::new();
-        provider
-            .stream(
-                ModelRequest {
-                    messages,
-                    tools,
-                    max_response_chars: 8000,
-                },
-                &CancellationToken::default(),
-                &mut |event| {
-                    if let ProviderEvent::TextDelta(delta) = event {
-                        text.push_str(&delta);
-                    }
-                },
-            )
-            .unwrap();
+        let mut returned_calls = Vec::new();
+        let result = provider.stream(
+            ModelRequest {
+                messages,
+                tools: if guided { Vec::new() } else { tools },
+                max_response_chars: 8000,
+            },
+            &CancellationToken::default(),
+            &mut |event| match event {
+                ProviderEvent::TextDelta(delta) => text.push_str(&delta),
+                ProviderEvent::ToolCall(call) => returned_calls.push(call),
+                _ => {}
+            },
+        );
         server.join().unwrap();
-        assert_eq!(text, "Choose an explicit version.");
+        assert!(returned_calls.is_empty());
+        if returned_tool {
+            assert!(matches!(result, Err(ProviderError::Protocol(_))));
+        } else {
+            result.unwrap();
+            assert_eq!(text, "Choose an explicit version.");
+        }
     }
 
     #[test]
@@ -1012,6 +1084,7 @@ mod failure_tests {
             );
         });
         let provider = RouterProvider {
+            request_id: None,
             profile: profile(format!("http://{address}")),
             api_key: "fixture-secret".into(),
             client: reqwest::Client::builder()
@@ -1241,6 +1314,11 @@ pub enum SessionProvider {
 }
 #[cfg(feature = "hosted")]
 impl ModelProvider for SessionProvider {
+    fn set_request_id(&mut self, request_id: Option<String>) {
+        if let Self::Router(p) = self {
+            p.set_request_id(request_id);
+        }
+    }
     fn set_request_timeout(&mut self, timeout: std::time::Duration) {
         if let Self::Router(p) = self {
             p.set_request_timeout(timeout);
