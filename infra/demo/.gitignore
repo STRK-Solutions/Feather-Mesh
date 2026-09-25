@@ -1,0 +1,6 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+ansible/inventories/*
+!ansible/inventories/example.yml

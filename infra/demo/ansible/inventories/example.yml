@@ -1,0 +1,10 @@
+---
+all:
+  children:
+    demo:
+      hosts:
+        ubuntu_example:
+          ansible_host: ubuntu.example.invalid
+          ansible_user: operator
+          ansible_ssh_common_args: -o StrictHostKeyChecking=yes -o BatchMode=yes
+          ansible_python_interpreter: /usr/bin/python3

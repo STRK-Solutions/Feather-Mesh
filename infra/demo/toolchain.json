@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "rust": "1.94.0",
+  "python_control": "3.13",
+  "python_ubuntu": "3.12",
+  "go": {
+    "version": "1.27.1",
+    "darwin_arm64_sha256": "ee215d57e0ec269c60cc9ceca68e6bda321ba9ee5afe24f4b0988703c2d87d12",
+    "linux_amd64_sha256": "63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445"
+  },
+  "python_lock": "requirements-dev.lock",
+  "terraform": "1.14.5",
+  "linux_target": "ubuntu-24.04-amd64",
+  "live_traffic_in_checks": false
+}

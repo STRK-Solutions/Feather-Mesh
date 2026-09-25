@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "os": "ubuntu-24.04",
+  "architecture": "amd64",
+  "packages": [
+    {
+      "package": "genisoimage",
+      "version": "9:1.1.11-3.5",
+      "sha256": "cfa9f63d8208a3e1b2c228357707f607e2b402334262d6f591abc44a429bb217"
+    },
+    {
+      "package": "ipxe-qemu",
+      "version": "1.21.1+git-20220113.fbbdc3926-0ubuntu2",
+      "sha256": "1f1612934b6ddaf4dd633760dfe5ef2a79ea2507341fd5efe394ff589a044707"
+    },
+    {
+      "package": "libaio1t64",
+      "version": "0.3.113-6build1.1",
+      "sha256": "433212b33e26d424605c01cec1de33b63f2cc12870987b4cb7b3625baba66a19"
+    },
+    {
+      "package": "libcacard0",
+      "version": "1:2.8.0-3build4",
+      "sha256": "7a75de14b0fdff2828a3d218a49e7fe4da2df533185ba9ccbabd0647db05e33c"
+    },
+    {
+      "package": "libdaxctl1",
+      "version": "77-2ubuntu2",
+      "sha256": "c6629b49c79343fb11ae404aeaa3156f051168da6c6d3d9d8d516acd94705061"
+    },
+    {
+      "package": "libndctl6",
+      "version": "77-2ubuntu2",
+      "sha256": "4eab53588a8fa9e3192635e118c2d91bc069cde46a4a3785c77a0bb1ae001d02"
+    },
+    {
+      "package": "libpmem1",
+      "version": "1.13.1-1.1ubuntu2",
+      "sha256": "8f1be1cc834a98f0cf5c0950153f7f939a0c2c92095e98cd7bb40c752c545c1b"
+    },
+    {
+      "package": "librdmacm1t64",
+      "version": "50.0-2ubuntu0.2",
+      "sha256": "7b7cc2fa16564bf301751b43d05d16f0846288b080d9a25a92a691d0df33fc68"
+    },
+    {
+      "package": "liburing2",
+      "version": "2.5-1build1",
+      "sha256": "c2aef62accee92a06263c3ad4ef46132c13e409b54296c44792a20491830a7b0"
+    },
+    {
+      "package": "libusbredirparser1t64",
+      "version": "0.13.0-2.1build1",
+      "sha256": "78be9176f05512bcac369fcada499686b1dd34320965d27e3405c7aacbc4e461"
+    },
+    {
+      "package": "libfdt1",
+      "version": "1.7.0-2build1",
+      "sha256": "274d20dfab9d6b216b5de85446a93f6ce5b2cd82c847b8dfdc508577f76eb96a"
+    },
+    {
+      "package": "qemu-system-common",
+      "version": "1:8.2.2+ds-0ubuntu1.18",
+      "sha256": "0a0b744f31e87d72dd0465436b8dfbb1ef9f574ecd0d5a2e9dd8c5cb7d0fef1f"
+    },
+    {
+      "package": "qemu-system-data",
+      "version": "1:8.2.2+ds-0ubuntu1.18",
+      "sha256": "a14b88d864859bd61c8a3274971da4ecb7da6cec15be6c265d0d411f783d5f2e"
+    },
+    {
+      "package": "qemu-system-x86",
+      "version": "1:8.2.2+ds-0ubuntu1.18",
+      "sha256": "14602e262627adac030329d2cecfee5f6c0938b34566ff2ea2d4c9a9eb02430d"
+    },
+    {
+      "package": "qemu-utils",
+      "version": "1:8.2.2+ds-0ubuntu1.18",
+      "sha256": "10695e57937d8a1d0ec6d017a6770d02353ec0c9500e4a36928230b2d39026c5"
+    },
+    {
+      "package": "seabios",
+      "version": "1.16.3-2",
+      "sha256": "cac4e59a66c834d19cae751c22ab3a0391c22f78010fd11aa2e3fe630e6bc0e0"
+    }
+  ]
+}

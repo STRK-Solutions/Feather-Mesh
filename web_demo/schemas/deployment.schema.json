@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://feam.invalid/web/v1/deployment.schema.json",
+  "title": "FEAM web v1 deployment",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "deployment_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "activation_generation": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "site": {
+      "enum": [
+        "ubuntu",
+        "cloud"
+      ]
+    },
+    "desired": {
+      "enum": [
+        "running",
+        "stopped"
+      ]
+    },
+    "state": {
+      "enum": [
+        "prepared",
+        "starting",
+        "running",
+        "stopping",
+        "stopped",
+        "unknown",
+        "torn-down"
+      ]
+    },
+    "public_selected": {
+      "type": "boolean"
+    },
+    "release_sha256": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "config_sha256": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "seed_sha256": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "inventory_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 63,
+      "pattern": "^[a-z][a-z0-9-]{0,62}$"
+    },
+    "parent_uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "policy_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "allocation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "credential_refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tunnel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63,
+          "pattern": "^[a-z][a-z0-9-]{0,62}$"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63,
+          "pattern": "^[a-z][a-z0-9-]{0,62}$"
+        },
+        "membership": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63,
+          "pattern": "^[a-z][a-z0-9-]{0,62}$"
+        }
+      },
+      "required": [
+        "tunnel",
+        "model",
+        "membership"
+      ]
+    },
+    "archive": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pending_batches": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "verified_manifest_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "pending_batches",
+        "verified_manifest_sha256"
+      ]
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "deployment_id",
+    "run_id",
+    "activation_generation",
+    "site",
+    "desired",
+    "state",
+    "public_selected",
+    "release_sha256",
+    "config_sha256",
+    "seed_sha256",
+    "inventory_ref",
+    "parent_uuid",
+    "policy_revision",
+    "allocation_id",
+    "credential_refs",
+    "archive",
+    "updated_at"
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "mode": "test",
+  "site": "ubuntu",
+  "public_admission": false,
+  "live_inference": false,
+  "storage": {
+    "root": "/home/feam-service-data",
+    "parent_uuid": "00000000-0000-4000-8000-000000000001",
+    "workspace_slots": 10,
+    "reset_spares": 2,
+    "workspace_gib": 2,
+    "datasets_gib": 200,
+    "operations_gib": 5,
+    "traces_gib": 20,
+    "runtime_gib": 20
+  },
+  "identity": {
+    "issuer": "https://example.cloudflareaccess.com",
+    "portal_hostname": "feam.example.org",
+    "admin_hostname": "admin.example.org",
+    "portal_audience": "example-portal-audience",
+    "admin_audience": "example-admin-audience",
+    "workspace_audience": "example-workspace-audience",
+    "roster_ref": "/etc/feam/secrets/roster.yaml"
+  },
+  "model": {
+    "backend": "fake",
+    "name": "deepseek/deepseek-v4.1-flash",
+    "provider": "deepinfra/fp8",
+    "fallbacks": false,
+    "automatic_retries": 0,
+    "global_concurrency": 3,
+    "per_user_concurrency": 1,
+    "request_timeout_seconds": 120,
+    "key_ref": "/etc/feam/secrets/openrouter-key"
+  },
+  "research": {
+    "archive": "unconfigured",
+    "retention_days": null,
+    "reviewer_ids": [],
+    "support_contact_ref": "/etc/feam/secrets/support-contact",
+    "batch_seconds": 300,
+    "batch_bytes": 8388608
+  },
+  "inputs": {
+    "I1": "pending",
+    "I2": "pending",
+    "I3": "pending",
+    "I4": "pending",
+    "I5": "pending",
+    "I6": "pending",
+    "I7": "pending"
+  }
+}

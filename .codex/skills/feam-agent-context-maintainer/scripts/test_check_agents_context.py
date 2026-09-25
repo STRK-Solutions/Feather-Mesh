@@ -20,7 +20,7 @@ class ContextCheckerTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name) / "repo with spaces"
         self.root.mkdir()
-        for name in (".codex", ".github", "docs", "feather-mesh"):
+        for name in (".codex", ".github", "docs", "feather-mesh", "web_demo", "infra"):
             shutil.copytree(ROOT / name, self.root / name,
                             ignore=shutil.ignore_patterns("target", "__pycache__", ".DS_Store"))
         for name in ("AGENTS.md", "data_access.md", "data_access_implementation_workplan.md",

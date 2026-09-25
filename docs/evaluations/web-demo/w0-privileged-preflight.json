@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "received_on": "2026-09-25",
+  "environment": "UBUNTU",
+  "provenance": "owner-run read-only sudo commands; supplied terminal transcript",
+  "raw_evidence": {
+    "restricted_path": ".local/demo-deployment/w0-owner-privileged-preflight.txt",
+    "sha256": "d1eb5facafddbe11b63ab103ebddada5b125630298498fe7dcf3f47760dfe029",
+    "exit_codes_captured": false
+  },
+  "commands": [
+    "sudo docker ps -a --format '{{.ID}} {{.State}}'",
+    "sudo docker info --format 'root={{.DockerRootDir}} driver={{.Driver}} cgroup={{.CgroupVersion}}'",
+    "sudo losetup --list --output NAME,BACK-FILE",
+    "sudo aa-status"
+  ],
+  "docker": {
+    "reported_container_rows": 0,
+    "reported_command_errors": false,
+    "data_root": "/var/lib/docker",
+    "storage_driver": "overlayfs",
+    "cgroup_version": 2
+  },
+  "loop_devices": {
+    "count": 21,
+    "all_backing_files_under": "/var/lib/snapd/snaps/",
+    "feam_backing_files_reported": 0
+  },
+  "apparmor": {
+    "module_loaded": true,
+    "profiles_loaded": 158,
+    "profiles_enforce": 62,
+    "profiles_complain": 5,
+    "profiles_unconfined": 91,
+    "profiles_prompt": 0,
+    "profiles_kill": 0,
+    "docker_default_mode": "enforce",
+    "rootlesskit_profile_mode": "unconfined",
+    "profiled_processes": 19,
+    "processes_enforce": 18,
+    "processes_unconfined_with_profile": 1
+  },
+  "scope_decision": {
+    "service_root": "/home/feam-service-data",
+    "parent_mount": "/home",
+    "parent_uuid_sha256": "28b516b9bb4cdb7ddfc30f0d8146e59717e6167938722fcf7d6d94a1e5be28c7",
+    "preserve": [
+      "existing Docker daemon and /var/lib/docker",
+      "all existing Snap loop devices",
+      "host AppArmor and namespace restrictions",
+      "unrelated disks and personal home contents"
+    ],
+    "recheck_before_mutation": [
+      "filesystem UUID and free space",
+      "service account and subordinate-ID collisions",
+      "resource ownership"
+    ]
+  },
+  "gate_result": {
+    "W0.06": "complete",
+    "W0.G": "complete"
+  },
+  "limitations": [
+    "Owner-supplied observation; no independently captured sudo exit codes or command timestamp.",
+    "No host provisioning or security-policy change performed by this closeout.",
+    "Loaded rootlesskit profile is not proof of per-container AppArmor confinement or future runner resource enforcement.",
+    "W1 runtime isolation and subsequent deployment acceptance remain unverified."
+  ]
+}

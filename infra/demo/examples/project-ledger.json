@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "project_id": "00000000-0000-4000-8000-000000000001",
+  "revision": 1,
+  "allowance_usd_micros": 100000000,
+  "settled_usd_micros": 0,
+  "runs": [
+    {
+      "run_id": "00000000-0000-4000-8000-000000000002",
+      "deployment_id": "00000000-0000-4000-8000-000000000003",
+      "activation_generation": 1,
+      "allocation_usd_micros": 1000000,
+      "outstanding_usd_micros": 1000000,
+      "settled_usd_micros": 0,
+      "state": "unknown",
+      "reconciliation_hash": null
+    }
+  ]
+}

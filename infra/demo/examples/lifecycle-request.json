@@ -1,0 +1,13 @@
+{
+  "protocol": "feam.web.v1",
+  "request_id": "00000000-0000-4000-8000-000000000001",
+  "idempotency_key": "00000000-0000-4000-8000-000000000001",
+  "deployment_id": "00000000-0000-4000-8000-000000000002",
+  "activation_generation": 1,
+  "workspace_id": "00000000-0000-4000-8000-000000000003",
+  "expected_generation": 1,
+  "actor_id": "00000000-0000-4000-8000-000000000004",
+  "authorization_version": 1,
+  "method": "workspace.start",
+  "parameters": {}
+}
