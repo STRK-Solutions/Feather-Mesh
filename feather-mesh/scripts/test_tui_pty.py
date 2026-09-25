@@ -79,6 +79,7 @@ class TerminalTests(unittest.TestCase):
     def test_signals_restore_terminal(self):
         for sig in [signal.SIGINT,signal.SIGTERM,signal.SIGHUP]:
             s=self.launch([str(CLI),'--project',str(self.root/f'project-{sig}'),'tui'])
+            s.wait(lambda:b'\x1b[?1049h' in s.raw)
             s.process.send_signal(sig);s.finish()
     def test_error_and_panic_restore_terminal(self):
         for mode in ['error','panic']:
@@ -88,9 +89,9 @@ class TerminalTests(unittest.TestCase):
         s.send('a?');s.send('q');s.finish();self.assertEqual(s.process.returncode,0)
     def test_fake_assistant_completes_without_an_extra_keypress(self):
         replay=self.root/'replay.json'
-        replay.write_text(json.dumps([[{'TextDelta':'REPLAY RESPONSE ARRIVED'},{'Finished':None}]]))
+        response='LONG RESPONSE START\n'+'\n'.join(f'assistant line {i:03d}' for i in range(80))+'\nREPLAY RESPONSE ARRIVED'
         # Unit variant events are encoded as JSON strings by serde.
-        replay.write_text(json.dumps([[{'TextDelta':'REPLAY RESPONSE ARRIVED'},'Finished']]))
+        replay.write_text(json.dumps([[{'TextDelta':response},'Finished']]))
         import codecs
         import pyte
         project=self.root/'fake'
@@ -104,6 +105,12 @@ class TerminalTests(unittest.TestCase):
         s.wait(lambda:visible('versions;'))
         s.send('aShow replay\r')
         s.wait(lambda:visible('REPLAY RESPONSE ARRIVED'))
+        self.assertIn('Assistant', screen.display[4])
+        s.send('?');s.wait(lambda:visible('Commands (quote paths with spaces)'))
+        self.assertNotIn('Versions', '\n'.join(screen.display))
+        s.send('\t\t\t\t');s.wait(lambda:visible('REPLAY RESPONSE ARRIVED'))
+        s.send('\x1b[5~'*10);s.wait(lambda:visible('LONG RESPONSE START'))
+        s.send('\x1b[6~'*10);s.wait(lambda:visible('REPLAY RESPONSE ARRIVED'))
         s.send('q');s.finish()
 
 if __name__=='__main__': unittest.main()

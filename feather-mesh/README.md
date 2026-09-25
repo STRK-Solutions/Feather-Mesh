@@ -178,9 +178,12 @@ cargo run -p mesh_cli --features tui -- tui --project /work/client --agent off
 
 It supports manifest-backed catalog browsing with per-peer coverage, pinned
 details/lineage/inventory, direct-resolution CLI/SDK examples, peer refresh,
-and reviewed publication/staging/withdrawal. A missing project is initialized
-only through its explicit TUI action. Normal noninteractive CLI JSON is not
-used or contaminated by TUI rendering.
+and reviewed publication/staging/withdrawal. Catalog shows product versions
+beside metadata and inventory; Lineage uses the same selectable version list
+beside the product version lineage. Peers, Operations,
+Help, Teams, and Cache remain separate full-width views. A missing project
+is initialized only through its explicit TUI action. Normal noninteractive CLI
+JSON is not used or contaminated by TUI rendering.
 
 The hosted router is separately opt-in and uses a profile outside the project:
 
@@ -188,6 +191,12 @@ The hosted router is separately opt-in and uses a profile outside the project:
 cargo run -p mesh_cli --features agent-hosted -- tui \
   --project /work/client --agent hosted --agent-profile demo-router
 ```
+
+Hosted builds add an Assistant menu. Submitting with `a` opens it; streaming
+and completed replies remain available while navigating other menus, with an
+unread marker and independent `PgUp`/`PgDn` scrolling. Transcripts are bounded
+to 1 MiB of rendered text, reset on project/profile changes, and are never
+persisted automatically.
 
 Profiles, disclosure policy, API-key environment references, bounded tools,
 review semantics, and recovery outcomes are defined in

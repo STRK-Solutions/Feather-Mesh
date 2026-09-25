@@ -9,7 +9,7 @@ from test_tui_pty import Session, CLI, WORKSPACE
 
 class ScreenSession(Session):
     def __init__(self,*args,**kwargs):
-        self.screen=pyte.Screen(80,24);self.stream=pyte.Stream(self.screen);self.decoder=codecs.getincrementaldecoder('utf-8')('replace');self.offset=0;self.assistant_count=0
+        self.screen=pyte.Screen(80,24);self.stream=pyte.Stream(self.screen);self.decoder=codecs.getincrementaldecoder('utf-8')('replace');self.offset=0
         super().__init__(*args,**kwargs)
     def pump(self,seconds=.15):
         super().pump(seconds)
@@ -20,8 +20,7 @@ class ScreenSession(Session):
         except AssertionError: raise AssertionError(f'Expected screen marker {text!r}; screen:\n{self.text()}') from None
     def command(self,text): self.send(':'+text+'\r')
     def ask(self,text):
-        self.assistant_count+=1
-        self.send('a'+text+'\r');self.until(f'Assistant result #{self.assistant_count} ',120)
+        self.send('a'+text+'\r');self.until('Assistant response received.',120)
     def review(self): self.until('y confirm')
 
 def event(tool,args,id): return {'ToolCall':{'id':id,'name':tool,'arguments':args}}
@@ -93,8 +92,11 @@ allow_provider_fallbacks = false
         s.send('/observations\r');s.until('2 versions;')
         if args.mode!='manual':
             s.ask('Find registered observations and ask me to select v1 or v2 before resolution.')
+            assert 'Versions' not in s.text(), 'Assistant menu must not render the Catalog list'
+            s.send('?');s.until('Commands (quote paths with spaces)')
+            assert 'Versions' not in s.text(), 'Help menu must not render the Catalog list'
             s.ask('Select observations v1. Resolve product://climate/observations version v1 using product.resolve.')
-            report['checks'].append('assistant clarification then explicit pinned resolution')
+            report['checks'].append('assistant menu persistence, clarification and explicit pinned resolution')
         destination=root/'staged data'
         def proposal(path, fresh_after_denial=False):
             s.command(f'stage product://climate/observations v1 "{path}"');s.review()

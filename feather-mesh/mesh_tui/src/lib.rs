@@ -3,6 +3,8 @@
 //! This crate calls the shared Rust services directly. It never parses CLI
 //! output, initializes a legacy registry, or treats terminal text as trusted.
 
+#[cfg(feature = "agent-hosted")]
+use std::collections::VecDeque;
 use std::io::{self, IsTerminal, Stdout};
 use std::path::PathBuf;
 use std::sync::mpsc::{self, TryRecvError};
@@ -30,7 +32,7 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap};
+use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Tabs, Wrap};
 use ratatui::{Frame, Terminal};
 use thiserror::Error;
 
@@ -175,19 +177,47 @@ enum Section {
     Teams,
     Cache,
     Lineage,
+    #[cfg(feature = "agent-hosted")]
+    Assistant,
 }
 
 impl Section {
+    #[cfg(not(feature = "agent-hosted"))]
+    const ALL: [Self; 7] = [
+        Self::Catalog,
+        Self::Peers,
+        Self::Operations,
+        Self::Help,
+        Self::Teams,
+        Self::Cache,
+        Self::Lineage,
+    ];
+
+    #[cfg(feature = "agent-hosted")]
+    const ALL: [Self; 8] = [
+        Self::Catalog,
+        Self::Peers,
+        Self::Operations,
+        Self::Help,
+        Self::Teams,
+        Self::Cache,
+        Self::Lineage,
+        Self::Assistant,
+    ];
+
     fn next(self) -> Self {
-        match self {
-            Self::Catalog => Self::Peers,
-            Self::Peers => Self::Operations,
-            Self::Operations => Self::Help,
-            Self::Help => Self::Teams,
-            Self::Teams => Self::Cache,
-            Self::Cache => Self::Lineage,
-            Self::Lineage => Self::Catalog,
-        }
+        let index = Self::ALL
+            .iter()
+            .position(|section| *section == self)
+            .unwrap();
+        Self::ALL[(index + 1) % Self::ALL.len()]
+    }
+
+    fn index(self) -> usize {
+        Self::ALL
+            .iter()
+            .position(|section| *section == self)
+            .unwrap()
     }
 
     fn title(self) -> &'static str {
@@ -199,7 +229,180 @@ impl Section {
             Self::Teams => "Teams",
             Self::Cache => "Cache",
             Self::Lineage => "Lineage",
+            #[cfg(feature = "agent-hosted")]
+            Self::Assistant => "Assistant",
         }
+    }
+}
+
+#[derive(Debug, Default)]
+struct TextViewState {
+    text: Option<String>,
+    scroll: u16,
+}
+
+#[derive(Debug, Default)]
+struct SectionViewState {
+    catalog: TextViewState,
+    peers: TextViewState,
+    operations: TextViewState,
+    help: TextViewState,
+    teams: TextViewState,
+    cache: TextViewState,
+    lineage: TextViewState,
+}
+
+impl SectionViewState {
+    fn get(&self, section: Section) -> &TextViewState {
+        match section {
+            Section::Catalog => &self.catalog,
+            Section::Peers => &self.peers,
+            Section::Operations => &self.operations,
+            Section::Help => &self.help,
+            Section::Teams => &self.teams,
+            Section::Cache => &self.cache,
+            Section::Lineage => &self.lineage,
+            #[cfg(feature = "agent-hosted")]
+            Section::Assistant => unreachable!("assistant has dedicated view state"),
+        }
+    }
+
+    fn get_mut(&mut self, section: Section) -> &mut TextViewState {
+        match section {
+            Section::Catalog => &mut self.catalog,
+            Section::Peers => &mut self.peers,
+            Section::Operations => &mut self.operations,
+            Section::Help => &mut self.help,
+            Section::Teams => &mut self.teams,
+            Section::Cache => &mut self.cache,
+            Section::Lineage => &mut self.lineage,
+            #[cfg(feature = "agent-hosted")]
+            Section::Assistant => unreachable!("assistant has dedicated view state"),
+        }
+    }
+}
+
+#[cfg(feature = "agent-hosted")]
+const ASSISTANT_TRANSCRIPT_LIMIT: usize = 1024 * 1024;
+#[cfg(feature = "agent-hosted")]
+const ASSISTANT_EVICTION_NOTICE: &str =
+    "[Older assistant entries were removed to keep this view bounded.]";
+
+#[cfg(feature = "agent-hosted")]
+#[derive(Debug)]
+struct AssistantTranscriptEntry {
+    user: Option<String>,
+    response: String,
+    complete: bool,
+}
+
+#[cfg(feature = "agent-hosted")]
+#[derive(Debug, Default)]
+struct AssistantViewState {
+    entries: VecDeque<AssistantTranscriptEntry>,
+    scroll_back: u16,
+    unread: bool,
+    evicted: bool,
+    export_text: Option<String>,
+}
+
+#[cfg(feature = "agent-hosted")]
+impl AssistantViewState {
+    fn begin(&mut self, user: String) {
+        self.entries.push_back(AssistantTranscriptEntry {
+            user: Some(sanitize_terminal_text(&user)),
+            response: "Assistant request in progress…".into(),
+            complete: false,
+        });
+        self.scroll_back = 0;
+        self.unread = false;
+        self.export_text = None;
+        self.enforce_limit();
+    }
+
+    fn stream(&mut self, text: &str) {
+        if let Some(entry) = self.entries.back_mut().filter(|entry| !entry.complete) {
+            entry.response = format!(
+                "Assistant (streaming; text is unverified until tool evidence):\n{}",
+                sanitize_terminal_text(text)
+            );
+        }
+    }
+
+    fn finish(&mut self, text: String, visible: bool) {
+        self.export_text = None;
+        if let Some(entry) = self.entries.back_mut().filter(|entry| !entry.complete) {
+            entry.response = sanitize_terminal_text(&text);
+            entry.complete = true;
+        } else {
+            self.entries.push_back(AssistantTranscriptEntry {
+                user: None,
+                response: sanitize_terminal_text(&text),
+                complete: true,
+            });
+        }
+        self.unread = !visible;
+        self.enforce_limit();
+    }
+
+    fn cancel(&mut self, visible: bool) {
+        if let Some(entry) = self.entries.back_mut().filter(|entry| !entry.complete) {
+            entry.response.push_str("\n\n[Assistant request cancelled]");
+            entry.complete = true;
+            self.unread = !visible;
+        }
+    }
+
+    fn push_local(&mut self, label: &str, text: String, visible: bool) {
+        self.export_text = Some(text.clone());
+        self.entries.push_back(AssistantTranscriptEntry {
+            user: None,
+            response: sanitize_terminal_text(&format!("{label}:\n{text}")),
+            complete: true,
+        });
+        self.scroll_back = 0;
+        self.unread = !visible;
+        self.enforce_limit();
+    }
+
+    fn rendered(&self) -> String {
+        let mut text = String::new();
+        if self.evicted {
+            text.push_str(ASSISTANT_EVICTION_NOTICE);
+            text.push_str("\n\n");
+        }
+        for (index, entry) in self.entries.iter().enumerate() {
+            if index > 0 {
+                text.push_str("\n\n");
+            }
+            if let Some(user) = &entry.user {
+                text.push_str("You:\n");
+                text.push_str(user);
+                text.push_str("\n\n");
+            }
+            text.push_str(&entry.response);
+        }
+        text
+    }
+
+    fn enforce_limit(&mut self) {
+        while self.rendered_len() > ASSISTANT_TRANSCRIPT_LIMIT
+            && self.entries.len() > 1
+            && self.entries.front().is_some_and(|entry| entry.complete)
+        {
+            self.entries.pop_front();
+            self.evicted = true;
+        }
+    }
+
+    fn rendered_len(&self) -> usize {
+        self.entries
+            .iter()
+            .map(|entry| {
+                entry.user.as_ref().map_or(0, |user| user.len() + 7) + entry.response.len() + 2
+            })
+            .sum::<usize>()
+            + usize::from(self.evicted) * (ASSISTANT_EVICTION_NOTICE.len() + 2)
     }
 }
 
@@ -306,7 +509,11 @@ impl Review {
 
 enum CoreUpdate {
     Catalog(CatalogPage),
-    Detail(String),
+    Refreshed {
+        page: CatalogPage,
+        cache_text: String,
+    },
+    View(Section, String),
     Review(Review),
     Draft(serde_json::Value),
     Operation(String),
@@ -326,14 +533,14 @@ struct App {
     input: InputMode,
     page: Option<CatalogPage>,
     selected: usize,
-    detail: Option<String>,
+    views: SectionViewState,
     status: String,
     review: Option<Review>,
     operations: Vec<String>,
     last_reload: Instant,
     pending: Option<CorePending>,
     session: u64,
-    scroll: u16,
+    review_scroll: u16,
     query: CatalogQuery,
     history: Vec<Option<String>>,
     draft: Option<serde_json::Value>,
@@ -341,6 +548,8 @@ struct App {
     no_color: bool,
     #[cfg(feature = "agent-hosted")]
     agent: HostedAgentState,
+    #[cfg(feature = "agent-hosted")]
+    assistant_view: AssistantViewState,
 }
 
 impl App {
@@ -359,14 +568,14 @@ impl App {
             input: InputMode::None,
             page: None,
             selected: 0,
-            detail: None,
+            views: SectionViewState::default(),
             status: format!("Manual mode; agent: {agent_status}"),
             review: None,
             operations: Vec::new(),
             last_reload: Instant::now(),
             pending: None,
             session: 1,
-            scroll: 0,
+            review_scroll: 0,
             query: CatalogQuery {
                 limit: 25,
                 ..Default::default()
@@ -377,6 +586,8 @@ impl App {
             no_color: std::env::var_os("NO_COLOR").is_some(),
             #[cfg(feature = "agent-hosted")]
             agent: hosted_agent,
+            #[cfg(feature = "agent-hosted")]
+            assistant_view: AssistantViewState::default(),
         }
     }
 
@@ -424,8 +635,7 @@ impl App {
         match update {
             Ok(CoreUpdate::Catalog(page)) => {
                 self.selected = 0;
-                self.detail = None;
-                self.scroll = 0;
+                self.views.catalog = TextViewState::default();
                 self.status = format!(
                     "{} versions; {} peers; next page: {}",
                     page.entries.len(),
@@ -435,21 +645,36 @@ impl App {
                 self.page = Some(page);
                 self.last_reload = Instant::now();
             }
-            Ok(CoreUpdate::Detail(text)) => {
-                self.detail = Some(text);
-                self.scroll = 0;
+            Ok(CoreUpdate::Refreshed { page, cache_text }) => {
+                self.selected = 0;
+                self.views.catalog = TextViewState::default();
+                self.views.cache.text = Some(cache_text);
+                self.views.cache.scroll = 0;
+                self.status = format!(
+                    "Refresh complete: {} versions; {} peers; Cache view updated.",
+                    page.entries.len(),
+                    page.coverage.len()
+                );
+                self.page = Some(page);
+                self.last_reload = Instant::now();
+            }
+            Ok(CoreUpdate::View(section, text)) => {
+                let view = self.views.get_mut(section);
+                view.text = Some(text);
+                view.scroll = 0;
                 self.status = "Local view ready; PgUp/PgDn scroll, :export NAME saves text.".into();
             }
             Ok(CoreUpdate::Review(review)) => {
                 self.review = Some(review);
-                self.scroll = 0;
+                self.review_scroll = 0;
                 self.status =
                     "Review complete details; PgUp/PgDn scroll; y confirms, n denies.".into();
             }
             Ok(CoreUpdate::Draft(draft)) => {
-                self.detail = Some(serde_json::to_string_pretty(&draft).unwrap());
+                self.views.catalog.text = Some(serde_json::to_string_pretty(&draft).unwrap());
+                self.views.catalog.scroll = 0;
                 self.draft = Some(draft);
-                self.scroll = 0;
+                self.section = Section::Catalog;
                 self.status =
                     "Draft loaded; :draft set /field JSON, :draft validate, :draft save NAME"
                         .into();
@@ -477,7 +702,6 @@ impl App {
                     })
                     .unwrap_or_else(|| result.clone());
                 self.section = Section::Operations;
-                self.page = None;
             }
             Ok(CoreUpdate::Status(status)) => self.status = status,
             Ok(CoreUpdate::Recovered(records)) => {
@@ -486,7 +710,6 @@ impl App {
             }
             Err(error) => {
                 self.status = error;
-                self.detail = Some(self.status.clone());
             }
         }
     }
@@ -524,6 +747,35 @@ impl App {
             true
         }
     }
+    fn select_section(&mut self, section: Section) {
+        self.section = section;
+        #[cfg(feature = "agent-hosted")]
+        if section == Section::Assistant {
+            self.assistant_view.unread = false;
+        }
+        self.section_view();
+    }
+
+    fn scroll_active_down(&mut self) {
+        #[cfg(feature = "agent-hosted")]
+        if self.section == Section::Assistant {
+            self.assistant_view.scroll_back = self.assistant_view.scroll_back.saturating_sub(10);
+            return;
+        }
+        let view = self.views.get_mut(self.section);
+        view.scroll = view.scroll.saturating_add(10);
+    }
+
+    fn scroll_active_up(&mut self) {
+        #[cfg(feature = "agent-hosted")]
+        if self.section == Section::Assistant {
+            self.assistant_view.scroll_back = self.assistant_view.scroll_back.saturating_add(10);
+            return;
+        }
+        let view = self.views.get_mut(self.section);
+        view.scroll = view.scroll.saturating_sub(10);
+    }
+
     fn handle_key(&mut self, code: KeyCode) -> bool {
         #[cfg(feature = "agent-hosted")]
         self.poll_agent();
@@ -543,28 +795,26 @@ impl App {
         match code {
             KeyCode::Char('q') | KeyCode::Esc => self.request_quit(),
             KeyCode::Char('?') => {
-                self.section = Section::Help;
+                self.select_section(Section::Help);
                 false
             }
             KeyCode::Tab => {
-                self.section = self.section.next();
-                self.scroll = 0;
-                self.section_view();
+                self.select_section(self.section.next());
                 false
             }
             KeyCode::PageDown => {
-                self.scroll = self.scroll.saturating_add(10);
+                self.scroll_active_down();
                 false
             }
             KeyCode::PageUp => {
-                self.scroll = self.scroll.saturating_sub(10);
+                self.scroll_active_up();
                 false
             }
-            KeyCode::Char(']') => {
+            KeyCode::Char(']') if self.section == Section::Catalog => {
                 self.page_next();
                 false
             }
-            KeyCode::Char('[') => {
+            KeyCode::Char('[') if self.section == Section::Catalog => {
                 self.page_previous();
                 false
             }
@@ -580,19 +830,23 @@ impl App {
                 self.refresh();
                 false
             }
-            KeyCode::Char('j') | KeyCode::Down => {
+            KeyCode::Char('j') | KeyCode::Down
+                if matches!(self.section, Section::Catalog | Section::Lineage) =>
+            {
                 self.move_selection(1);
                 false
             }
-            KeyCode::Char('k') | KeyCode::Up => {
+            KeyCode::Char('k') | KeyCode::Up
+                if matches!(self.section, Section::Catalog | Section::Lineage) =>
+            {
                 self.move_selection(-1);
                 false
             }
-            KeyCode::Enter => {
+            KeyCode::Enter if self.section == Section::Catalog => {
                 self.open_selected();
                 false
             }
-            KeyCode::Char('e') => {
+            KeyCode::Char('e') if self.section == Section::Catalog => {
                 self.example_selected();
                 false
             }
@@ -678,8 +932,8 @@ impl App {
 
     fn handle_review_key(&mut self, code: KeyCode) -> bool {
         match code {
-            KeyCode::PageDown => self.scroll = self.scroll.saturating_add(10),
-            KeyCode::PageUp => self.scroll = self.scroll.saturating_sub(10),
+            KeyCode::PageDown => self.review_scroll = self.review_scroll.saturating_add(10),
+            KeyCode::PageUp => self.review_scroll = self.review_scroll.saturating_sub(10),
             KeyCode::Char('n') | KeyCode::Char('s') | KeyCode::Esc => {
                 self.status = "Operation cancelled before commit.".into();
                 #[cfg(feature = "agent-hosted")]
@@ -722,6 +976,8 @@ impl App {
     }
 
     fn search(&mut self, text: String) {
+        self.section = Section::Catalog;
+        self.views.catalog.scroll = 0;
         self.query.text = (!text.trim().is_empty()).then_some(text);
         self.query.cursor = None;
         self.history.clear();
@@ -753,17 +1009,18 @@ impl App {
         let query = self.query.clone();
         self.job("Refreshing peer observations…", false, move || {
             let project = Project::open(root).map_err(|e| e.to_string())?;
-            refresh(&project).map_err(|e| e.to_string())?;
-            query_catalog(&project, query)
-                .map(CoreUpdate::Catalog)
-                .map_err(|e| e.to_string())
+            let snapshot = refresh(&project).map_err(|e| e.to_string())?;
+            let page = query_catalog(&project, query).map_err(|e| e.to_string())?;
+            Ok(CoreUpdate::Refreshed {
+                page,
+                cache_text: serde_json::to_string_pretty(&snapshot).unwrap(),
+            })
         });
     }
     fn section_view(&mut self) {
         let root = self.options.project_root.clone();
         let section = self.section;
-        let entry = self.selected_entry().cloned();
-        if !matches!(section, Section::Teams | Section::Cache | Section::Lineage) {
+        if !matches!(section, Section::Teams | Section::Cache) {
             return;
         }
         self.job("Reading local view…", false, move || {
@@ -778,17 +1035,10 @@ impl App {
                     mesh_core::peer::cache_status(&project).map_err(|e| e.to_string())?,
                 )
                 .unwrap(),
-                _ => {
-                    let e = entry.ok_or("Select a pinned version first")?;
-                    serde_json::to_value(
-                        resolve(&project, &e.reference, &e.version, None, false)
-                            .map_err(|e| e.to_string())?
-                            .lineage,
-                    )
-                    .unwrap()
-                }
+                _ => unreachable!("only Teams and Cache load section views"),
             };
-            Ok(CoreUpdate::Detail(
+            Ok(CoreUpdate::View(
+                section,
                 serde_json::to_string_pretty(&value).unwrap(),
             ))
         });
@@ -799,6 +1049,9 @@ impl App {
             return;
         }
         self.selected = (self.selected as isize + delta).clamp(0, len as isize - 1) as usize;
+        if self.section == Section::Lineage {
+            self.views.lineage.scroll = 0;
+        }
     }
 
     fn selected_entry(&self) -> Option<&CatalogEntry> {
@@ -811,6 +1064,7 @@ impl App {
         }
     }
     fn resolve_view(&mut self, reference: String, version: String) {
+        self.section = Section::Catalog;
         let root = self.options.project_root.clone();
         self.job(
             "Resolving pinned registered inventory…",
@@ -819,7 +1073,8 @@ impl App {
                 let project = Project::open(root).map_err(|e| e.to_string())?;
                 let product = resolve(&project, &reference, &version, None, false)
                     .map_err(|e| e.to_string())?;
-                Ok(CoreUpdate::Detail(
+                Ok(CoreUpdate::View(
+                    Section::Catalog,
                     serde_json::to_string_pretty(&product).unwrap(),
                 ))
             },
@@ -827,8 +1082,8 @@ impl App {
     }
     fn example_selected(&mut self) {
         if let Some(entry) = self.selected_entry() {
-            self.detail = Some(example(&self.options.project_root, entry));
-            self.scroll = 0;
+            self.views.catalog.text = Some(example(&self.options.project_root, entry));
+            self.views.catalog.scroll = 0;
             self.status =
                 "Examples generated locally; :export NAME saves to .feam/exports/NAME.".into();
         }
@@ -877,9 +1132,14 @@ impl App {
                 let selected = std::fs::canonicalize(&selected).unwrap_or(selected);
                 let journal = std::fs::canonicalize(self.journal.root()).unwrap_or_else(|_| self.journal.root().to_path_buf());
                 if journal.starts_with(&selected) { self.status = "Select a project outside the private operation journal.".into(); return; }
-                self.session += 1; self.review = None; self.draft = None; self.page = None; self.detail = None;
+                self.session += 1; self.section = Section::Catalog; self.review = None; self.draft = None; self.page = None;
+                self.views = SectionViewState::default(); self.review_scroll = 0;
                 self.options.project_root = selected; self.query.cursor = None; self.history.clear();
-                #[cfg(feature = "agent-hosted")] { self.agent.stop(); self.agent = HostedAgentState::from_profile_request(self.options.agent_profile.as_deref()); }
+                #[cfg(feature = "agent-hosted")] {
+                    self.agent.stop();
+                    self.agent = HostedAgentState::from_profile_request(self.options.agent_profile.as_deref());
+                    self.assistant_view = AssistantViewState::default();
+                }
                 self.reload();
             }
             ["resolve", reference, version] => self.resolve_view(reference.to_string(), version.to_string()),
@@ -902,13 +1162,17 @@ impl App {
                 match result { Ok(()) => { self.review = None; self.show_draft(); } Err(e) => self.status = e }
             }
             ["draft", "validate"] => {
-                if let Some(draft) = &self.draft { self.review = Some(Review::Inspect(draft.clone())); self.scroll = 0; }
+                if let Some(draft) = &self.draft { self.review = Some(Review::Inspect(draft.clone())); self.review_scroll = 0; }
             }
             ["draft", "save", name] | ["draft", "save", name, "--overwrite"] => {
                 if let Some(draft) = &self.draft { self.prepare_save("drafts", name, serde_json::to_string_pretty(draft).unwrap(), words.len() == 4); }
             }
             ["export", name] | ["export", name, "--overwrite"] => {
-                if let Some(text) = self.detail.clone() { self.prepare_save("exports", name, text, words.len() == 3); }
+                if let Some(text) = self.active_export_text() {
+                    self.prepare_save("exports", name, text, words.len() == 3);
+                } else {
+                    self.status = "The active menu has no content to export.".into();
+                }
             }
             ["stage", reference, version, destination] | ["stage", reference, version, destination, "--overwrite"] => {
                 let (reference, version, destination) = (reference.to_string(), version.to_string(), PathBuf::from(destination)); let overwrite = words.len() == 5;
@@ -919,7 +1183,7 @@ impl App {
                 self.job("Checking local withdrawal…", false, move || prepare_withdrawal(root, reference, version, reason).map(|p| CoreUpdate::Review(Review::Withdrawal(Box::new(p)))).map_err(|e| e.to_string()));
             }
             ["filter", json] => {
-                match serde_json::from_str::<CatalogQuery>(json) { Ok(query) => { self.query = query; self.history.clear(); self.reload(); } Err(e) => self.status = e.to_string() }
+                match serde_json::from_str::<CatalogQuery>(json) { Ok(query) => { self.section = Section::Catalog; self.query = query; self.history.clear(); self.reload(); } Err(e) => self.status = e.to_string() }
             }
             #[cfg(feature = "agent-hosted")]
             ["agent-draft"] => {
@@ -931,7 +1195,8 @@ impl App {
             ["agent-profile", profile] => {
                 self.agent.stop(); self.review = None; self.session += 1;
                 self.options.agent_profile = if *profile == "off" { None } else { Some(profile.to_string()) };
-                self.agent = HostedAgentState::from_profile_request(self.options.agent_profile.as_deref()); self.status = self.agent.status();
+                self.agent = HostedAgentState::from_profile_request(self.options.agent_profile.as_deref());
+                self.assistant_view = AssistantViewState::default(); self.status = self.agent.status();
             }
             #[cfg(feature = "agent-hosted")]
             ["integrity-consent", reference, version] => {
@@ -944,20 +1209,46 @@ impl App {
             #[cfg(feature = "agent-hosted")]
             ["usage"] => {
                 if let HostedAgentState::Ready(ready) = &self.agent {
-                    self.detail = Some(serde_json::to_string_pretty(&ready.usage).unwrap());
+                    let usage = serde_json::to_string_pretty(&ready.usage).unwrap();
+                    self.section = Section::Assistant;
+                    self.assistant_view.push_local("Assistant session usage", usage, true);
                     self.status = "Assistant session usage; export to retain it before switching profiles.".into();
                 }
             },
-            ["help"] => self.section = Section::Help,
+            ["help"] => self.select_section(Section::Help),
             _ => self.status = "Unknown command or arguments; ? shows command help. Quote paths containing spaces.".into(),
         }
     }
+    fn active_export_text(&self) -> Option<String> {
+        match self.section {
+            Section::Catalog => self.views.catalog.text.clone(),
+            Section::Peers => self
+                .page
+                .as_ref()
+                .and_then(|page| serde_json::to_string_pretty(&page.coverage).ok()),
+            Section::Operations => Some(format!(
+                "Journal: {}\n{}",
+                self.journal.root().display(),
+                self.operations.join("\n\n")
+            )),
+            Section::Help => Some(controls::HELP.into()),
+            Section::Teams | Section::Cache => self.views.get(self.section).text.clone(),
+            Section::Lineage => lineage_summary(self),
+            #[cfg(feature = "agent-hosted")]
+            Section::Assistant => self.assistant_view.export_text.clone().or_else(|| {
+                let text = self.assistant_view.rendered();
+                (!text.is_empty()).then_some(text)
+            }),
+        }
+    }
+
     fn show_draft(&mut self) {
-        self.detail = self
+        self.section = Section::Catalog;
+        self.views.catalog.text = self
             .draft
             .as_ref()
             .map(|d| serde_json::to_string_pretty(d).unwrap());
-        self.scroll = 0;
+        self.views.catalog.scroll = 0;
         self.status = "Edit with :draft set /field JSON; explicit assets via /assets; :draft validate checks required semantics.".into();
     }
     fn prepare_save(&mut self, folder: &str, name: &str, text: String, overwrite: bool) {
@@ -1064,11 +1355,11 @@ impl App {
             return;
         }
         let project_root = self.options.project_root.clone();
+        let display_text = user_text.clone();
         match self.agent.start(project_root, user_text) {
             Ok(()) => {
-                self.section = Section::Catalog;
-                self.detail = Some("Assistant request in progress…".into());
-                self.scroll = 0;
+                self.section = Section::Assistant;
+                self.assistant_view.begin(display_text);
                 self.status = "Assistant request started; manual navigation remains available. Press s to stop generation.".into();
             }
             Err(error) => self.status = error,
@@ -1077,14 +1368,17 @@ impl App {
 
     #[cfg(feature = "agent-hosted")]
     fn poll_agent(&mut self) {
-        if let HostedAgentState::Ready(ready) = &self.agent
-            && ready.pending.is_some()
-            && !ready.streamed.is_empty()
-        {
-            self.detail = Some(format!(
-                "Assistant (streaming; text is unverified until tool evidence):\n{}",
-                ready.streamed
-            ));
+        let was_pending = self.agent.is_pending();
+        let streamed = match &self.agent {
+            HostedAgentState::Ready(ready)
+                if ready.pending.is_some() && !ready.streamed.is_empty() =>
+            {
+                Some(ready.streamed.clone())
+            }
+            _ => None,
+        };
+        if let Some(streamed) = streamed {
+            self.assistant_view.stream(&streamed);
         }
         if let Some(run) = self.agent.take_completed() {
             let run_id = match &self.agent {
@@ -1094,7 +1388,8 @@ impl App {
             for tool in &run.tools {
                 if let mesh_agent::ToolExecution::DraftPatch { draft, .. } = tool {
                     self.draft = Some(draft.clone());
-                    self.detail = Some(serde_json::to_string_pretty(draft).unwrap());
+                    self.views.catalog.text = Some(serde_json::to_string_pretty(draft).unwrap());
+                    self.views.catalog.scroll = 0;
                 }
             }
             if let Some(operation) = run.pending_operation.clone()
@@ -1106,18 +1401,24 @@ impl App {
                     ConfirmableOperation::Stage(value) => Review::Stage(value),
                     ConfirmableOperation::Withdrawal(value) => Review::Withdrawal(value),
                 });
+                self.review_scroll = 0;
             }
-            self.detail = Some(sanitize_terminal_text(&format!(
+            let result = format!(
                 "Assistant result #{run_id} ({:?}):\n{}\n\nTool activity:\n{}",
                 run.state,
                 run.text,
                 serde_json::to_string_pretty(&run.tools).unwrap_or_else(|_| "unavailable".into())
-            )));
+            );
+            self.assistant_view
+                .finish(result, self.section == Section::Assistant);
             self.status = if self.review.is_some() {
                 "Assistant proposal awaits local review; press y to confirm or n to cancel.".into()
             } else {
                 "Assistant response received. Any mutation proposal is never auto-executed.".into()
             };
+        } else if was_pending && !self.agent.is_pending() {
+            self.assistant_view
+                .cancel(self.section == Section::Assistant);
         }
     }
 }
@@ -1217,6 +1518,10 @@ impl HostedAgentState {
 
     fn is_ready(&self) -> bool {
         matches!(self, Self::Ready(ready) if ready.pending.is_none())
+    }
+
+    fn is_pending(&self) -> bool {
+        matches!(self, Self::Ready(ready) if ready.pending.is_some())
     }
 
     fn status(&self) -> String {
@@ -1395,7 +1700,7 @@ fn render(frame: &mut Frame, app: &App) {
         render_body(frame, app, rows[1]);
     }
     let prompt = match &app.input {
-        InputMode::None => "/ search | : command | Enter details | e examples | r refresh | Tab section | ? help | q exit".into(),
+        InputMode::None => key_hints(app.section),
         InputMode::Search(value) => format!("Search: {value}"),
         InputMode::Command(value) => format!("Command: {value}"),
         #[cfg(feature = "agent-hosted")]
@@ -1407,39 +1712,80 @@ fn render(frame: &mut Frame, app: &App) {
         rows[2],
     );
     if let Some(review) = &app.review {
-        render_review(frame, review, area, app.scroll);
+        render_review(frame, review, area, app.review_scroll);
+    }
+}
+
+fn key_hints(section: Section) -> String {
+    match section {
+        Section::Catalog => "/ search | : command | ↑/↓ select | Enter details | e examples | [/] page | Tab menu | q exit".into(),
+        Section::Lineage => "/ search | : command | ↑/↓ select | PgUp/PgDn scroll | Tab menu | q exit".into(),
+        #[cfg(feature = "agent-hosted")]
+        Section::Assistant => "a ask | s stop | / search | PgUp/PgDn transcript | : command | Tab menu | ? help | q exit".into(),
+        _ => "/ search | : command | PgUp/PgDn scroll | r refresh | Tab menu | ? help | q exit".into(),
     }
 }
 
 fn render_body(frame: &mut Frame, app: &App, area: Rect) {
-    let sections = "Catalog  Peers  Operations  Help  Teams  Cache  Lineage";
     let chunks = Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).split(area);
+    let titles: Vec<Line<'_>> = Section::ALL
+        .iter()
+        .map(|section| {
+            let title = section.title().to_string();
+            #[cfg(feature = "agent-hosted")]
+            let title = if *section == Section::Assistant && app.assistant_view.unread {
+                format!("{title}*")
+            } else {
+                title
+            };
+            Line::from(title)
+        })
+        .collect();
+    let active_style = if app.no_color {
+        Style::default().add_modifier(Modifier::REVERSED | Modifier::BOLD)
+    } else {
+        Style::default()
+            .fg(Color::Black)
+            .bg(Color::Cyan)
+            .add_modifier(Modifier::BOLD)
+    };
     frame.render_widget(
-        Paragraph::new(format!("[{}] {sections}", app.section.title())),
+        Tabs::new(titles)
+            .select(app.section.index())
+            .highlight_style(active_style)
+            .divider("|"),
         chunks[0],
     );
-    let cols = Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)])
-        .split(chunks[1]);
+    match app.section {
+        Section::Catalog => render_catalog(frame, app, chunks[1]),
+        Section::Lineage => render_lineage(frame, app, chunks[1]),
+        #[cfg(feature = "agent-hosted")]
+        Section::Assistant => render_assistant(frame, app, chunks[1]),
+        _ => render_section(frame, app, chunks[1]),
+    }
+}
+
+fn render_version_list(frame: &mut Frame, app: &App, area: Rect, title: &str) {
     let entries = app
         .page
         .as_ref()
-        .map(|p| p.entries.as_slice())
+        .map(|page| page.entries.as_slice())
         .unwrap_or_default();
     let start = app
         .selected
-        .saturating_sub(cols[0].height.saturating_sub(4) as usize);
+        .saturating_sub(area.height.saturating_sub(4) as usize);
     let list: Vec<_> = entries
         .iter()
         .enumerate()
         .skip(start)
-        .map(|(i, e)| {
+        .map(|(index, entry)| {
             let text = sanitize_terminal_text(&format!(
                 "{} {} {}",
-                if i == app.selected { ">" } else { " " },
-                e.reference,
-                e.version
+                if index == app.selected { ">" } else { " " },
+                entry.reference,
+                entry.version
             ));
-            let style = if i == app.selected {
+            let style = if index == app.selected {
                 if app.no_color {
                     Style::default().add_modifier(Modifier::REVERSED)
                 } else {
@@ -1452,30 +1798,137 @@ fn render_body(frame: &mut Frame, app: &App, area: Rect) {
         })
         .collect();
     frame.render_widget(
-        List::new(list).block(
-            Block::default()
-                .title("Versions  [ / ] page")
-                .borders(Borders::ALL),
-        ),
-        cols[0],
+        List::new(list).block(Block::default().title(title).borders(Borders::ALL)),
+        area,
     );
-    let detail = match app.section {
-        Section::Peers => app.page.as_ref().map(|p| serde_json::to_string_pretty(&p.coverage).unwrap()).unwrap_or_default(),
-        Section::Operations => format!("Journal: {}\n{}", app.journal.root().display(), app.operations.join("\n\n")),
-        Section::Help => controls::HELP.into(),
-        _ => app.detail.clone().unwrap_or_else(|| "Enter: metadata/inventory. e: table/raster examples. PgUp/PgDn: scroll. :project \"PATH\": switch and clear context.".into()),
-    };
+}
+
+fn render_catalog(frame: &mut Frame, app: &App, area: Rect) {
+    let cols =
+        Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)]).split(area);
+    render_version_list(frame, app, cols[0], "Versions  [ / ] page");
+    let detail = app.views.catalog.text.clone().unwrap_or_else(|| {
+        "Enter: metadata/inventory. e: table/raster examples. PgUp/PgDn: scroll. :project \"PATH\": switch and clear context.".into()
+    });
     frame.render_widget(
         Paragraph::new(sanitize_terminal_text(&detail))
             .wrap(Wrap { trim: false })
-            .scroll((app.scroll, 0))
-            .block(
-                Block::default()
-                    .title(app.section.title())
-                    .borders(Borders::ALL),
-            ),
+            .scroll((app.views.catalog.scroll, 0))
+            .block(Block::default().title("Catalog").borders(Borders::ALL)),
         cols[1],
     );
+}
+
+fn lineage_summary(app: &App) -> Option<String> {
+    let selected = app.selected_entry()?;
+    let mut versions: Vec<_> = app
+        .page
+        .as_ref()
+        .into_iter()
+        .flat_map(|page| &page.entries)
+        .filter(|entry| entry.reference == selected.reference)
+        .map(|entry| entry.version.as_str())
+        .collect();
+    versions.sort();
+    versions.dedup();
+    let history = if versions.len() > 1 {
+        versions.join(" -> ")
+    } else {
+        format!(
+            "{} (no previous version in this catalog view)",
+            selected.version
+        )
+    };
+    Some(format!(
+        "Product: {}\nName: {}\n\nVersion lineage\n{}\n\nSelected version: {}",
+        selected.reference, selected.name, history, selected.version
+    ))
+}
+
+fn render_lineage(frame: &mut Frame, app: &App, area: Rect) {
+    let cols =
+        Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)]).split(area);
+    render_version_list(frame, app, cols[0], "Products / versions");
+
+    let text = lineage_summary(app)
+        .unwrap_or_else(|| "No catalog products loaded. Press r to refresh.".into());
+    frame.render_widget(
+        Paragraph::new(sanitize_terminal_text(&text))
+            .wrap(Wrap { trim: false })
+            .scroll((app.views.lineage.scroll, 0))
+            .block(Block::default().title("Lineage").borders(Borders::ALL)),
+        cols[1],
+    );
+}
+
+fn render_section(frame: &mut Frame, app: &App, area: Rect) {
+    let (title, text): (String, String) = match app.section {
+        Section::Peers => (
+            "Peers".into(),
+            app.page
+                .as_ref()
+                .and_then(|page| serde_json::to_string_pretty(&page.coverage).ok())
+                .unwrap_or_else(|| "No catalog coverage loaded. Press r to refresh.".into()),
+        ),
+        Section::Operations => (
+            "Operations".into(),
+            format!(
+                "Journal: {}\n{}",
+                app.journal.root().display(),
+                app.operations.join("\n\n")
+            ),
+        ),
+        Section::Help => ("Help".into(), controls::HELP.into()),
+        Section::Teams | Section::Cache => (
+            app.section.title().into(),
+            app.views.get(app.section).text.clone().unwrap_or_else(|| {
+                "View not loaded. Select this menu again after the current operation finishes."
+                    .into()
+            }),
+        ),
+        Section::Lineage => unreachable!("lineage has a dedicated renderer"),
+        Section::Catalog => unreachable!("catalog has a dedicated renderer"),
+        #[cfg(feature = "agent-hosted")]
+        Section::Assistant => unreachable!("assistant has a dedicated renderer"),
+    };
+    frame.render_widget(
+        Paragraph::new(sanitize_terminal_text(&text))
+            .wrap(Wrap { trim: false })
+            .scroll((app.views.get(app.section).scroll, 0))
+            .block(Block::default().title(title).borders(Borders::ALL)),
+        area,
+    );
+}
+
+#[cfg(feature = "agent-hosted")]
+fn render_assistant(frame: &mut Frame, app: &App, area: Rect) {
+    let mut text = app.assistant_view.rendered();
+    if text.is_empty() {
+        text = format!(
+            "{}\n\nPress a to compose an assistant request. Assistant output stays in this menu while you inspect other views.",
+            app.agent.status()
+        );
+    }
+    let inner_width = area.width.saturating_sub(2).max(1) as usize;
+    let inner_height = area.height.saturating_sub(2);
+    let lines = wrapped_line_count(&text, inner_width);
+    let max_scroll = lines.saturating_sub(inner_height);
+    let scroll = max_scroll.saturating_sub(app.assistant_view.scroll_back);
+    frame.render_widget(
+        Paragraph::new(sanitize_terminal_text(&text))
+            .wrap(Wrap { trim: false })
+            .scroll((scroll, 0))
+            .block(Block::default().title("Assistant").borders(Borders::ALL)),
+        area,
+    );
+}
+
+#[cfg(feature = "agent-hosted")]
+fn wrapped_line_count(text: &str, width: usize) -> u16 {
+    text.lines()
+        .map(|line| line.chars().count().max(1).div_ceil(width))
+        .sum::<usize>()
+        .min(u16::MAX as usize) as u16
 }
 
 fn render_review(frame: &mut Frame, review: &Review, area: Rect, scroll: u16) {
@@ -1536,6 +1989,225 @@ fn default_journal_root() -> PathBuf {
 mod tests {
     use super::*;
     use ratatui::backend::TestBackend;
+
+    fn test_app() -> (tempfile::TempDir, App) {
+        let temp = tempfile::tempdir().unwrap();
+        let journal = OperationJournal::open(temp.path().join("journal")).unwrap();
+        let app = App::new(
+            TuiOptions {
+                project_root: temp.path().join("project"),
+                agent_profile: None,
+            },
+            journal,
+        );
+        (temp, app)
+    }
+
+    fn screen_text(app: &App, width: u16, height: u16) -> String {
+        let backend = TestBackend::new(width, height);
+        let mut terminal = Terminal::new(backend).unwrap();
+        terminal.draw(|frame| render(frame, app)).unwrap();
+        terminal
+            .backend()
+            .buffer()
+            .content
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect()
+    }
+
+    fn catalog_page() -> CatalogPage {
+        CatalogPage {
+            protocol: "feam.catalog.v1".into(),
+            entries: vec![
+                CatalogEntry {
+                    reference: "product://climate/observations".into(),
+                    version: "v1".into(),
+                    name: "Observations".into(),
+                    manifest_revision: 1,
+                    data_kind: mesh_core::peer::DataKind::Table,
+                    data_format: mesh_core::peer::DataFormat::Parquet,
+                    description: "test".into(),
+                    limitations: "none".into(),
+                    owner_team: "Climate".into(),
+                    quality: "production".into(),
+                },
+                CatalogEntry {
+                    reference: "product://climate/observations".into(),
+                    version: "v2".into(),
+                    name: "Observations".into(),
+                    manifest_revision: 2,
+                    data_kind: mesh_core::peer::DataKind::Table,
+                    data_format: mesh_core::peer::DataFormat::Parquet,
+                    description: "test v2".into(),
+                    limitations: "none".into(),
+                    owner_team: "Climate".into(),
+                    quality: "production".into(),
+                },
+            ],
+            coverage: Vec::new(),
+            snapshot_fingerprint: "fixture".into(),
+            next_cursor: None,
+            result_limit: 25,
+            truncated: false,
+        }
+    }
+
+    #[test]
+    fn catalog_product_list_is_hidden_from_full_width_menus() {
+        let (_temp, mut app) = test_app();
+        app.page = Some(catalog_page());
+        app.views.catalog.text = Some("CATALOG DETAIL".into());
+        let catalog = screen_text(&app, 100, 30);
+        assert!(catalog.contains("Versions"));
+        assert!(catalog.contains("product://climate/observations"));
+        assert!(catalog.contains("CATALOG DETAIL"));
+
+        app.section = Section::Teams;
+        app.views.teams.text = Some("TEAM VIEW ONLY".into());
+        let teams = screen_text(&app, 100, 30);
+        assert!(teams.contains("TEAM VIEW ONLY"));
+        assert!(!teams.contains("Versions"));
+        assert!(!teams.contains("product://climate/observations"));
+
+        app.handle_key(KeyCode::Enter);
+        app.handle_key(KeyCode::Down);
+        app.handle_key(KeyCode::Char('e'));
+        app.handle_key(KeyCode::Char(']'));
+        assert!(app.pending.is_none());
+        assert_eq!(app.selected, 0);
+        assert_eq!(app.views.catalog.text.as_deref(), Some("CATALOG DETAIL"));
+    }
+
+    #[test]
+    fn refresh_result_updates_the_cache_view_without_changing_focus() {
+        let (_temp, mut app) = test_app();
+        app.section = Section::Cache;
+        app.views.cache.text = Some("STALE CACHE".into());
+        let (sender, receiver) = mpsc::sync_channel(1);
+        sender
+            .send(Ok(CoreUpdate::Refreshed {
+                page: catalog_page(),
+                cache_text: "FRESH CACHE SNAPSHOT".into(),
+            }))
+            .unwrap();
+        app.pending = Some(CorePending {
+            receiver,
+            session: app.session,
+            mutation: false,
+        });
+
+        app.poll_core();
+
+        assert_eq!(app.section, Section::Cache);
+        assert_eq!(
+            app.views.cache.text.as_deref(),
+            Some("FRESH CACHE SNAPSHOT")
+        );
+        assert_eq!(app.page.as_ref().unwrap().entries.len(), 2);
+        assert!(app.status.contains("Cache view updated"));
+        assert!(screen_text(&app, 100, 30).contains("FRESH CACHE SNAPSHOT"));
+    }
+
+    #[test]
+    fn lineage_has_a_catalog_style_version_browser_and_product_history() {
+        let (_temp, mut app) = test_app();
+        app.page = Some(catalog_page());
+        app.section = Section::Lineage;
+        let lineage = screen_text(&app, 100, 30);
+        assert!(lineage.contains("Products / versions"));
+        assert!(lineage.contains("product://climate/observations v1"));
+        assert!(lineage.contains("product://climate/observations v2"));
+        assert!(lineage.contains("v1 -> v2"));
+        assert!(lineage.contains("Version lineage"));
+        assert!(!lineage.contains("Declared lineage references"));
+        assert!(!lineage.contains("Press Enter"));
+
+        app.handle_key(KeyCode::Down);
+        assert_eq!(app.selected, 1);
+        let updated = screen_text(&app, 100, 30);
+        assert!(updated.contains("Selected version: v2"));
+        app.handle_key(KeyCode::Enter);
+        assert!(app.pending.is_none());
+    }
+
+    #[test]
+    fn section_results_and_scroll_positions_remain_isolated() {
+        let (_temp, mut app) = test_app();
+        app.views.catalog.scroll = 4;
+        app.section = Section::Teams;
+        app.views.teams.scroll = 7;
+        app.handle_key(KeyCode::PageDown);
+        assert_eq!(app.views.teams.scroll, 17);
+        assert_eq!(app.views.catalog.scroll, 4);
+
+        let (sender, receiver) = mpsc::sync_channel(1);
+        sender
+            .send(Ok(CoreUpdate::View(
+                Section::Teams,
+                "LATE TEAM RESULT".into(),
+            )))
+            .unwrap();
+        app.pending = Some(CorePending {
+            receiver,
+            session: app.session,
+            mutation: false,
+        });
+        app.section = Section::Help;
+        app.poll_core();
+        assert_eq!(app.section, Section::Help);
+        assert_eq!(app.views.teams.text.as_deref(), Some("LATE TEAM RESULT"));
+        assert!(app.views.help.text.is_none());
+
+        app.review = Some(Review::Inspect(serde_json::json!({})));
+        app.review_scroll = 2;
+        app.handle_key(KeyCode::PageDown);
+        assert_eq!(app.review_scroll, 12);
+        assert_eq!(app.views.teams.scroll, 0);
+    }
+
+    #[cfg(feature = "agent-hosted")]
+    #[test]
+    fn assistant_is_a_persistent_bounded_menu() {
+        let (_temp, mut app) = test_app();
+        assert_eq!(Section::ALL.last(), Some(&Section::Assistant));
+        app.assistant_view.begin("show observations".into());
+        app.assistant_view.stream("partial response");
+        app.section = Section::Help;
+        app.assistant_view
+            .finish("Assistant result #1: COMPLETE RESPONSE".into(), false);
+        assert!(app.assistant_view.unread);
+        let help = screen_text(&app, 100, 30);
+        assert!(help.contains("Assistant*"));
+        assert!(!help.contains("COMPLETE RESPONSE"));
+
+        app.select_section(Section::Assistant);
+        assert!(!app.assistant_view.unread);
+        let assistant = screen_text(&app, 80, 24);
+        assert!(assistant.contains("Assistant"));
+        assert!(assistant.contains("COMPLETE RESPONSE"));
+        assert!(assistant.contains("/ search"));
+        assert!(!assistant.contains("Versions"));
+        app.handle_key(KeyCode::PageUp);
+        assert_eq!(app.assistant_view.scroll_back, 10);
+
+        app.assistant_view
+            .push_local("large one", "a".repeat(700_000), true);
+        app.assistant_view
+            .push_local("large two", "b".repeat(700_000), true);
+        assert!(app.assistant_view.evicted);
+        assert!(app.assistant_view.rendered_len() <= ASSISTANT_TRANSCRIPT_LIMIT);
+        assert!(
+            app.assistant_view
+                .rendered()
+                .contains("Older assistant entries were removed")
+        );
+
+        app.command("agent-profile off".into());
+        assert!(app.assistant_view.entries.is_empty());
+        assert_eq!(app.assistant_view.scroll_back, 0);
+        assert!(!app.assistant_view.unread);
+    }
 
     #[test]
     fn external_terminal_controls_are_not_rendered() {
