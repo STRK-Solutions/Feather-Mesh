@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import socket
+import shutil
 import subprocess
 import time
 import urllib.error
@@ -178,6 +179,60 @@ def test_loopback_stac_paginates_and_round_trips_identity_to_rasterio(peer_proje
             assert dataset.crs.to_string() == "EPSG:4326"
             assert dataset.nodata == 255
             assert dataset.read(1, window=Window(0, 0, 2, 1)).tolist() == [[7, 8]]
+    finally:
+        process.terminate()
+        process.wait(timeout=5)
+
+
+def test_climatology_interval_cli_sdk_schema_http_and_pixels(peer_projects):
+    provider, client, serving = peer_projects
+    target = serving / "datasets/temperature/normal/normal.tiff"
+    target.parent.mkdir(parents=True)
+    shutil.copyfile(serving / "datasets/temperature/v1/temperature.tiff", target)
+    metadata = metadata_raster("normal", "normal.tiff")
+    metadata["raster"].update(datetime=None, start_datetime="1991-01-01T00:00:00Z", end_datetime="2020-12-31T23:59:59Z")
+    metadata["raster"]["semantics"]["band_1"] = "synthetic January 1991-2020 climatology"
+    publish(provider, serving, metadata, "normal.json")
+    descriptor = cli("--project", str(client), "--format", "json", "resolve", "product://climate/temperature", "--version", "normal")
+    assert descriptor["raster"]["datetime"] is None
+    assert descriptor["raster"]["start_datetime"] == "1991-01-01T00:00:00Z"
+    asset = Project.open(client, executable=EXE).resolve_asset("product://climate/temperature", version="normal", asset="data")
+    with rasterio.open(asset.path) as dataset:
+        assert dataset.read(1, window=Window(0, 0, 2, 1)).tolist() == [[7, 8]]
+    for patch in ({"datetime": "2020-12-31T23:59:59Z"}, {"end_datetime": "1980-01-01T00:00:00Z"}, {"start_datetime": None}):
+        invalid = json.loads(json.dumps(metadata))
+        invalid["version"] = "invalid-time"
+        invalid["raster"].update(patch)
+        path = provider / "invalid-time.json"
+        path.write_text(json.dumps(invalid))
+        failed = subprocess.run([EXE, "--project", str(provider), "--format", "json", "validate-metadata", str(path)], capture_output=True, text=True)
+        assert failed.returncode == 3
+        assert failed.stdout == ""
+        assert json.loads(failed.stderr)["protocol"] == "feam.peer.v1"
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    process = subprocess.Popen([EXE, "--project", str(client), "stac", "serve", "--addr", f"127.0.0.1:{port}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        for _ in range(50):
+            try:
+                with urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=.25):
+                    break
+            except (urllib.error.URLError, ConnectionError):
+                time.sleep(.1)
+        else:
+            raise AssertionError("STAC interval server did not start")
+        catalog = Client.open(f"http://127.0.0.1:{port}")
+        found = list(catalog.search(collections=["climate--temperature"], datetime="2000-01-01T00:00:00Z", limit=1).items())
+        assert len(found) == 1
+        assert found[0].datetime is None
+        assert found[0].properties["start_datetime"] == "1991-01-01T00:00:00Z"
+        assert found[0].properties["end_datetime"] == "2020-12-31T23:59:59Z"
+        schema = json.loads((Path(__file__).parents[2] / "mesh_core/tests/data/peer_access/stac-item-profile-v1.1.0.json").read_text())
+        validate_json_schema(found[0].to_dict(), schema)
+        assert list(catalog.search(collections=["climate--temperature"], datetime="2021-01-01T00:00:00Z/2022-01-01T00:00:00Z").items()) == []
+        collection = catalog.get_collection("climate--temperature").to_dict()
+        assert collection["extent"]["temporal"]["interval"] == [["1991-01-01T00:00:00Z", "2026-01-01T00:00:00Z"]]
     finally:
         process.terminate()
         process.wait(timeout=5)

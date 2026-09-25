@@ -1,0 +1,3 @@
+# Reuse the exact CPython 3.12 Linux amd64 wheels exercised by the FEAM image.
+# No independent floating Polars/GDAL dependency set is introduced by the pipeline.
+-r ../../infra/demo/images/terminal/requirements.lock

@@ -1,0 +1,93 @@
+{
+  "gate": "U.04 runner runtime participant",
+  "interpretation": "Slice limits were applied live through systemctl set-property --runtime. Existing user manager and Docker daemon were not restarted. The loaded manager and user Docker unit configurations will govern their next start; their new ExecStartPre/ExecStart was not exercised by this application. Current mount UUID, Docker root/cgroup mode and socket ACL were independently verified.",
+  "live_after": {
+    "containers": [
+      "df113fa4fb27 running",
+      "d7757998ae13 exited"
+    ],
+    "docker_cgroup_driver": "systemd",
+    "docker_cgroup_version": "2",
+    "docker_pid": "30845",
+    "docker_root": "/home/feam-service-data/runtime/docker",
+    "parent_uuid": "5c315f27-6b18-4d8b-a22c-a284bc912e30",
+    "runner_slice": {
+      "ActiveState": "active",
+      "CPUQuotaPerSecUSec": "6s",
+      "MemoryMax": "6442450944",
+      "TasksMax": "2048"
+    },
+    "socket_acl": "user::rw-\nuser:feam-controller:rw-\ngroup::rw-\nmask::rw-\nother::---",
+    "user_manager_pid": "30738"
+  },
+  "live_before": {
+    "containers": [
+      "df113fa4fb27 running",
+      "d7757998ae13 exited"
+    ],
+    "docker_pid": "30845",
+    "runner_slice": {
+      "ActiveState": "active",
+      "CPUQuotaPerSecUSec": "2s",
+      "MemoryMax": "1610612736",
+      "TasksMax": "512"
+    },
+    "user_manager_pid": "30738"
+  },
+  "loaded_configuration": {
+    "manager_dropin": "/etc/systemd/system/user@2101.service.d/feam.conf",
+    "manager_mount_bindings": "runtime, 12 fixed slots, datasets, /run/feam, feam-service-runtime.service",
+    "manager_start_checks": "parent UUID verify and controller UID 2103 socket traversal ACL",
+    "manager_systemd_dropin_loaded": true,
+    "slice_dropin": "/etc/systemd/system/user-2101.slice.d/feam.conf",
+    "slice_dropin_values": {
+      "CPUQuota": "600%",
+      "MemoryMax": "6G",
+      "MemorySwapMax": "0",
+      "TasksMax": 2048
+    },
+    "slice_systemd_dropin_loaded": true,
+    "user_docker_unit_loaded_path": "/home/feam-service-data/runner-home/.config/systemd/user/docker.service"
+  },
+  "observed_utc": "2026-09-25T09:23:10+00:00",
+  "private_artifacts": {
+    "runtime-participant-after.json": {
+      "path": ".local/demo-deployment/functional-proposal/runtime-participant-after.json",
+      "sha256": "b1d122c4034172a763d0ee299b245c416659a1db8a254ceb3fa672ab0226be83"
+    },
+    "runtime-participant-apply.log": {
+      "path": ".local/demo-deployment/functional-proposal/runtime-participant-apply.log",
+      "sha256": "3364ffa6d2d5e9c7b7fcce54fd3a5bfc1aafe2e65184c367c9e3f79aca80badf"
+    },
+    "runtime-participant-before.json": {
+      "path": ".local/demo-deployment/functional-proposal/runtime-participant-before.json",
+      "sha256": "b6b77ef7e1cef7e9e22fdef5f517e279e20634ba7b5765821e3bf173b2e16a6e"
+    },
+    "runtime-participant-check-v2.log": {
+      "path": ".local/demo-deployment/functional-proposal/runtime-participant-check-v2.log",
+      "sha256": "a0821f54f0ff5f3d82d1e352403e832a51a838551441299ff556733c990e812d"
+    },
+    "runtime-participant-loaded.json": {
+      "path": ".local/demo-deployment/functional-proposal/runtime-participant-loaded.json",
+      "sha256": "d3e18121da064689d6ace3c2e1dbd7352ce88505cf520771a95d6c85b83c2df3"
+    },
+    "runtime-participant-repeat.log": {
+      "path": ".local/demo-deployment/functional-proposal/runtime-participant-repeat.log",
+      "sha256": "9bd06427c53f79e506e8485521550fd81965644d85f094f64a822a7f6b7b08c7"
+    }
+  },
+  "scope": "Existing Ubuntu participant, no user-manager or Docker restart",
+  "source_files": [
+    "infra/demo/ansible/runtime-participant.yml",
+    "infra/demo/ansible/roles/runtime/tasks/main.yml",
+    "infra/demo/tests/w7/test_runtime_participant.py"
+  ],
+  "validation": {
+    "ansible_lint": "0 failures, 0 warnings; production profile",
+    "ansible_syntax": "passed",
+    "apply": "ok=19 changed=5 failed=0 skipped=3",
+    "check_mode": "ok=17 changed=3 failed=0 skipped=5",
+    "local_unittest": "1 passed",
+    "repeat": "ok=16 changed=0 failed=0 skipped=6"
+  }
+}

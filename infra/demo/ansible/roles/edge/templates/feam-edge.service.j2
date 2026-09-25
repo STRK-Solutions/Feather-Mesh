@@ -1,0 +1,50 @@
+[Unit]
+Description=FEAM approved Cloudflare connector
+Requires=feam-gateway.service feam-service-runtime.service
+After=network-online.target feam-gateway.service feam-service-runtime.service
+BindsTo=run-feam.mount
+StartLimitIntervalSec=60
+StartLimitBurst=3
+[Service]
+Type=simple
+User=feam-edge
+Group=feam-edge
+ExecStartPre=+/usr/local/sbin/feam-edge-preflight ready
+LoadCredential=tunnel-token:/etc/feam/edge/tunnel-token
+# HTTP/2 transport fails WebSocket upgrades to Unix origins (cloudflared #560).
+ExecStart=/opt/feam/edge/cloudflared-2026.9.3 tunnel --no-autoupdate --protocol quic --metrics 127.0.0.1:20241 --loglevel warn run --token-file ${CREDENTIALS_DIRECTORY}/tunnel-token
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=30
+TimeoutStopSec=30
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+InaccessiblePaths=/etc/feam/services /etc/feam/edge -/run/user -/run/docker.sock -/var/run/docker.sock
+Slice=feam-control.slice
+MemoryMax=256M
+MemorySwapMax=0
+TasksMax=64
+LimitNOFILE=1024
+LimitCORE=0
+StandardOutput=journal
+StandardError=journal
+LogRateLimitIntervalSec=30
+LogRateLimitBurst=100
+[Install]
+WantedBy=multi-user.target

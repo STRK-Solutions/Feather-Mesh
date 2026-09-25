@@ -1,0 +1,25 @@
+[Unit]
+Requires=home-feam\x2dservice\x2ddata-runtime.mount
+After=home-feam\x2dservice\x2ddata-runtime.mount
+BindsTo=home-feam\x2dservice\x2ddata-runtime.mount
+{% for number in range(1, (13 if feam_participant_services | default(false) else 3)) %}
+Requires=home-feam\x2dservice\x2ddata-slot\x2d{{ '%02d' | format(number) }}.mount
+After=home-feam\x2dservice\x2ddata-slot\x2d{{ '%02d' | format(number) }}.mount
+BindsTo=home-feam\x2dservice\x2ddata-slot\x2d{{ '%02d' | format(number) }}.mount
+{% endfor %}
+{% if feam_participant_services | default(false) %}
+Requires=home-feam\x2dservice\x2ddata-datasets.mount run-feam.mount feam-service-runtime.service
+After=home-feam\x2dservice\x2ddata-datasets.mount run-feam.mount feam-service-runtime.service
+BindsTo=home-feam\x2dservice\x2ddata-datasets.mount run-feam.mount
+{% else %}
+Requires=run-feam\x2dterminal\x2dw1-slot\x2d01.mount
+After=run-feam\x2dterminal\x2dw1-slot\x2d01.mount
+BindsTo=run-feam\x2dterminal\x2dw1-slot\x2d01.mount
+{% endif %}
+[Service]
+Delegate=cpu memory pids
+ExecStartPre=+/usr/local/sbin/feam-w1-storage verify --parent-uuid {{ feam_parent_uuid }}
+{% if not feam_participant_services | default(false) %}
+ExecStartPre=+/usr/bin/setfacl -m u:2101:x,u:2102:rwx,d:u:2102:rwx /run/feam-terminal-w1/slot-01
+{% endif %}
+ExecStartPre=+/usr/bin/setfacl -m u:2103:x /run/user/2101

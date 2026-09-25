@@ -25,30 +25,12 @@
     mode: '0755'
 
 - name: Bind runner manager to verified system mounts and recreate socket ACLs
-  ansible.builtin.copy:
+  ansible.builtin.template:
+    src: manager.conf.j2
     dest: /etc/systemd/system/user@2101.service.d/feam.conf
     owner: root
     group: root
     mode: '0644'
-    content: |
-      [Unit]
-      Requires=home-feam\x2dservice\x2ddata-runtime.mount
-      Requires=home-feam\x2dservice\x2ddata-slot\x2d01.mount
-      Requires=home-feam\x2dservice\x2ddata-slot\x2d02.mount
-      Requires=run-feam\x2dterminal\x2dw1-slot\x2d01.mount
-      After=home-feam\x2dservice\x2ddata-runtime.mount
-      After=home-feam\x2dservice\x2ddata-slot\x2d01.mount
-      After=home-feam\x2dservice\x2ddata-slot\x2d02.mount
-      After=run-feam\x2dterminal\x2dw1-slot\x2d01.mount
-      BindsTo=home-feam\x2dservice\x2ddata-runtime.mount
-      BindsTo=home-feam\x2dservice\x2ddata-slot\x2d01.mount
-      BindsTo=home-feam\x2dservice\x2ddata-slot\x2d02.mount
-      BindsTo=run-feam\x2dterminal\x2dw1-slot\x2d01.mount
-      [Service]
-      Delegate=cpu memory pids
-      ExecStartPre=+/usr/local/sbin/feam-w1-storage verify --parent-uuid {{ feam_parent_uuid }}
-      ExecStartPre=+/usr/bin/setfacl -m u:2101:x,u:2102:rwx,d:u:2102:rwx /run/feam-terminal-w1/slot-01
-      ExecStartPre=+/usr/bin/setfacl -m u:2103:x /run/user/2101
   register: runtime_manager_unit
 
 - name: Create aggregate runner slice override
@@ -67,10 +49,10 @@
     mode: '0644'
     content: |
       [Slice]
-      MemoryMax=1536M
+      MemoryMax={{ feam_runner_memory_max | default('1536M') }}
       MemorySwapMax=0
-      CPUQuota=200%
-      TasksMax=512
+      CPUQuota={{ feam_runner_cpu_quota | default('200%') }}
+      TasksMax={{ feam_runner_tasks_max | default(512) }}
   register: runtime_slice_unit
 
 - name: Load system manager prerequisites
@@ -78,12 +60,28 @@
     daemon_reload: true
   when: runtime_manager_unit.changed or runtime_slice_unit.changed
 
+- name: Apply changed runner slice limits live without restarting the manager
+  ansible.builtin.command:
+    argv:
+      - systemctl
+      - set-property
+      - --runtime
+      - user-2101.slice
+      - 'MemoryMax={{ feam_runner_memory_max | default("1536M") }}'
+      - MemorySwapMax=0
+      - 'CPUQuota={{ feam_runner_cpu_quota | default("200%") }}'
+      - 'TasksMax={{ feam_runner_tasks_max | default(512) }}'
+  # This must precede the live daemon checks; a deferred handler runs too late.
+  when: runtime_slice_unit.changed # noqa: no-handler
+  changed_when: true
+
 - name: Inspect runner registration in logind rather than only the linger file
   ansible.builtin.command:
     argv: [loginctl, show-user, feam-runner, --property=Linger, --value]
   register: runtime_linger
   failed_when: false
   changed_when: false
+  check_mode: false
 
 - name: Enable or repair lingering for the dedicated runner only
   ansible.builtin.command:
@@ -101,31 +99,62 @@
     argv: [loginctl, show-user, feam-runner, --property=Linger, --value]
   register: runtime_linger_verified
   changed_when: false
+  check_mode: false
   failed_when: runtime_linger_verified.rc != 0 or runtime_linger_verified.stdout != 'yes'
 
-- name: Enable the dedicated user daemon
-  become: true
-  become_user: feam-runner
-  environment:
-    XDG_RUNTIME_DIR: /run/user/2101
-    DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/2101/bus
-  ansible.builtin.systemd_service:
-    scope: user
-    name: docker.service
-    daemon_reload: '{{ runtime_daemon_unit.changed }}'
-    enabled: true
-    state: started
+- name: Reload the dedicated user manager only when its daemon unit changed
+  ansible.builtin.command:
+    argv: [/usr/sbin/runuser, -u, feam-runner, --, /usr/bin/env,
+           'XDG_RUNTIME_DIR=/run/user/2101', 'DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/2101/bus',
+           /usr/bin/systemctl, --user, daemon-reload]
+  # The following enablement and liveness checks require the current unit now.
+  when: runtime_daemon_unit.changed # noqa: no-handler
+  changed_when: true
+
+- name: Inspect dedicated user daemon enablement
+  ansible.builtin.command:
+    argv: [/usr/sbin/runuser, -u, feam-runner, --, /usr/bin/env,
+           'XDG_RUNTIME_DIR=/run/user/2101', 'DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/2101/bus',
+           /usr/bin/systemctl, --user, is-enabled, docker.service]
+  register: runtime_docker_enabled
+  changed_when: false
+  check_mode: false
+  failed_when: runtime_docker_enabled.rc not in [0, 1]
+
+- name: Enable the dedicated user daemon without restarting it
+  ansible.builtin.command:
+    argv: [/usr/sbin/runuser, -u, feam-runner, --, /usr/bin/env,
+           'XDG_RUNTIME_DIR=/run/user/2101', 'DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/2101/bus',
+           /usr/bin/systemctl, --user, enable, docker.service]
+  when: runtime_docker_enabled.stdout != 'enabled'
+  changed_when: true
+
+- name: Inspect dedicated user daemon activity
+  ansible.builtin.command:
+    argv: [/usr/sbin/runuser, -u, feam-runner, --, /usr/bin/env,
+           'XDG_RUNTIME_DIR=/run/user/2101', 'DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/2101/bus',
+           /usr/bin/systemctl, --user, show, docker.service, --property=ActiveState, --value]
+  register: runtime_docker_activity
+  changed_when: false
+  check_mode: false
+  failed_when: runtime_docker_activity.rc != 0 or runtime_docker_activity.stdout not in ['active', 'inactive']
+
+- name: Start the dedicated user daemon only when inactive
+  ansible.builtin.command:
+    argv: [/usr/sbin/runuser, -u, feam-runner, --, /usr/bin/env,
+           'XDG_RUNTIME_DIR=/run/user/2101', 'DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/2101/bus',
+           /usr/bin/systemctl, --user, start, docker.service]
+  when: runtime_docker_activity.stdout == 'inactive'
+  changed_when: true
 
 - name: Verify rootless systemd cgroup support
-  become: true
-  become_user: feam-runner
-  environment:
-    XDG_RUNTIME_DIR: /run/user/2101
-    DOCKER_HOST: unix:///run/user/2101/feam-docker.sock
   ansible.builtin.command:
-    argv: [docker, info, --format, '{{ "{{json .}}" }}']
+    argv: [/usr/sbin/runuser, -u, feam-runner, --, /usr/bin/env,
+           'XDG_RUNTIME_DIR=/run/user/2101', 'DOCKER_HOST=unix:///run/user/2101/feam-docker.sock',
+           /usr/bin/docker, info, --format, '{{ "{{json .}}" }}']
   register: runtime_docker_info
   changed_when: false
+  check_mode: false
 
 - name: Reject ignored limits or a wrong runtime data root
   ansible.builtin.assert:

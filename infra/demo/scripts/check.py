@@ -17,6 +17,11 @@ def main():
                    XDG_CACHE_HOME=str(Path(tmp) / "cache"))
         commands = [
             [sys.executable, "-m", "unittest", "discover", "-s", "web_demo/tests", "-v"],
+            [sys.executable, "-m", "unittest", "discover", "-s", "infra/demo/tests/operator", "-v"],
+            [sys.executable, "-m", "unittest", "discover", "-s", "infra/demo/tests/w3", "-v"],
+            [sys.executable, "-m", "unittest", "discover", "-s", "infra/demo/tests/w7", "-v"],
+            [sys.executable, "-m", "unittest", "discover", "-s", "infra/demo/tests/w9", "-v"],
+            [sys.executable, "-m", "unittest", "discover", "-s", "infra/demo/tests/edge", "-v"],
             ["bash", "-n", "infra/demo/tests/full_vm_probe.sh"],
             ["bash", "-n", "infra/demo/scripts/native_build.sh"],
             ["bash", "-n", "infra/demo/scripts/native_web_build.sh"],
@@ -30,7 +35,12 @@ def main():
              "infra/demo/ansible/inventories/example.yml", "infra/demo/ansible/preflight.yml"],
             ["ansible-playbook", "--syntax-check", "-i", "infra/demo/ansible/inventories/example.yml", "infra/demo/ansible/host.yml"],
             ["ansible-playbook", "--syntax-check", "-i", "infra/demo/ansible/inventories/example.yml", "infra/demo/ansible/deploy-w1.yml"],
-            ["ansible-lint", "--offline", "infra/demo/ansible/preflight.yml", "infra/demo/ansible/host.yml", "infra/demo/ansible/deploy-w1.yml"],
+            ["ansible-playbook", "--syntax-check", "-i", "infra/demo/ansible/inventories/example.yml", "infra/demo/ansible/pool.yml"],
+            ["ansible-playbook", "--syntax-check", "-i", "infra/demo/ansible/inventories/example.yml", "infra/demo/ansible/services.yml"],
+            ["ansible-playbook", "--syntax-check", "-i", "infra/demo/ansible/inventories/example.yml", "infra/demo/ansible/runtime-participant.yml"],
+            ["ansible-playbook", "--syntax-check", "-i", "infra/demo/ansible/inventories/example.yml", "infra/demo/ansible/pipeline-tools.yml"],
+            ["ansible-playbook", "--syntax-check", "-i", "infra/demo/ansible/inventories/example.yml", "infra/demo/ansible/edge.yml"],
+            ["ansible-lint", "--offline", "infra/demo/ansible/preflight.yml", "infra/demo/ansible/host.yml", "infra/demo/ansible/deploy-w1.yml", "infra/demo/ansible/pool.yml", "infra/demo/ansible/services.yml", "infra/demo/ansible/runtime-participant.yml", "infra/demo/ansible/pipeline-tools.yml", "infra/demo/ansible/edge.yml"],
         ]
         for command in commands:
             if shutil.which(command[0]) is None:

@@ -3,11 +3,12 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
+use chrono::{DateTime, SecondsFormat, Utc};
 use serde_json::{Map, Value, json};
 
 use crate::peer::{
     DataKind, Lifecycle, PeerError, PeerResult, Project, ResolvedProduct, list_registered,
-    reference, resolve,
+    raster_time_bounds, reference, resolve,
 };
 
 pub const STAC_VERSION: &str = "1.1.0";
@@ -30,7 +31,8 @@ pub struct StacItem {
     pub version: String,
     pub manifest_revision: u64,
     pub bbox: [f64; 4],
-    pub datetime: String,
+    pub start_datetime: DateTime<Utc>,
+    pub end_datetime: DateTime<Utc>,
     pub value: Value,
 }
 
@@ -43,8 +45,40 @@ pub fn item_id(namespace: &str, product_id: &str, version: &str) -> String {
 }
 
 pub fn collections(project: &Project) -> PeerResult<Vec<Value>> {
-    let mut values = BTreeMap::new();
+    let mut values: BTreeMap<String, Value> = BTreeMap::new();
     for item in items(project)? {
+        let start = item
+            .start_datetime
+            .to_rfc3339_opts(SecondsFormat::AutoSi, true);
+        let end = item
+            .end_datetime
+            .to_rfc3339_opts(SecondsFormat::AutoSi, true);
+        if let Some(existing) = values.get_mut(&item.collection_id) {
+            let interval = &mut existing["extent"]["temporal"]["interval"][0];
+            let previous_start = DateTime::parse_from_rfc3339(
+                interval[0].as_str().expect("generated temporal extent"),
+            )
+            .expect("validated time");
+            let previous_end = DateTime::parse_from_rfc3339(
+                interval[1].as_str().expect("generated temporal extent"),
+            )
+            .expect("validated time");
+            if item.start_datetime < previous_start {
+                interval[0] = json!(start);
+            }
+            if item.end_datetime > previous_end {
+                interval[1] = json!(end);
+            }
+            let bbox = &mut existing["extent"]["spatial"]["bbox"][0];
+            for (index, coordinate) in item.bbox.iter().enumerate() {
+                let previous = bbox[index].as_f64().expect("generated bbox");
+                bbox[index] = json!(if index < 2 {
+                    previous.min(*coordinate)
+                } else {
+                    previous.max(*coordinate)
+                });
+            }
+        }
         values.entry(item.collection_id.clone()).or_insert_with(|| {
             json!({
                 "stac_version": STAC_VERSION,
@@ -53,7 +87,7 @@ pub fn collections(project: &Project) -> PeerResult<Vec<Value>> {
                 "title": format!("{} raster product", item.product_id),
                 "description": format!("Registered raster product product://{}/{}", item.namespace, item.product_id),
                 "license": "proprietary",
-                "extent": {"spatial": {"bbox": [item.bbox]}, "temporal": {"interval": [[item.datetime, item.datetime]]}},
+                "extent": {"spatial": {"bbox": [item.bbox]}, "temporal": {"interval": [[start, end]]}},
                 "links": [],
                 "summaries": {"feam:namespace": [item.namespace], "feam:product_id": [item.product_id]}
             })
@@ -121,7 +155,12 @@ pub fn item_from_resolved(
         "type": "Polygon",
         "coordinates": [[[west, south], [east, south], [east, north], [west, north], [west, south]]]
     });
-    let value = json!({
+    let (start_datetime, end_datetime) = raster_time_bounds(
+        descriptor.datetime.as_deref(),
+        descriptor.start_datetime.as_deref(),
+        descriptor.end_datetime.as_deref(),
+    )?;
+    let mut value = json!({
         "stac_version": STAC_VERSION,
         "type": "Feature",
         "id": id,
@@ -146,6 +185,10 @@ pub fn item_from_resolved(
         "assets": assets,
         "links": []
     });
+    if descriptor.datetime.is_none() {
+        value["properties"]["start_datetime"] = json!(descriptor.start_datetime);
+        value["properties"]["end_datetime"] = json!(descriptor.end_datetime);
+    }
     validate_item(&value)?;
     Ok(StacItem {
         id,
@@ -155,7 +198,8 @@ pub fn item_from_resolved(
         version: resolved.version,
         manifest_revision,
         bbox: descriptor.bbox,
-        datetime: descriptor.datetime.clone(),
+        start_datetime,
+        end_datetime,
         value,
     })
 }
@@ -186,7 +230,25 @@ pub fn validate_item(item: &Value) -> PeerResult<()> {
         .get("properties")
         .and_then(Value::as_object)
         .ok_or_else(|| invalid("properties", "must be an object"))?;
-    required_string(properties, "datetime")?;
+    if !properties.contains_key("datetime") {
+        return Err(invalid(
+            "datetime",
+            "is required, including null for intervals",
+        ));
+    }
+    for field in ["datetime", "start_datetime", "end_datetime"] {
+        if properties
+            .get(field)
+            .is_some_and(|value| !value.is_null() && !value.is_string())
+        {
+            return Err(invalid(field, "must be an RFC 3339 string"));
+        }
+    }
+    raster_time_bounds(
+        properties.get("datetime").and_then(Value::as_str),
+        properties.get("start_datetime").and_then(Value::as_str),
+        properties.get("end_datetime").and_then(Value::as_str),
+    )?;
     if object
         .get("geometry")
         .and_then(Value::as_object)
@@ -265,7 +327,9 @@ pub fn search(
         .filter(|item| {
             collection.is_none_or(|collection| item.collection_id == collection)
                 && bbox.is_none_or(|query| intersects(item.bbox, query))
-                && datetime.is_none_or(|query| matches_datetime(&item.datetime, query))
+                && datetime.is_none_or(|query| {
+                    matches_datetime(item.start_datetime, item.end_datetime, query)
+                })
         })
         .cloned()
         .collect()
@@ -278,11 +342,28 @@ fn intersects(
     left <= q_right && right >= q_left && bottom <= q_top && top >= q_bottom
 }
 
-fn matches_datetime(value: &str, query: &str) -> bool {
-    if let Some((start, end)) = query.split_once('/') {
-        (start == ".." || value >= start) && (end == ".." || value <= end)
+fn matches_datetime(start: DateTime<Utc>, end: DateTime<Utc>, query: &str) -> bool {
+    if let Some((query_start, query_end)) = query.split_once('/') {
+        let lower = if query_start == ".." {
+            None
+        } else {
+            DateTime::parse_from_rfc3339(query_start).ok()
+        };
+        let upper = if query_end == ".." {
+            None
+        } else {
+            DateTime::parse_from_rfc3339(query_end).ok()
+        };
+        if (query_start != ".." && lower.is_none())
+            || (query_end != ".." && upper.is_none())
+            || lower.zip(upper).is_some_and(|(lower, upper)| lower > upper)
+        {
+            return false;
+        }
+        // A query matches when its closed interval overlaps the item's interval.
+        lower.is_none_or(|lower| end >= lower) && upper.is_none_or(|upper| start <= upper)
     } else {
-        value == query
+        DateTime::parse_from_rfc3339(query).is_ok_and(|instant| start <= instant && end >= instant)
     }
 }
 

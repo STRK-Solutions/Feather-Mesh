@@ -113,6 +113,7 @@ impl ProviderError {
 /// arguments independently.
 pub trait ModelProvider: Send {
     fn set_request_timeout(&mut self, _timeout: std::time::Duration) {}
+    fn set_request_id(&mut self, _request_id: Option<String>) {}
     fn stream(
         &mut self,
         request: ModelRequest,
@@ -173,6 +174,7 @@ pub struct RouterProvider {
     profile: AgentProfile,
     api_key: String,
     client: reqwest::Client,
+    request_id: Option<String>,
 }
 
 #[cfg(feature = "hosted")]
@@ -193,16 +195,37 @@ impl RouterProvider {
                 profile.api_key_env
             )));
         }
-        let client = reqwest::Client::builder()
+        let mut client = reqwest::Client::builder()
             .pool_max_idle_per_host(0)
             .redirect(reqwest::redirect::Policy::none())
-            .use_rustls_tls()
+            .use_rustls_tls();
+        if let Some(path) = &profile.loopback_ca_file {
+            use std::io::Read as _;
+            let file = std::fs::File::open(path).map_err(|_| {
+                ProviderError::Configuration("loopback CA certificate is unavailable".into())
+            })?;
+            let mut pem = Vec::new();
+            file.take(65_537).read_to_end(&mut pem).map_err(|_| {
+                ProviderError::Configuration("loopback CA certificate could not be read".into())
+            })?;
+            if pem.len() > 65_536 {
+                return Err(ProviderError::Configuration(
+                    "loopback CA certificate is too large".into(),
+                ));
+            }
+            let certificate = reqwest::Certificate::from_pem(&pem).map_err(|_| {
+                ProviderError::Configuration("loopback CA certificate is invalid".into())
+            })?;
+            client = client.add_root_certificate(certificate).no_proxy();
+        }
+        let client = client
             .build()
             .map_err(|error| ProviderError::Configuration(error.to_string()))?;
         Ok(Self {
             profile,
             api_key,
             client,
+            request_id: None,
         })
     }
 
@@ -226,6 +249,9 @@ impl RouterProvider {
 
 #[cfg(feature = "hosted")]
 impl ModelProvider for RouterProvider {
+    fn set_request_id(&mut self, request_id: Option<String>) {
+        self.request_id = request_id;
+    }
     fn set_request_timeout(&mut self, timeout: std::time::Duration) {
         self.profile.max_request_seconds = timeout.as_secs().max(1);
     }
@@ -310,17 +336,20 @@ impl RouterProvider {
         if encoded.len() > self.profile.max_request_bytes {
             return Err(ProviderError::TooLarge);
         }
-        let response = self
+        let mut outbound = self
             .client
             .post(self.endpoint()?)
             .bearer_auth(&self.api_key)
             .header("Content-Type", "application/json")
-            .body(encoded)
-            .send()
-            .await
-            .map_err(|error| {
-                ProviderError::Transport(format!("HTTP request failed: {}", error.without_url()))
-            })?;
+            .body(encoded);
+        if self.profile.loopback_ca_file.is_some()
+            && let Some(request_id) = &self.request_id
+        {
+            outbound = outbound.header("X-Request-ID", request_id);
+        }
+        let response = outbound.send().await.map_err(|error| {
+            ProviderError::Transport(format!("HTTP request failed: {}", error.without_url()))
+        })?;
         let status = response.status();
         if !status.is_success() {
             let mut error_bytes = Vec::new();
@@ -842,6 +871,7 @@ mod hosted_tests {
         let profile = AgentProfile {
             backend: "router".into(),
             base_url: format!("http://{address}"),
+            loopback_ca_file: None,
             model: "synthetic/model".into(),
             api_key_env: "UNUSED_OFFLINE_TEST_KEY".into(),
             context_policy: "synthetic-demo".into(),
@@ -862,6 +892,7 @@ mod hosted_tests {
             allow_provider_fallbacks: false,
         };
         let mut provider = RouterProvider {
+            request_id: None,
             profile,
             api_key: "synthetic-offline-key".into(),
             client: reqwest::Client::builder()
@@ -1012,6 +1043,7 @@ mod failure_tests {
             );
         });
         let provider = RouterProvider {
+            request_id: None,
             profile: profile(format!("http://{address}")),
             api_key: "fixture-secret".into(),
             client: reqwest::Client::builder()
@@ -1241,6 +1273,11 @@ pub enum SessionProvider {
 }
 #[cfg(feature = "hosted")]
 impl ModelProvider for SessionProvider {
+    fn set_request_id(&mut self, request_id: Option<String>) {
+        if let Self::Router(p) = self {
+            p.set_request_id(request_id);
+        }
+    }
     fn set_request_timeout(&mut self, timeout: std::time::Duration) {
         if let Self::Router(p) = self {
             p.set_request_timeout(timeout);

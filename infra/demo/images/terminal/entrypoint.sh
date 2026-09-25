@@ -12,6 +12,35 @@ if [[ ! -e /workspace/.feam-w1-initialized ]]; then
 fi
 [[ ! -L /workspace/.feam-w1-initialized && $(cat /workspace/.feam-w1-initialized) == feam-w1-demo-v1 ]]
 mkdir -p /workspace/cache /workspace/state /workspace/config
+case "${FEAM_DEMO_MODE:-manual}" in
+  manual)
+    # Explicit W1 operator mode remains available with no hosted configuration.
+    exec /usr/local/bin/ttyd --interface /run/feam-terminal/ttyd.sock \
+      --writable --check-origin --max-clients 2 /opt/feam/launcher.sh
+    ;;
+  hosted)
+    python3 /opt/feam/hosted_check.py
+    python3 /opt/feam/attach_releases.py
+    /usr/local/bin/model-adapter -listen 127.0.0.1:8443 \
+      -socket /run/feam-model/broker.sock -capability-file /run/feam-config/capability \
+      -cert /run/feam-config/cert.pem -key /run/feam-config/key.pem &
+    adapter_pid=$!
+    ;;
+  *) printf '%s\n' 'Invalid FEAM demo mode; startup refused.' >&2; exit 1 ;;
+esac
 # URL-supplied arguments are disabled: never add ttyd --url-arg.
-exec /usr/local/bin/ttyd --interface /run/feam-terminal/ttyd.sock \
-  --writable --check-origin --max-clients 2 /opt/feam/launcher.sh
+/usr/local/bin/ttyd --interface /run/feam-terminal/ttyd.sock \
+  --writable --check-origin --max-clients 2 /opt/feam/launcher.sh &
+terminal_pid=$!
+cleanup() { kill "$adapter_pid" "$terminal_pid" 2>/dev/null || true; wait "$adapter_pid" "$terminal_pid" 2>/dev/null || true; }
+trap cleanup EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
+# A dead adapter must not leave a silently unassisted participant terminal.
+set +e
+wait -n "$adapter_pid" "$terminal_pid"
+status=$?
+set -e
+if (( status == 0 )); then status=1; fi
+printf '%s\n' 'FEAM participant service stopped; operator attention required.' >&2
+exit "$status"

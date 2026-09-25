@@ -184,6 +184,7 @@
       "properties": {
         "archive": {
           "enum": [
+            "local",
             "r2",
             "private-git",
             "unconfigured"
@@ -405,6 +406,7 @@
             "properties": {
               "archive": {
                 "enum": [
+                  "local",
                   "r2",
                   "private-git"
                 ]

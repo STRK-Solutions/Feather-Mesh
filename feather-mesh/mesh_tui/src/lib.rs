@@ -16,6 +16,7 @@ use crossterm::terminal::{
 };
 use mesh_core::peer::{Project, refresh, resolve};
 use mesh_core::services::interactive_operations::{RecoveryIdentity, path_state, reconcile};
+mod capture;
 mod controls;
 use controls::{example, save_local_text, split_command};
 use mesh_core::services::catalog_service::{
@@ -124,6 +125,12 @@ pub fn run(mut options: TuiOptions) -> Result<(), TuiError> {
     }
     for id in signals {
         signal_hook::low_level::unregister(id);
+    }
+    if !app.capture.finish(Duration::from_secs(2)) {
+        return Err(io::Error::other(
+            "Research capture has an unacknowledged gap; no operation is automatically replayed.",
+        )
+        .into());
     }
     Ok(())
 }
@@ -339,6 +346,7 @@ struct App {
     draft: Option<serde_json::Value>,
     quit_when_idle: bool,
     no_color: bool,
+    capture: capture::Capture,
     #[cfg(feature = "agent-hosted")]
     agent: HostedAgentState,
 }
@@ -375,6 +383,7 @@ impl App {
             draft: None,
             quit_when_idle: false,
             no_color: std::env::var_os("NO_COLOR").is_some(),
+            capture: capture::Capture::from_environment(),
             #[cfg(feature = "agent-hosted")]
             agent: hosted_agent,
         }
@@ -386,6 +395,10 @@ impl App {
         mutation: bool,
         work: impl FnOnce() -> Result<CoreUpdate, String> + Send + 'static,
     ) {
+        if mutation && !self.capture.ready() {
+            self.status = "Recording unavailable; new operations are paused. Browsing and exit remain available.".into();
+            return;
+        }
         if self.pending.is_some() {
             self.status = "A core operation is still running; navigation remains available.".into();
             return;
@@ -410,6 +423,7 @@ impl App {
             return;
         };
         let session = pending.session;
+        let mutation = pending.mutation;
         let update = match pending.receiver.try_recv() {
             Ok(update) => update,
             Err(TryRecvError::Empty) => return,
@@ -441,6 +455,20 @@ impl App {
                 self.status = "Local view ready; PgUp/PgDn scroll, :export NAME saves text.".into();
             }
             Ok(CoreUpdate::Review(review)) => {
+                self.capture.emit(
+                    "proposal",
+                    review.kind(),
+                    "prepared",
+                    Some(review.operation_id()),
+                    None,
+                );
+                self.capture.emit(
+                    "review",
+                    review.kind(),
+                    "presented",
+                    Some(review.operation_id()),
+                    None,
+                );
                 self.review = Some(review);
                 self.scroll = 0;
                 self.status =
@@ -455,6 +483,29 @@ impl App {
                         .into();
             }
             Ok(CoreUpdate::Operation(result)) => {
+                if let Ok(value) = serde_json::from_str::<serde_json::Value>(&result) {
+                    let state = value["state"].as_str().unwrap_or("unknown");
+                    let state = if [
+                        "committed",
+                        "committed_with_followup_error",
+                        "failed",
+                        "not_committed",
+                        "unknown",
+                    ]
+                    .contains(&state)
+                    {
+                        state
+                    } else {
+                        "unknown"
+                    };
+                    self.capture.emit(
+                        "outcome",
+                        "operation",
+                        "completed",
+                        value["operation_id"].as_str(),
+                        Some(state),
+                    );
+                }
                 #[cfg(feature = "agent-hosted")]
                 if let Ok(outcome) = serde_json::from_str::<serde_json::Value>(&result)
                     && let Some(id) = outcome["operation_id"].as_str()
@@ -479,12 +530,25 @@ impl App {
                 self.section = Section::Operations;
                 self.page = None;
             }
-            Ok(CoreUpdate::Status(status)) => self.status = status,
+            Ok(CoreUpdate::Status(status)) => {
+                if mutation {
+                    self.capture
+                        .emit("outcome", "operation", "completed", None, Some("committed"));
+                }
+                self.status = status;
+            }
             Ok(CoreUpdate::Recovered(records)) => {
                 self.operations = records;
                 self.reload();
             }
             Err(error) => {
+                self.capture.emit(
+                    "outcome",
+                    "operation",
+                    "failed",
+                    None,
+                    Some(if mutation { "unknown" } else { "failed" }),
+                );
                 self.status = error;
                 self.detail = Some(self.status.clone());
             }
@@ -514,6 +578,10 @@ impl App {
         });
     }
     fn request_quit(&mut self) -> bool {
+        if !self.quit_when_idle {
+            self.capture
+                .emit("review", "session", "cancelled", None, None);
+        }
         #[cfg(feature = "agent-hosted")]
         self.agent.stop();
         if self.pending.as_ref().is_some_and(|p| p.mutation) {
@@ -608,6 +676,8 @@ impl App {
             #[cfg(feature = "agent-hosted")]
             KeyCode::Char('s') => {
                 self.agent.stop();
+                self.capture
+                    .emit("review", "model", "cancelled", None, None);
                 self.status = "Stopping assistant generation; any started data operation continues until its shared service finishes.".into();
                 false
             }
@@ -681,6 +751,19 @@ impl App {
             KeyCode::PageDown => self.scroll = self.scroll.saturating_add(10),
             KeyCode::PageUp => self.scroll = self.scroll.saturating_sub(10),
             KeyCode::Char('n') | KeyCode::Char('s') | KeyCode::Esc => {
+                if let Some(review) = &self.review {
+                    self.capture.emit(
+                        "review",
+                        review.kind(),
+                        if code == KeyCode::Char('n') {
+                            "denied"
+                        } else {
+                            "cancelled"
+                        },
+                        Some(review.operation_id()),
+                        None,
+                    );
+                }
                 self.status = "Operation cancelled before commit.".into();
                 #[cfg(feature = "agent-hosted")]
                 if let Some(review) = &self.review
@@ -867,6 +950,18 @@ impl App {
                 "Stop or finish the active assistant run before preparing a local mutation.".into();
             return;
         }
+        if let Some(command) = words.first()
+            && [
+                "init", "resolve", "publish", "stage", "withdraw", "draft", "export",
+            ]
+            .contains(command)
+        {
+            if *command != "draft" {
+                let _ = self.capture.begin_request();
+            }
+            self.capture
+                .emit("request", command, "submitted", None, None);
+        }
         match words.as_slice() {
             ["init", namespace] | ["init", namespace, _] => {
                 let namespace = namespace.to_string(); let serving = args.get(2).map(PathBuf::from);
@@ -899,10 +994,10 @@ impl App {
             }
             ["draft", "set", pointer, json] => {
                 let result = serde_json::from_str(json).map_err(|e| e.to_string()).and_then(|value| controls::patch_draft(self.draft.as_mut().ok_or("Load or create a draft first")?, pointer, value));
-                match result { Ok(()) => { self.review = None; self.show_draft(); } Err(e) => self.status = e }
+                match result { Ok(()) => { self.capture.emit("review","publication","edited",None,None); self.review = None; self.show_draft(); } Err(e) => self.status = e }
             }
             ["draft", "validate"] => {
-                if let Some(draft) = &self.draft { self.review = Some(Review::Inspect(draft.clone())); self.scroll = 0; }
+                if let Some(draft) = &self.draft { self.capture.emit("review","inspection","presented",None,None); self.review = Some(Review::Inspect(draft.clone())); self.scroll = 0; }
             }
             ["draft", "save", name] | ["draft", "save", name, "--overwrite"] => {
                 if let Some(draft) = &self.draft { self.prepare_save("drafts", name, serde_json::to_string_pretty(draft).unwrap(), words.len() == 4); }
@@ -991,6 +1086,21 @@ impl App {
         });
     }
     fn confirm_review(&mut self) {
+        if !self.capture.ready() {
+            self.status =
+                "Recording unavailable; confirmation is paused and the review remains unapproved."
+                    .into();
+            return;
+        }
+        if let Some(review) = &self.review {
+            self.capture.emit(
+                "review",
+                review.kind(),
+                "approved",
+                Some(review.operation_id()),
+                None,
+            );
+        }
         let Some(review) = self.review.take() else {
             return;
         };
@@ -1064,7 +1174,14 @@ impl App {
             return;
         }
         let project_root = self.options.project_root.clone();
-        match self.agent.start(project_root, user_text) {
+        if !self.capture.ready() {
+            self.status = "Recording unavailable; new assistant requests are paused.".into();
+            return;
+        }
+        let capture_run_id = self.capture.begin_request();
+        self.capture
+            .emit("request", "model", "submitted", None, None);
+        match self.agent.start(project_root, user_text, capture_run_id) {
             Ok(()) => {
                 self.section = Section::Catalog;
                 self.detail = Some("Assistant request in progress…".into());
@@ -1086,7 +1203,7 @@ impl App {
                 ready.streamed
             ));
         }
-        if let Some(run) = self.agent.take_completed() {
+        if let Some(run) = self.agent.take_completed(&mut self.capture) {
             let run_id = match &self.agent {
                 HostedAgentState::Ready(ready) => ready.next_run_id - 1,
                 _ => 0,
@@ -1107,6 +1224,15 @@ impl App {
                     ConfirmableOperation::Withdrawal(value) => Review::Withdrawal(value),
                 });
             }
+            if let Some(review) = &self.review {
+                self.capture.emit(
+                    "review",
+                    review.kind(),
+                    "presented",
+                    Some(review.operation_id()),
+                    None,
+                );
+            }
             self.detail = Some(sanitize_terminal_text(&format!(
                 "Assistant result #{run_id} ({:?}):\n{}\n\nTool activity:\n{}",
                 run.state,
@@ -1118,6 +1244,27 @@ impl App {
             } else {
                 "Assistant response received. Any mutation proposal is never auto-executed.".into()
             };
+        }
+    }
+}
+
+#[cfg(feature = "agent-hosted")]
+fn record_tool_event(capture: &mut capture::Capture, tool: &mesh_agent::ToolExecution) {
+    match tool {
+        mesh_agent::ToolExecution::Read { tool, .. } => {
+            capture.emit("outcome", tool, "completed", None, Some("read_completed"))
+        }
+        mesh_agent::ToolExecution::AwaitingReview {
+            tool, operation_id, ..
+        } => capture.emit("proposal", tool, "prepared", Some(operation_id), None),
+        mesh_agent::ToolExecution::DraftPatch { .. } => {
+            capture.emit("review", "publication", "edited", None, None)
+        }
+        mesh_agent::ToolExecution::Rejected { .. } => {
+            capture.emit("outcome", "tool", "denied", None, Some("denied"))
+        }
+        mesh_agent::ToolExecution::Clarification { .. } => {
+            capture.emit("review", "model", "clarification", None, None)
         }
     }
 }
@@ -1253,12 +1400,20 @@ impl HostedAgentState {
             AgentHarness::new(ready.profile.clone(), ready.provider.clone(), root)
         }))
     }
-    fn start(&mut self, project_root: PathBuf, user_text: String) -> Result<(), String> {
+    fn start(
+        &mut self,
+        project_root: PathBuf,
+        user_text: String,
+        capture_run_id: Option<String>,
+    ) -> Result<(), String> {
         self.harness_mut(project_root)?;
         let Self::Ready(ready) = self else {
             unreachable!()
         };
         let mut harness = ready.harness.take().unwrap();
+        if let Some(id) = capture_run_id {
+            harness.set_capture_run_id(id)?;
+        }
         let cancellation = CancellationToken::default();
         harness.set_cancellation(cancellation.clone());
         let (sender, receiver) = mpsc::sync_channel(32);
@@ -1288,7 +1443,7 @@ impl HostedAgentState {
             }
         }
     }
-    fn take_completed(&mut self) -> Option<AgentRun> {
+    fn take_completed(&mut self, capture: &mut capture::Capture) -> Option<AgentRun> {
         let Self::Ready(ready) = self else {
             return None;
         };
@@ -1299,6 +1454,7 @@ impl HostedAgentState {
                     if id == active.run_id && !active.cancellation.is_cancelled() =>
                 {
                     match event {
+                        mesh_agent::AgentEvent::RequestStarted(id) => capture.provider_request(id),
                         mesh_agent::AgentEvent::Text(text) => {
                             if ready.streamed.len() + text.len() <= ready.profile.max_response_chars
                             {
@@ -1306,7 +1462,11 @@ impl HostedAgentState {
                             }
                         }
                         mesh_agent::AgentEvent::ToolStarted(name) => {
+                            capture.emit("proposal", &name, "requested", None, None);
                             ready.streamed.push_str(&format!("\n[tool: {name}]\n"))
+                        }
+                        mesh_agent::AgentEvent::ToolResult(tool) => {
+                            record_tool_event(capture, &tool)
                         }
                         _ => (),
                     }
@@ -1378,7 +1538,11 @@ fn render(frame: &mut Frame, app: &App) {
                     )
                 )),
             ]),
-            Line::from(sanitize_terminal_text(&app.status)),
+            Line::from(sanitize_terminal_text(&format!(
+                "{} | {}",
+                app.capture.status(),
+                app.status
+            ))),
         ])
         .block(Block::default().borders(Borders::ALL)),
         rows[0],
@@ -1407,7 +1571,7 @@ fn render(frame: &mut Frame, app: &App) {
         rows[2],
     );
     if let Some(review) = &app.review {
-        render_review(frame, review, area, app.scroll);
+        render_review(frame, review, area, app.scroll, app.capture.status());
     }
 }
 
@@ -1478,7 +1642,13 @@ fn render_body(frame: &mut Frame, app: &App, area: Rect) {
     );
 }
 
-fn render_review(frame: &mut Frame, review: &Review, area: Rect, scroll: u16) {
+fn render_review(
+    frame: &mut Frame,
+    review: &Review,
+    area: Rect,
+    scroll: u16,
+    capture_status: &str,
+) {
     let popup = Rect {
         x: area.x + 1,
         y: area.y + 1,
@@ -1486,8 +1656,8 @@ fn render_review(frame: &mut Frame, review: &Review, area: Rect, scroll: u16) {
         height: area.height.saturating_sub(2),
     };
     frame.render_widget(Clear, popup);
-    let rows = Layout::vertical([Constraint::Length(3), Constraint::Min(1)]).split(popup);
-    frame.render_widget(Paragraph::new("y confirm | n deny | h assistant handle | PgUp/PgDn full details\nChanged state requires a fresh review. No approval survives restart.").wrap(Wrap { trim: false }), rows[0]);
+    let rows = Layout::vertical([Constraint::Length(4), Constraint::Min(1)]).split(popup);
+    frame.render_widget(Paragraph::new(format!("y confirm | n deny | h assistant handle | PgUp/PgDn full details\nChanged state requires a fresh review. No approval survives restart.\n{capture_status}")).wrap(Wrap { trim: false }), rows[0]);
     frame.render_widget(
         Paragraph::new(sanitize_terminal_text(&format!(
             "Operation: {}\n{}",
@@ -1597,6 +1767,25 @@ mod workflow_tests {
         );
         app.draft = Some(serde_json::to_value(request).unwrap());
         (temp, app)
+    }
+    #[test]
+    fn capture_failure_preserves_unapproved_review_and_denial() {
+        let (_temp, mut app) = fixture_app();
+        app.command("draft validate".into());
+        assert!(app.review.is_some());
+        app.capture = capture::Capture::failed_for_test();
+        app.handle_review_key(KeyCode::Char('y'));
+        assert!(app.review.is_some());
+        assert!(app.pending.is_none());
+        assert!(app.status.contains("paused"));
+        app.handle_review_key(KeyCode::Char('n'));
+        assert!(app.review.is_none());
+        assert!(
+            !app.options
+                .project_root
+                .join("serving/manifest.json")
+                .exists()
+        );
     }
     #[test]
     fn manual_publication_stage_denial_withdrawal_and_recovery() {

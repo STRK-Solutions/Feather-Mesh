@@ -1,0 +1,104 @@
+{
+  "environment": "UBUNTU",
+  "volumes": [
+    {
+      "name": "datasets",
+      "bytes": 214748364800,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "operations",
+      "bytes": 5368709120,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "runtime",
+      "bytes": 21474836480,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "slot-01",
+      "bytes": 2147483648,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "slot-02",
+      "bytes": 2147483648,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "slot-03",
+      "bytes": 2147483648,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "slot-04",
+      "bytes": 2147483648,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "slot-05",
+      "bytes": 2147483648,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "slot-06",
+      "bytes": 2147483648,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "slot-07",
+      "bytes": 2147483648,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "slot-08",
+      "bytes": 2147483648,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "slot-09",
+      "bytes": 2147483648,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "slot-10",
+      "bytes": 2147483648,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "slot-11",
+      "bytes": 2147483648,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "slot-12",
+      "bytes": 2147483648,
+      "fully_reserved": true,
+      "identity_verified": true
+    },
+    {
+      "name": "traces",
+      "bytes": 21474836480,
+      "fully_reserved": true,
+      "identity_verified": true
+    }
+  ],
+  "reserved_bytes": 288836550656,
+  "inventory_sha256": "821c875e2c77fea7d5d9ce85cfb6b54614c5a2f104d84dc8faa3053a2499a8d4",
+  "participant_services_deployed": false
+}

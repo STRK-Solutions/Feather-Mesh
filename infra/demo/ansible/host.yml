@@ -27,9 +27,18 @@
       ansible.builtin.command:
         argv: [dpkg-query, -W, uidmap, dbus-user-session, acl, docker-ce-rootless-extras, apparmor]
       changed_when: false
+    - name: Inspect service root before choosing the storage parent
+      ansible.builtin.stat:
+        path: '{{ feam_root }}'
+        follow: false
+      register: host_service_root
+    - name: Reject unsafe existing service roots
+      ansible.builtin.assert:
+        that:
+          - not host_service_root.stat.exists or (host_service_root.stat.isdir and not host_service_root.stat.islnk and host_service_root.stat.uid == 0)
     - name: Read parent storage identity
       ansible.builtin.command:
-        argv: [findmnt, -n, -o, UUID, --target, /home]
+        argv: [findmnt, -n, -o, UUID, --target, '{{ feam_root if host_service_root.stat.exists else "/home" }}']
       register: feam_parent
       changed_when: false
     - name: Reject an unexpected storage filesystem

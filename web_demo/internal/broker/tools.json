@@ -1,0 +1,399 @@
+[
+  {
+    "name": "user.clarify",
+    "description": "Ask the local user to choose a missing product, exact version, destination, draft or scientific fact. Use this for ambiguous requests instead of guessing. Ends the turn awaiting a user response.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "choices": {
+          "items": {
+            "maxLength": 256,
+            "type": "string"
+          },
+          "maxItems": 10,
+          "type": "array"
+        },
+        "question": {
+          "maxLength": 1024,
+          "type": "string"
+        }
+      },
+      "required": [
+        "question"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "catalog.search",
+    "description": "Search bounded registered catalog records.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "description": "Data visibility/sensitivity, such as public, internal or restricted; not scientific quality.",
+          "type": "string"
+        },
+        "cursor": {
+          "type": "string"
+        },
+        "data_format": {
+          "enum": [
+            "parquet",
+            "geotiff"
+          ],
+          "type": "string"
+        },
+        "data_kind": {
+          "enum": [
+            "table",
+            "raster"
+          ],
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "owner_team": {
+          "type": "string"
+        },
+        "quality": {
+          "description": "Scientific maturity/quality, such as production, qualified or unverified.",
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "product.inspect",
+    "description": "Inspect one explicit registered product version.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "reference": {
+          "type": "string"
+        },
+        "verify_integrity": {
+          "description": "Defaults to false for metadata-only inspection. True reads/hashes all registered bytes and requires prior local integrity consent.",
+          "type": "boolean"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reference",
+        "version"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "product.resolve",
+    "description": "Resolve one explicit registered version without copying it.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "reference": {
+          "type": "string"
+        },
+        "verify_integrity": {
+          "description": "Defaults to false for metadata-only inspection. True reads/hashes all registered bytes and requires prior local integrity consent.",
+          "type": "boolean"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reference",
+        "version"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "peers.status",
+    "description": "Show configured peer coverage and errors.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "catalog.refresh",
+    "description": "Refresh local peer observation status.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "help.lookup",
+    "description": "Read a bounded local help excerpt.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "topic": {
+          "enum": [
+            "resolve",
+            "stage",
+            "publish",
+            "withdraw"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "topic"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "publication.validate",
+    "description": "Propose bounded scientific/policy edits to a locally selected draft. Returns the patch for local inspection/validation consent; does not publish or select assets. Use only user-supplied scientific facts.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "type": "string"
+        },
+        "patch": {
+          "additionalProperties": false,
+          "properties": {
+            "classification": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "contact": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "description": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "intended_use": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "limitations": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "lineage": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "product": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "product"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "name": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "owner_team": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "producer": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "quality": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "raster": {
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "start_datetime"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "end_datetime"
+                        ]
+                      }
+                    ]
+                  },
+                  "properties": {
+                    "datetime": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "datetime": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "start_datetime",
+                    "end_datetime"
+                  ]
+                }
+              ],
+              "properties": {
+                "bbox": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "maxItems": 4,
+                  "minItems": 4,
+                  "type": "array"
+                },
+                "datetime": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "end_datetime": {
+                  "type": "string"
+                },
+                "semantics": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "start_datetime": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "datetime",
+                "bbox",
+                "semantics"
+              ],
+              "type": "object"
+            },
+            "table": {
+              "additionalProperties": false,
+              "properties": {
+                "column_meanings": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "column_units": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "partition_columns": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "column_meanings",
+                "column_units"
+              ],
+              "type": "object"
+            },
+            "usage_policy": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "version": {
+              "maxLength": 2048,
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "handle",
+        "patch"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "publication.publish",
+    "description": "Open a local review using an operations handle whose tool is publication.publish. Its metadata and inventory have ALREADY passed local validation. Private fields are intentionally omitted; do not request or invent them or revalidate this operation handle as a draft. This only opens review; it cannot publish directly.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "handle"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "product.stage",
+    "description": "Open a local review using an operations handle whose tool is product.stage. Exact version, destination and overwrite choice are ALREADY selected locally; the private path is intentionally omitted. Use the existing handle without requesting the path again. This only opens review; it cannot copy directly.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "handle"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "product.withdraw",
+    "description": "Open a local review using an operations handle whose tool is product.withdraw. Exact version and reason are ALREADY selected locally; the private reason is intentionally omitted. No extra reason text is needed from the model. This only opens review; it cannot withdraw directly.",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "handle"
+      ],
+      "type": "object"
+    }
+  }
+]

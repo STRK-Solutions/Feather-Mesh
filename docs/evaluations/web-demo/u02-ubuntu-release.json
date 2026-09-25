@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "environment": "UBUNTU-existing-host",
+  "protocol": "feam.pipeline.release-acceptance.v1",
+  "status": "current-private-release",
+  "owner_approval": {
+    "scope": "exact Ubuntu climate candidate SHA-256 and 76623-byte inventory",
+    "candidate_sha256": "9894f3498b7d0828d3358b6dd415f6ee0ba298442bca7f615987af147a2aef41",
+    "candidate_bytes": 76623,
+    "private_actor_binding": ".local/demo-deployment/u02-approval-actor.json",
+    "actor_kind": "prebootstrap_operator_approval_record",
+    "deployed_admin_authority_claimed": false,
+    "database_approval_audit_matches_private_actor": true
+  },
+  "job_id": "00000000-0000-4000-8000-000000000404",
+  "bundle": "demo-climate",
+  "job_sha256": "5b34ed3fa00c5ccf8d8d6e822ee3ca5c2f1d62fa825dc6bf8cbae96c83d39a10",
+  "candidate_sha256": "9894f3498b7d0828d3358b6dd415f6ee0ba298442bca7f615987af147a2aef41",
+  "approval_sha256": "9894f3498b7d0828d3358b6dd415f6ee0ba298442bca7f615987af147a2aef41",
+  "release_sha256": "9894f3498b7d0828d3358b6dd415f6ee0ba298442bca7f615987af147a2aef41",
+  "release_bytes": 76623,
+  "release_files": 6,
+  "manifest_revision": 2,
+  "pipeline_state": "released",
+  "manifest_outcome": "committed",
+  "promotion_outcome": "committed",
+  "release_database_status": "current",
+  "release_path": "/home/feam-service-data/datasets/pipeline/releases/demo-climate/9894f3498b7d0828d3358b6dd415f6ee0ba298442bca7f615987af147a2aef41",
+  "release_integrity": {
+    "tree_hash_recomputed_independently": true,
+    "regular_files_only": true,
+    "root_owner": "feam-pipeline",
+    "root_owner_permissions": "r-x",
+    "candidate_sources_and_reports_retained": true
+  },
+  "serving_acl": {
+    "mapped_participant_uid": 200999,
+    "serving_manifest_and_asset_read": true,
+    "serving_manifest_write_denied": true,
+    "provenance_read_denied": true,
+    "provider_project_config_read_denied": true,
+    "raw_source_read_denied": true,
+    "feam_runner_and_controller_have_ancestor_traversal_only": true
+  },
+  "promoted_path_reader_verification": {
+    "supported_installed_sdk": "passed",
+    "native_polars_lazy_table": "365 rows; known date and flags match approved source",
+    "native_rasterio": "512x512 EPSG:4326; known 2x2 values and source cells match",
+    "real_loopback_pystac_client": "climatology interval item found; outside interval empty",
+    "private_report": "/home/feam-service-data/datasets/pipeline/staging/00000000-0000-4000-8000-000000000404/reports/ubuntu-release-verify.json",
+    "report_scope_note": "The read-only verification helper labels its report as a private candidate even when pointed at a release; durable pipeline DB and independent tree hash establish promotion status."
+  },
+  "assigned_to_participants": false,
+  "public_exposure": false,
+  "private_logs": [
+    ".local/demo-deployment/u02-candidate-approve.log",
+    ".local/demo-deployment/u02-candidate-promote.log",
+    ".local/demo-deployment/u02-promoted-reader-verify.log"
+  ],
+  "remaining": "U.04 must assign this exact current release through the service grant and read-only mount flow."
+}

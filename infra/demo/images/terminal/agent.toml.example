@@ -1,0 +1,19 @@
+schema_version = 1
+default_profile = "phase1-demo"
+
+[profiles.phase1-demo]
+backend = "router"
+base_url = "https://127.0.0.1:8443/v1"
+loopback_ca_file = "/run/feam-config/ca.pem"
+model = "deepseek/deepseek-v4.1-flash"
+api_key_env = "FEAM_BROKER_CAPABILITY"
+context_policy = "metadata-only"
+allow_user_text = true
+max_context_chars = 32000
+max_response_chars = 16000
+max_request_bytes = 131072
+max_response_bytes = 131072
+max_output_tokens = 1024
+allowed_providers = ["deepinfra/fp8"]
+allow_provider_fallbacks = false
+reasoning_enabled = false

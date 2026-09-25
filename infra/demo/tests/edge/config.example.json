@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "issuer": "https://fixture-team.cloudflareaccess.com",
+  "audiences": {
+    "feam.613202690.xyz": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "admin.613202690.xyz": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "u-44444444-4444-4444-8444-444444444444.613202690.xyz": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "u-55555555-5555-4555-8555-555555555555.613202690.xyz": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "workspace": "u-44444444-4444-4444-8444-444444444444.613202690.xyz",
+  "other_workspace": "u-55555555-5555-4555-8555-555555555555.613202690.xyz",
+  "origin_ip": "192.0.2.1",
+  "tokens": {
+    "portal": "./portal.jwt",
+    "admin": "./admin.jwt",
+    "workspace": "./owner-workspace.jwt",
+    "other_workspace": "./other-owner-own-workspace.jwt",
+    "cross_user": "./other-user-same-workspace.jwt",
+    "expired_workspace": "./expired-workspace.jwt",
+    "disabled_workspace": "./disabled-workspace.jwt"
+  }
+}

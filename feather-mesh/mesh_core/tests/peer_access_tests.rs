@@ -318,7 +318,9 @@ fn rejects_fake_parquet_and_accepts_geotiff_with_required_context() {
         lineage: vec![],
         table: None,
         raster: Some(RasterPublication {
-            datetime: "2026-01-01T00:00:00Z".into(),
+            datetime: Some("2026-01-01T00:00:00Z".into()),
+            start_datetime: None,
+            end_datetime: None,
             bbox: [-76.0, 45.0, -75.0, 46.0],
             semantics: BTreeMap::from([("band_1".into(), "temperature".into())]),
         }),
@@ -334,6 +336,83 @@ fn rejects_fake_parquet_and_accepts_geotiff_with_required_context() {
     let manifest: serde_json::Value =
         serde_json::from_slice(&fs::read(serving.join("manifest.json")).unwrap()).unwrap();
     assert_eq!(manifest["revision"], 1);
+
+    let mut normal = request.clone();
+    normal.version = "normal-1991-2020".into();
+    let temporal = normal.raster.as_mut().unwrap();
+    temporal.datetime = None;
+    temporal.start_datetime = Some("1991-01-01T00:00:00Z".into());
+    temporal.end_datetime = Some("2020-12-31T23:59:59Z".into());
+    publish(&project, &normal).unwrap();
+    let projected = mesh_core::stac::items(&project).unwrap();
+    let interval = projected
+        .iter()
+        .find(|item| item.version == "normal-1991-2020")
+        .unwrap();
+    assert!(interval.value["properties"]["datetime"].is_null());
+    assert_eq!(
+        interval.value["properties"]["start_datetime"],
+        "1991-01-01T00:00:00Z"
+    );
+    assert_eq!(
+        mesh_core::stac::search(&projected, None, None, Some("2000-01-01T00:00:00Z")).len(),
+        1
+    );
+    assert_eq!(
+        mesh_core::stac::search(
+            &projected,
+            None,
+            None,
+            Some("1989-01-01T00:00:00Z/1991-01-01T00:00:00Z")
+        )
+        .len(),
+        1
+    );
+    assert!(
+        mesh_core::stac::search(
+            &projected,
+            None,
+            None,
+            Some("2021-01-01T00:00:00Z/2022-01-01T00:00:00Z")
+        )
+        .is_empty()
+    );
+    let collections = mesh_core::stac::collections(&project).unwrap();
+    assert_eq!(
+        collections[0]["extent"]["temporal"]["interval"][0],
+        serde_json::json!(["1991-01-01T00:00:00Z", "2026-01-01T00:00:00Z"])
+    );
+
+    for (instant, start, end) in [
+        (None, None, None),
+        (None, Some("1991-01-01T00:00:00Z"), None),
+        (
+            Some("2026-01-01T00:00:00Z"),
+            Some("1991-01-01T00:00:00Z"),
+            Some("2020-01-01T00:00:00Z"),
+        ),
+        (
+            None,
+            Some("2020-01-01T00:00:00Z"),
+            Some("1991-01-01T00:00:00Z"),
+        ),
+        (Some("not a source time"), None, None),
+    ] {
+        let mut invalid = normal.clone();
+        invalid.version = "invalid-time".into();
+        let time = invalid.raster.as_mut().unwrap();
+        time.datetime = instant.map(String::from);
+        time.start_datetime = start.map(String::from);
+        time.end_datetime = end.map(String::from);
+        assert!(matches!(
+            publish(&project, &invalid),
+            Err(PeerError::Validation { .. })
+        ));
+    }
+    let instant_json = serde_json::to_value(&request.raster).unwrap();
+    assert_eq!(instant_json["datetime"], "2026-01-01T00:00:00Z");
+    assert!(instant_json.get("start_datetime").is_none());
+    assert!(instant_json.get("end_datetime").is_none());
 }
 
 fn review_fixture() -> (tempfile::TempDir, Project, PublicationRequest) {

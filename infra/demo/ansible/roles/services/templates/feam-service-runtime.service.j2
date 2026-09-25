@@ -1,0 +1,32 @@
+[Unit]
+Description=Verify and provision fixed FEAM private runtime ACLs
+Requires=run-feam.mount
+After=run-feam.mount
+Before=user@2101.service{% for service in services_names %} feam-{{ service }}.service{% endfor %}
+
+BindsTo=run-feam.mount
+RequiresMountsFor=/home/feam-service-data/operations /home/feam-service-data/traces /home/feam-service-data/datasets
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+{% for service in services_names %}
+ExecStart=/usr/local/sbin/feam-services-runtime layout --service {{ service }}
+{% endfor %}
+TimeoutStartSec=45
+User=root
+Group=root
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/run/feam
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+MemoryMax=128M
+MemorySwapMax=0
+TasksMax=16
+[Install]
+WantedBy=multi-user.target

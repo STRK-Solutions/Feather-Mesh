@@ -1,0 +1,20 @@
+{
+  "protocol": "feam.u04-rootless-run-mount-repair.v1",
+  "environment": "Ubuntu 24.04 amd64 private FEAM host",
+  "root_cause": "RootlessKit copied /run before the bounded FEAM tmpfs was mounted, hiding that mount from the already-running rootless Docker daemon.",
+  "repair": "Clone the verified host FEAM tmpfs as a detached mount, then attach it at the same path in the pinned daemon user and mount namespaces.",
+  "helper": "infra/demo/scripts/rootless_run_mount.py",
+  "helper_sha256": "0376b26e9ec287616859e29a523581bef20e3f4b87189254a637009bb8348613",
+  "live_result": "bound; repeat check already_visible",
+  "w1_preservation": "two original containers retain their exact identities and prior running/exited states; neither daemon nor user manager was restarted",
+  "unknown_first_start_job": "reviewed and hash-bound aborted with no A container; durable state failed and workspace generation advanced from 1 to 2 before a fresh request",
+  "controller_after_recovery": "active",
+  "validation": [
+    "Python compilation",
+    "services.yml Ansible syntax",
+    "live pinned mount visibility and idempotence check",
+    "live Docker container identity and state readback"
+  ],
+  "private_evidence": ".local/demo-deployment/functional-proposal/u04-rootless-mount-repair.json",
+  "pending": "Fresh A/B start and terminal checks are separate acceptance evidence; no public route activated by this repair."
+}

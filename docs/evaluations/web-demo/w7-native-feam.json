@@ -1,0 +1,17 @@
+{
+  "environment": "UBUNTU-native-build",
+  "architecture": "linux-amd64",
+  "rust": "1.94.0",
+  "source_sha256": "a01aec8aaf89b2be9cbf46ebbd5f22676553be0264d93315db26893acf4b9769",
+  "feam_sha256": "359cc328a37074fec958bb4ee1351393aa4bb8d5c9bc4cf8afae29c8da7653d1",
+  "bytes": 12656688,
+  "command": "cargo build --locked --release -p mesh_cli --features agent-hosted --jobs 2",
+  "exit_code": 0,
+  "runtime_acceptance": false,
+  "broker_probe_build": {
+    "command": "cargo build --locked --release -p mesh_agent --features hosted --example broker_probe --jobs 2",
+    "exit_code": 0,
+    "seconds": 42.82,
+    "source": "same explicitly approved snapshot; no new source transfer"
+  }
+}

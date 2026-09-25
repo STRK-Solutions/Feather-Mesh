@@ -57,6 +57,18 @@ class ContractTests(unittest.TestCase):
             settings["model"]["backend"] = "openrouter"
             self.rejected("settings", settings)
 
+    def test_production_accepts_reviewed_local_archive_mode(self):
+        settings = self.example("settings")
+        settings["mode"] = "production"
+        settings["public_admission"] = True
+        settings["model"]["backend"] = "openrouter"
+        settings["research"].update(archive="local", retention_days=30,
+                                    reviewer_ids=["00000000-0000-4000-8000-000000000001"])
+        settings["inputs"] = {key: "ready" for key in settings["inputs"]}
+        validate("settings", settings)
+        settings["research"]["archive"] = "directory-fixture"
+        self.rejected("settings", settings)
+
     def test_no_raw_key_or_audience_sharing(self):
         settings = self.example("settings")
         settings["model"]["key"] = "synthetic-secret"

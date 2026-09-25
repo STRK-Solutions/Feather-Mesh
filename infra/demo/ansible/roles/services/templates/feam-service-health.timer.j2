@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodic read-only FEAM private service checks
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+RandomizedDelaySec=15s
+Persistent=false
+Unit=feam-service-health.service
+[Install]
+WantedBy=timers.target

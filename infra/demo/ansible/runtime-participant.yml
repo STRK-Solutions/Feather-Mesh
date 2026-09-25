@@ -1,0 +1,31 @@
+---
+# Apply only after services.yml installed its boot-layout dependency. Does not
+# restart a running daemon/user manager; interruption is an explicit operation.
+- name: Configure complete participant runner budgets and boot dependencies
+  hosts: demo
+  become: true
+  gather_facts: false
+  vars:
+    feam_root: /home/feam-service-data
+    feam_participant_services: true
+    feam_runner_memory_max: 6G
+    feam_runner_cpu_quota: 600%
+    feam_runner_tasks_max: 2048
+  pre_tasks:
+    - name: Verify complete owned pool before runtime configuration
+      ansible.builtin.command:
+        argv: [/usr/local/sbin/feam-w1-storage, verify, --parent-uuid, '{{ feam_parent_uuid }}']
+      changed_when: false
+      check_mode: false
+    - name: Require the installed participant boot layout unit
+      ansible.builtin.stat:
+        path: /etc/systemd/system/feam-service-runtime.service
+      register: runtime_layout
+    - name: Reject incomplete boot prerequisites
+      ansible.builtin.assert:
+        that:
+          - runtime_layout.stat.exists
+          - runtime_layout.stat.isreg
+          - runtime_layout.stat.uid == 0
+  roles:
+    - runtime

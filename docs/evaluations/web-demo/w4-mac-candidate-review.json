@@ -1,0 +1,64 @@
+{
+  "protocol": "feam.pipeline.candidate-review.v1",
+  "environment": "MAC",
+  "status": "private-preparation-only",
+  "manager_admitted": false,
+  "approved_for_promotion": false,
+  "promoted": false,
+  "source_acquisition_approval": "Owner approval relayed 2026-09-25; w4-source-proposal.md bounded42MiB180seconds",
+  "job_sha256": "5b34ed3fa00c5ccf8d8d6e822ee3ca5c2f1d62fa825dc6bf8cbae96c83d39a10",
+  "candidate_sha256": "8ac5d97fe10f3a0dab22800e79fece2a167d090dfd39f3925ac1f0f7927f4ebc",
+  "complete_candidate_bytes": 76808,
+  "data_asset_bytes": 62046,
+  "manifest_revision": 2,
+  "inventory": [
+    {
+      "path": "provenance/january-maximum-normal.provenance.json",
+      "bytes": 2386,
+      "sha256": "04e41be362ae89ce4efb854e5e825ffdcffd68c0e033ae02ef8521bec3b1b931"
+    },
+    {
+      "path": "provenance/ottawa-daily.provenance.json",
+      "bytes": 2181,
+      "sha256": "250fb697018d583995b270bf7b4f1571197712498525f0fe68493dac3524d563"
+    },
+    {
+      "path": "provider/.feam/project.toml",
+      "bytes": 104,
+      "sha256": "4f192125eed12db0d4b3a0a6f657d46fb1e978a4b279f836bdbd9461d59b203f"
+    },
+    {
+      "path": "provider/serving/datasets/january-maximum-normal/v1991-2020/normal.tiff",
+      "bytes": 53282,
+      "sha256": "150eee12e07e3232beadcbef7a13af0ba65b5f3770f5b1275226d1bc22e504a8"
+    },
+    {
+      "path": "provider/serving/datasets/ottawa-daily/v2023/observations.parquet",
+      "bytes": 8764,
+      "sha256": "0d95da831ec907acf40967b97e0ce5b75f72c1ddaf5ec2991e2de9ace2d93a3c"
+    },
+    {
+      "path": "provider/serving/manifest.json",
+      "bytes": 10091,
+      "sha256": "1f7fa09fe6c0aa5489a775b5cadf5260ededc0baeec1186520909a62b1cd0bf6"
+    }
+  ],
+  "base_revision": "583cf8c2aec7c2079005a9925613a3b791821a34",
+  "source_worktree_dirty": true,
+  "versions": {
+    "python": "3.13.7",
+    "polars": "1.44.2",
+    "rasterio": "1.5.1",
+    "gdal": "3.12.4"
+  },
+  "source_file_sha256": {
+    "web_demo/importers/convert.py": "4a911a7097c5d71d3ba2a9e4d63b17c82daa22f4e2cf97330b5b4af699997ede",
+    "feather-mesh/mesh_core/src/services/peer_access.rs": "0e9b0b0ae4e345edf970ef6537aba94c750931c6bf6b12e24d29b83496457aa6",
+    "feather-mesh/mesh_core/src/stac.rs": "841f6fa978121fef75fef503d05822b65cb0b37006738e9a4dcfdd04b6b875a0"
+  },
+  "limitations": [
+    "MAC direct private conversion and FEAM validation only; production manager correctly denied Mac filesystem headroom.",
+    "Linux/Ubuntu pipeline identity, dataset filesystem admission, mounts, audience grants and promotion are pending.",
+    "Ubuntu re-preparation creates its own manifest timestamps and exact candidate digest requiring its own review."
+  ]
+}

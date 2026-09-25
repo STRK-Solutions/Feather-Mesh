@@ -4,3 +4,12 @@
 # Generated Python bytecode from offline web-demo validation.
 __pycache__/
 *.py[cod]
+
+# Terraform plugins and operator state/plans contain private resource details.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+crash.log

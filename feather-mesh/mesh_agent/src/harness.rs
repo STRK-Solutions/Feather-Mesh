@@ -6,6 +6,7 @@ use crate::provider::{
 };
 use crate::tools::{ConfirmableOperation, ToolExecution, ToolExecutor, tool_schemas};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -30,6 +31,7 @@ pub struct AgentRun {
 }
 #[derive(Debug, Clone)]
 pub enum AgentEvent {
+    RequestStarted(String),
     Text(String),
     ToolStarted(String),
     ToolResult(ToolExecution),
@@ -45,6 +47,7 @@ pub struct AgentHarness<P: ModelProvider> {
     pending_review: Option<(String, String)>,
     spent: f64,
     unknown_cost: bool,
+    capture_run_id: Option<String>,
     pub requests: u64,
     pub request_bytes: usize,
 }
@@ -67,6 +70,7 @@ impl<P: ModelProvider> AgentHarness<P> {
             pending_review: None,
             spent: 0.0,
             unknown_cost: false,
+            capture_run_id: None,
             requests: 0,
             request_bytes: 0,
         }
@@ -77,10 +81,29 @@ impl<P: ModelProvider> AgentHarness<P> {
     pub fn set_cancellation(&mut self, token: CancellationToken) {
         self.cancellation = token;
     }
+    /// Correlate captured application events with broker requests. Each model
+    /// dispatch gets a distinct ID; retries never reuse a previous dispatch ID.
+    pub fn set_capture_run_id(&mut self, run_id: String) -> Result<(), String> {
+        if run_id.len() != 36
+            || !run_id.bytes().enumerate().all(|(index, byte)| {
+                if [8, 13, 18, 23].contains(&index) {
+                    byte == b'-'
+                } else {
+                    byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)
+                }
+            })
+        {
+            return Err("Capture run ID must be a lowercase UUID".into());
+        }
+        self.capture_run_id = Some(run_id);
+        Ok(())
+    }
     pub fn switch_project(&mut self, root: impl Into<PathBuf>) {
         self.stop();
         self.cancellation = CancellationToken::default();
         self.executor.reset_project(root);
+        self.capture_run_id = None;
+        self.provider.set_request_id(None);
         self.messages.clear();
         self.pending_review = None;
     }
@@ -240,6 +263,30 @@ impl<P: ModelProvider> AgentHarness<P> {
             self.provider.set_request_timeout(
                 Duration::from_secs(self.profile.max_request_seconds).saturating_sub(model_time),
             );
+            let request_id = self.capture_run_id.as_ref().map(|run_id| {
+                let mut hash: [u8; 32] =
+                    Sha256::digest(format!("feam.request.v1:{run_id}:{}", self.requests)).into();
+                // Preserve the event contract's v4-shaped correlation IDs.
+                // These are derived labels, never authentication credentials.
+                hash[6] = (hash[6] & 0x0f) | 0x40;
+                hash[8] = (hash[8] & 0x3f) | 0x80;
+                let hex = hash[..16]
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect::<String>();
+                format!(
+                    "{}-{}-{}-{}-{}",
+                    &hex[..8],
+                    &hex[8..12],
+                    &hex[12..16],
+                    &hex[16..20],
+                    &hex[20..]
+                )
+            });
+            self.provider.set_request_id(request_id.clone());
+            if let Some(id) = request_id {
+                emit(AgentEvent::RequestStarted(id));
+            }
             let started = Instant::now();
             let mut proposals = Vec::new();
             let mut output_exceeded = false;
@@ -475,6 +522,7 @@ mod tests {
         AgentProfile {
             backend: "router".into(),
             base_url: "https://router.example.test/v1".into(),
+            loopback_ca_file: None,
             model: "test".into(),
             api_key_env: "KEY".into(),
             context_policy: "synthetic-demo".into(),
@@ -540,5 +588,70 @@ mod tests {
                 kind: "repeated_tool_call".into()
             }
         );
+    }
+
+    #[test]
+    fn capture_correlates_distinct_dispatches_without_reusing_ids() {
+        use std::sync::{Arc, Mutex};
+        struct CaptureProvider {
+            ids: Arc<Mutex<Vec<Option<String>>>>,
+            fake: FakeProvider,
+        }
+        impl ModelProvider for CaptureProvider {
+            fn set_request_id(&mut self, id: Option<String>) {
+                self.ids.lock().unwrap().push(id);
+            }
+            fn stream(
+                &mut self,
+                request: ModelRequest,
+                cancellation: &CancellationToken,
+                emit: &mut dyn FnMut(ProviderEvent),
+            ) -> Result<(), ProviderError> {
+                self.fake.stream(request, cancellation, emit)
+            }
+        }
+        let ids = Arc::new(Mutex::new(Vec::new()));
+        let provider = CaptureProvider {
+            ids: ids.clone(),
+            fake: FakeProvider::new([
+                Ok(vec![
+                    ProviderEvent::ToolCall(ProviderToolCall {
+                        id: "help".into(),
+                        name: "help.lookup".into(),
+                        arguments: serde_json::json!({"topic":"resolve"}),
+                    }),
+                    ProviderEvent::Finished,
+                ]),
+                Ok(vec![
+                    ProviderEvent::TextDelta("Done".into()),
+                    ProviderEvent::Finished,
+                ]),
+            ]),
+        };
+        let mut harness = AgentHarness::new(profile(), provider, "/not/used/by/help");
+        assert!(harness.set_capture_run_id("not-a-uuid".into()).is_err());
+        harness
+            .set_capture_run_id("00000000-0000-4000-8000-000000000001".into())
+            .unwrap();
+        let mut started = Vec::new();
+        let run = harness.run_streamed("help resolve", &mut |event| {
+            if let AgentEvent::RequestStarted(id) = event {
+                started.push(id);
+            }
+        });
+        assert_eq!(run.state, AgentRunState::Complete);
+        assert_eq!(started.len(), 2);
+        assert_ne!(started[0], started[1]);
+        assert!(
+            started
+                .iter()
+                .all(|id| id.len() == 36 && id.as_bytes()[14] == b'4')
+        );
+        assert_eq!(
+            *ids.lock().unwrap(),
+            started.into_iter().map(Some).collect::<Vec<_>>()
+        );
+        harness.switch_project("/other");
+        assert!(ids.lock().unwrap().last().unwrap().is_none());
     }
 }

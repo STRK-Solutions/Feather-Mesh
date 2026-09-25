@@ -1,0 +1,26 @@
+---
+# Operator-only finite expansion. Does not initialize accounts/workspaces, start
+# containers, delete W1 state, or claim deployed capacity acceptance.
+- name: Expand the verified FEAM pool to ten workspaces and two spares
+  hosts: demo
+  become: true
+  gather_facts: false
+  vars:
+    feam_root: /home/feam-service-data
+    feam_runtime_size_mib: 20480
+    feam_slot_count: 12
+    feam_complete_storage: true
+    feam_slot_names: [slot-01, slot-02, slot-03, slot-04, slot-05, slot-06, slot-07, slot-08, slot-09, slot-10, slot-11, slot-12]
+    feam_volume_names: '{{ ["runtime", "datasets", "operations", "traces"] + feam_slot_names }}'
+  pre_tasks:
+    - name: Require the actual recorded filesystem identity
+      ansible.builtin.assert:
+        that:
+          - feam_parent_uuid is defined
+          - feam_parent_uuid is match('^[a-f0-9-]{36}$')
+    - name: Verify existing slice before any expansion
+      ansible.builtin.command:
+        argv: [/usr/local/sbin/feam-w1-storage, verify, --parent-uuid, '{{ feam_parent_uuid }}']
+      changed_when: false
+  roles:
+    - role: storage

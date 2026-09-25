@@ -9,6 +9,9 @@ test-driver = []
 agent-hosted = ["dep:mesh_agent", "mesh_agent/hosted"]
 
 [dependencies]
+chrono = { workspace = true }
+sha2 = { workspace = true }
+socket2 = "0.6.5"
 signal-hook = "0.3.18"
 crossterm = { workspace = true }
 mesh_agent = { path = "../mesh_agent", optional = true }
