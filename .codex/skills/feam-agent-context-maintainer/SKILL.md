@@ -17,7 +17,7 @@ Read only the high-signal files needed for the drift being investigated:
 - `feather-mesh/Cargo.toml`
 - [CI workflows](../../../.github/workflows), including Rust and agent-context checks
 - Changed files relevant to the current task
-- For peer data access, [requirements](../../../data_access.md), the [workplan](../../../data_access_implementation_workplan.md), and [feam-peer-data-access](../feam-peer-data-access/SKILL.md). Read the existing [contract](../../../docs/data_access_contract.md) for settled decisions. Confirmed requirements govern over proposed defaults; source/tests describe observed behavior. Explicit user instructions take precedence. Older plans are historical for this feature.
+- For peer data access, [requirements](../../../docs/data_access.md) and [feam-peer-data-access](../feam-peer-data-access/SKILL.md). Read the existing [contract](../../../docs/data_access_contract.md) for settled decisions. Confirmed requirements and the contract govern; source/tests describe observed behavior. Explicit user instructions take precedence. Older plans are historical for this feature.
 
 Do not load long project artifacts, PDFs, or generated outputs unless the task specifically targets them.
 
