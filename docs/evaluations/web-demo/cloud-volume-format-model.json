@@ -1,0 +1,23 @@
+{
+  "additional_headroom_bytes": 1073741824,
+  "conservative_floor_bytes": 51539607552,
+  "e2fsprogs": "dumpe2fs 1.47.0 (5-Feb-2023)",
+  "environment": "existing Ubuntu host; disposable sparse regular file; no mount",
+  "fields": {
+    "Block count": "83886080",
+    "Block size": "4096",
+    "Filesystem UUID": "11111111-1111-4111-8111-111111111111",
+    "Filesystem features": "has_journal ext_attr resize_inode dir_index filetype extent 64bit flex_bg sparse_super large_file huge_file dir_nlink extra_isize metadata_csum",
+    "Free blocks": "83469633",
+    "Inode count": "5242880",
+    "Inode size": "256",
+    "Overhead clusters": "416441",
+    "Reserved block count": "0"
+  },
+  "free_bytes_after_format": 341891616768,
+  "full_pool_bytes": 288836550656,
+  "logical_bytes": 343597383680,
+  "physical_bytes": 1618432000,
+  "protocol": "feam.cloud-volume-format-model.v1",
+  "surplus_bytes": 441716736
+}
