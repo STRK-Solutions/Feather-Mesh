@@ -16,6 +16,10 @@ import (
 )
 
 func postForm(t *testing.T, f fixture, actor int, host, audience, path string, form url.Values) *httptest.ResponseRecorder {
+	return postFormAccept(t, f, actor, host, audience, path, form, "")
+}
+
+func postFormAccept(t *testing.T, f fixture, actor int, host, audience, path string, form url.Values, accept string) *httptest.ResponseRecorder {
 	t.Helper()
 	get := request(f, "GET", host, "/", f.accounts[actor].Email, audience, "")
 	response := httptest.NewRecorder()
@@ -28,6 +32,7 @@ func postForm(t *testing.T, f fixture, actor int, host, audience, path string, f
 	req := request(f, "POST", host, path, f.accounts[actor].Email, audience, form.Encode())
 	req.Header.Set("Origin", "https://"+host)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", accept)
 	req.AddCookie(cookies[0])
 	response = httptest.NewRecorder()
 	f.g.ServeHTTP(response, req)

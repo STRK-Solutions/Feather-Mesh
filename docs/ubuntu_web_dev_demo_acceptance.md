@@ -23,6 +23,16 @@ and AI work after the fresh Start. See the
 [recovery evidence](evaluations/web-demo/allocation-90d-recovery-20261003.json).
 Full admin walkthrough and unattended reboot acceptance remain separate.
 
+**2026-10-03 workspace navigation follow-up:** successful browser workspace
+forms now return to the dashboard with HTTP 303. The participant page refreshes
+while state/readiness is pending and reveals access automatically when ready.
+Go regression checks and native builds pass; local Chromium verifies Start/Stop,
+no duplicate submissions, disabled pending controls and refresh stopping at a
+stable state. The gateway update is deployed with all health checks passing;
+the active workspace, other service processes and current allocation survived.
+[Evidence](evaluations/web-demo/workspace-action-navigation-20261003.json) keeps
+local browser proof separate from the requested live owner confirmation.
+
 September 25 checkpoint (historical; see the current follow-up above): **The Ubuntu participant demo was deployed; final
 fresh admin-browser acceptance is unavailable.** U.01–U.06 have bounded evidence.
 U.07's operator delivery is complete, but its fresh admin walkthrough and U.G

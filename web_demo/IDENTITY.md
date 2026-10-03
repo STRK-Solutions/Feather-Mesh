@@ -109,6 +109,14 @@ uses `LOCAL_PEERCRED` for local tests. An inactive socket can be reclaimed only
 when it is owned by the current UID, connection is refused, and its inode is
 unchanged. Active, foreign, symlink and regular-file paths are preserved.
 
+Successful browser workspace forms (`Accept: text/html`) return `303 See Other`
+to the same dashboard. JSON callers retain the lifecycle status and job response.
+The participant dashboard refreshes every two seconds while a workspace change
+or its ready snapshot is pending, disables duplicate workspace actions during
+that transition, and stops refreshing once the state is stable. The access link
+requires both current `Running` status and the gateway's ready snapshot. Refresh
+performs only authenticated GETs; it never resubmits a lifecycle action.
+
 The private control listener supports:
 
 | Route | Caller | Contract |

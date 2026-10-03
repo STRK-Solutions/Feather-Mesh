@@ -139,6 +139,7 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			data.Workspace = &ws
 			data.LifecycleState, data.WarningAt, data.RetentionNotified, data.RetentionDeleteAfter = g.workspaceStatus(r.Context(), ws)
+			data.WorkspaceUpdating = workspaceUpdating(data.LifecycleState, ws.Ready)
 		}
 	}
 	if e != nil {
@@ -350,6 +351,12 @@ func (g *Gateway) action(w http.ResponseWriter, r *http.Request, a control.Accou
 	}
 	if e = json.NewDecoder(io.LimitReader(resp.Body, 64<<10)).Decode(&result); e != nil {
 		http.Error(w, "lifecycle outcome unknown; inspect jobs", 503)
+		return
+	}
+	// Browser forms use Post/Redirect/Get; explicit API callers retain the
+	// lifecycle JSON response. Refreshing the dashboard never repeats a POST.
+	if strings.Contains(r.Header.Get("Accept"), "text/html") {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

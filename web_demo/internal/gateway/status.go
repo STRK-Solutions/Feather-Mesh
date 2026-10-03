@@ -44,7 +44,7 @@ func (g *Gateway) workspaceStatus(ctx context.Context, workspace control.Workspa
 	if status.ID != workspace.ID || status.OwnerID != workspace.OwnerID || status.DeploymentID != workspace.DeploymentID || status.Generation != workspace.Generation || status.AssignmentVersion != workspace.GrantVersion {
 		return "Updating workspace", "", "", ""
 	}
-	label := map[string]string{"running": "Running", "stopped": "Stopped", "starting": "Starting", "stopping": "Stopping", "deleted": "Deleted", "error": "Needs operator attention"}[status.State]
+	label := map[string]string{"running": "Running", "stopped": "Stopped", "starting": "Starting", "stopping": "Stopping", "resetting": "Resetting", "pending-delete": "Deleting", "deleted": "Deleted", "error": "Needs operator attention"}[status.State]
 	if label == "" {
 		return "Updating workspace", "", "", ""
 	}
@@ -61,4 +61,16 @@ func (g *Gateway) workspaceStatus(ctx context.Context, workspace control.Workspa
 		notified, deleteAfter = n.UTC().Format(time.RFC3339), deadline.UTC().Format(time.RFC3339)
 	}
 	return label, warning, notified, deleteAfter
+}
+
+func workspaceUpdating(state string, ready bool) bool {
+	switch state {
+	case "Starting", "Stopping", "Resetting", "Deleting", "Updating workspace":
+		return true
+	case "Running":
+		// The controller may finish before its ready snapshot reaches the gateway.
+		return !ready
+	default:
+		return false
+	}
 }

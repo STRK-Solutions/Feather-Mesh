@@ -1,0 +1,100 @@
+{
+  "recorded_at_utc": "2026-10-03T19:47:50.343061+00:00",
+  "scope": "Owner-requested UI fix for workspace Start displaying a JSON document",
+  "behavior": {
+    "html_workspace_forms": "303 redirect to the same dashboard after successful lifecycle admission",
+    "json_callers": "Existing JSON status/job response retained",
+    "pending_workspace": "Refresh authenticated GET every two seconds; disable duplicate controls",
+    "ready_link": "Shown only when current controller status is Running and the gateway ready snapshot has arrived",
+    "stable_state": "Automatic refresh stops",
+    "errors": "Rejected or malformed lifecycle replies retain failure responses without success redirect"
+  },
+  "validation": {
+    "go_version": "1.27.1",
+    "mac": [
+      "go test -race ./internal/gateway passed",
+      "go test -race ./... passed",
+      "go vet ./... passed",
+      "go build -trimpath ./cmd/... passed"
+    ],
+    "regressions": [
+      "participant Start/Stop redirect",
+      "admin Stop redirect",
+      "confirmed reset/delete redirect",
+      "JSON and legacy no-Accept caller compatibility",
+      "rejected admission and malformed response retain errors",
+      "dashboard GET refresh does not repeat POST",
+      "transitional states and stale generation suppress access",
+      "ready snapshot delay keeps refresh active",
+      "stable/error/unavailable states stop refresh"
+    ],
+    "native_ubuntu": {
+      "source_sha256": "9b21c330c6c534cd658a8b2a7a6df4626ea9ba789a4efb4e384c36af24e6146d",
+      "source_files": 134,
+      "checks": [
+        {
+          "command": "go test -race ./...",
+          "exit": 0,
+          "output_lines": 23
+        },
+        {
+          "command": "go vet ./...",
+          "exit": 0,
+          "output_lines": 0
+        }
+      ],
+      "built_commands": 10,
+      "only_changed_service_binary": "gateway"
+    },
+    "chromium": {
+      "version": "153.0.8010.12",
+      "environment": "Local HTTPS gateway with synthetic identity/controller; no Cloudflare or live inference",
+      "start_and_stop_return_to_dashboard": true,
+      "automatic_access_link": true,
+      "pending_controls_disabled": true,
+      "post_count": 2,
+      "post_statuses": [
+        303,
+        303
+      ],
+      "stable_dashboard_stops_refreshing": true,
+      "initial_probe_attempts": "The intercepted-request fixture did not follow redirects reliably; replaced with direct loopback HTTPS. A selector was narrowed to distinguish the synthetic broker status from the workspace status. Production code did not change for these fixture corrections."
+    }
+  },
+  "deployment": {
+    "status": "deployed and verified",
+    "method": "Existing Ansible services role; no database initialization/migration or private credential replacement",
+    "release_sha256": "9b21c330c6c534cd658a8b2a7a6df4626ea9ba789a4efb4e384c36af24e6146d",
+    "runtime_manifest_sha256": "f54ef1d10456be6022cab1899d702b73b5cdfee524fd0332be7887bc2333fc61",
+    "restarted_services": [
+      "gateway"
+    ],
+    "other_five_service_processes_unchanged": true,
+    "all_service_executables_match_reviewed_hashes": true,
+    "health_exit_codes": {
+      "gateway": 0,
+      "controller": 0,
+      "broker": 0,
+      "collector": 0,
+      "pipeline": 0,
+      "reconciler": 0
+    },
+    "connector_ready": true,
+    "running_containers_preserved": 1,
+    "allocation_unchanged": true,
+    "recorded_run_requests_after": 2,
+    "recorded_run_cost_usd_micros_after": 551,
+    "operator_vault_revision": 97
+  },
+  "live_browser_confirmation": "Requested from owner after deployment; no reply yet",
+  "limitations": [
+    "Local synthetic browser checks do not establish Cloudflare-authenticated browser acceptance.",
+    "Complete administrator grant/reset/revocation acceptance remains outside this fix."
+  ],
+  "source_sha256": {
+    "gateway.go": "f4794f68f0e6f8214b497708b2094babbd89e58fac9c818df365c90d2e1d0d64",
+    "pages.go": "95b91f9d1bd2b2498e10378e7b10225ea295975a7530291a9141291b282709b0",
+    "status.go": "40412cab1cab527812419df1c35f855f5af9bc3eb6795b2e37e3a4f06557acac",
+    "navigation_test.go": "e92ce6e85a3ef6108fc21d3affe646450b6e50a957a422195da8a2ae0c58b9f7"
+  }
+}

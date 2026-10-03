@@ -72,6 +72,28 @@ An initial deployment precheck stopped on the broker's retained `failed` label;
 all six process IDs were verified zero before continuing, with no repeated
 initialization. This recovery does not close the complete U.07 admin walkthrough.
 
+### Workspace action navigation — 2026-10-03
+
+The owner reported that Start displayed a JSON page and required Back to reach
+the access link, then requested the UI fix.
+
+- [x] Return successful HTML workspace form submissions to their dashboard with
+  HTTP 303; preserve JSON responses for programmatic callers and reject failures
+  without a success redirect.
+- [x] Refresh the participant dashboard every two seconds during lifecycle
+  transitions and ready-snapshot propagation; disable duplicate actions while
+  pending and stop refresh when stable. Access requires both Running and Ready.
+- [x] Gateway regression tests, full Mac race/vet/build and native Ubuntu
+  race/vet/ten-command builds pass.
+- [x] Local Chromium Start/Stop flow returns to the dashboard, automatically
+  reveals access when ready, disables pending controls and sends each POST once.
+- [x] Publish to main and deploy the immutable gateway update through Ansible.
+  Only the gateway restarted; the other five service processes, running
+  workspace container, files and signed allocation were preserved. All six
+  health checks and connector readiness pass.
+- [x] Record [sanitized deployment evidence](evaluations/web-demo/workspace-action-navigation-20261003.json).
+- [ ] Live browser confirmation requested from the owner after deployment.
+
 Source of truth: [Ubuntu web demo design](ubuntu_web_dev_demo_design.md), with the owner's Ubuntu-only functional scope recorded here and in the design. This milestone supersedes earlier requirements to finish cloud, clean-VM recreation, extended model evaluation, capacity or reboot acceptance before delivery. Keep architectural decisions in the design and delivery status here.
 
 ## 1. Instructions for the implementing agent
