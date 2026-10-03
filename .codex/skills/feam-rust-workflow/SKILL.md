@@ -55,9 +55,6 @@ If a command cannot be run, report the missing tool/dependency, reason, and unve
 For TUI/harness changes also run `cargo test --workspace --all-features` and
 `cargo clippy --workspace --all-targets --all-features -- -D warnings`. Verify
 CLI feature modes with `cargo test -p mesh_cli --no-default-features`, then with
-`--features tui` and `--features agent-hosted`. See the
-[demo runbook](../../../docs/tui_agent_stage1_demo.md) for PTY restoration,
-manual/fake walkthroughs and the offline evaluation driver. Live router traffic
+`--features tui` and `--features agent-hosted`. See the [TUI design](../../../docs/tui_agent_harness_design.md) and the validation scripts in [`feather-mesh/scripts/`](../../../feather-mesh/scripts/) for PTY restoration, manual/fake walkthroughs and the offline evaluation driver. Live router traffic
 requires explicit model/provider/context/budget authorization; fake transport
-success is not evidence of live model quality. Keep every failed live attempt
-and unknown usage in the acceptance report.
+success is not evidence of live model quality. Record every failed live attempt and unknown usage.
