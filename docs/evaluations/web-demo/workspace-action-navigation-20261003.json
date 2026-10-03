@@ -86,9 +86,14 @@
     "recorded_run_cost_usd_micros_after": 551,
     "operator_vault_revision": 97
   },
-  "live_browser_confirmation": "Requested from owner after deployment; no reply yet",
+  "live_browser_confirmation": {
+    "status": "owner-confirmed success",
+    "owner_report": "confirmed, bug is fixed",
+    "scope": "Response to the deployed Stop then Start check: return directly to dashboard and reveal access automatically",
+    "browser_name_and_version": "not provided"
+  },
   "limitations": [
-    "Local synthetic browser checks do not establish Cloudflare-authenticated browser acceptance.",
+    "Live browser acceptance is owner-reported; no independent authenticated browser trace or browser/version details were captured.",
     "Complete administrator grant/reset/revocation acceptance remains outside this fix."
   ],
   "source_sha256": {
@@ -96,5 +101,12 @@
     "pages.go": "95b91f9d1bd2b2498e10378e7b10225ea295975a7530291a9141291b282709b0",
     "status.go": "40412cab1cab527812419df1c35f855f5af9bc3eb6795b2e37e3a4f06557acac",
     "navigation_test.go": "e92ce6e85a3ef6108fc21d3affe646450b6e50a957a422195da8a2ae0c58b9f7"
+  },
+  "implementation_commit": "9e6dc6443019eaebbf94d21701c6511e4bb6d079",
+  "implementation_ci": {
+    "checked_at_utc": "2026-10-03T19:52:23.159174+00:00",
+    "agent_context": "passed",
+    "rust": "in progress",
+    "web_demo": "in progress"
   }
 }

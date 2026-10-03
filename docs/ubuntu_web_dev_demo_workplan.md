@@ -92,7 +92,10 @@ the access link, then requested the UI fix.
   workspace container, files and signed allocation were preserved. All six
   health checks and connector readiness pass.
 - [x] Record [sanitized deployment evidence](evaluations/web-demo/workspace-action-navigation-20261003.json).
-- [ ] Live browser confirmation requested from the owner after deployment.
+- [x] Owner confirmed the deployed Stop/Start navigation fix: "confirmed, bug is fixed."
+  This is owner-reported live acceptance, separate from the local Chromium probe.
+  Implementation CI: agent context passed; Rust and Web demo were still running
+  when this confirmation was recorded.
 
 Source of truth: [Ubuntu web demo design](ubuntu_web_dev_demo_design.md), with the owner's Ubuntu-only functional scope recorded here and in the design. This milestone supersedes earlier requirements to finish cloud, clean-VM recreation, extended model evaluation, capacity or reboot acceptance before delivery. Keep architectural decisions in the design and delivery status here.
 

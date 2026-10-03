@@ -30,8 +30,9 @@ Go regression checks and native builds pass; local Chromium verifies Start/Stop,
 no duplicate submissions, disabled pending controls and refresh stopping at a
 stable state. The gateway update is deployed with all health checks passing;
 the active workspace, other service processes and current allocation survived.
-[Evidence](evaluations/web-demo/workspace-action-navigation-20261003.json) keeps
-local browser proof separate from the requested live owner confirmation.
+The owner confirmed the deployed bug is fixed after the requested Stop/Start
+check. [Evidence](evaluations/web-demo/workspace-action-navigation-20261003.json)
+keeps local Chromium proof separate from owner-reported live acceptance.
 
 September 25 checkpoint (historical; see the current follow-up above): **The Ubuntu participant demo was deployed; final
 fresh admin-browser acceptance is unavailable.** U.01–U.06 have bounded evidence.
