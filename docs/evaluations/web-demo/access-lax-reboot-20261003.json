@@ -1,0 +1,102 @@
+{
+  "recorded_at_utc": "2026-10-03T18:45:58Z",
+  "scope": "Owner-requested admin and user Access SameSite Lax change, main push, Ubuntu reboot and redirect retest",
+  "implementation_commit": "85a1a9bac53fde880dfe975d70902c0779e23e74",
+  "local_validation": {
+    "terraform_version": "1.14.5",
+    "cloudflare_provider_version": "5.22.0",
+    "terraform_format_and_validate": "passed",
+    "terraform_mock_tests_passed": 10,
+    "edge_python_tests_passed": 18,
+    "initial_python_attempt": "One test lacked PyYAML; all 18 passed when rerun in an existing equipped environment. No source repair was needed."
+  },
+  "implementation_ci": {
+    "agent_context": "https://github.com/STRK-Solutions/Feather-Mesh/actions/runs/37144913140",
+    "rust": "https://github.com/STRK-Solutions/Feather-Mesh/actions/runs/37144913117",
+    "web_demo": "https://github.com/STRK-Solutions/Feather-Mesh/actions/runs/37144913118",
+    "all_passed": true
+  },
+  "edge_apply": {
+    "method": "Cloudflare API GET, preserved-field PUT, GET readback for each exact existing application",
+    "applications": {
+      "admin": 1,
+      "portal": 1,
+      "workspace": 7
+    },
+    "before": "strict",
+    "after": "lax",
+    "changed_fields_only": [
+      "same_site_cookie_attribute",
+      "updated_at"
+    ],
+    "all_other_application_fields_unchanged": true,
+    "reusable_policy_references_preserved": true,
+    "gateway_csrf_cookie": "Unchanged: Secure, HttpOnly, SameSite Strict",
+    "terraform_state": "No Terraform state was manually rewritten; the next operator plan must refresh against the API."
+  },
+  "reboot": {
+    "command_exit": 0,
+    "new_boot_id_verified_over_ssh": true,
+    "precheck": {
+      "stopped_workspaces": 7,
+      "pending_lifecycle_jobs": 0,
+      "unsettled_model_requests": 0
+    },
+    "recovered_services": [
+      "gateway",
+      "controller",
+      "collector",
+      "pipeline",
+      "reconciler"
+    ],
+    "connector": "Explicitly started after reboot; remains disabled at boot for on-demand operation",
+    "connector_ready_http": 200,
+    "connector_connections": 4,
+    "broker": "Failed after three automatic retries: invalid allocation or accounting state. Installed allocation expired 2026-09-27T08:00:00Z; no spending renewal or broker configuration change was made.",
+    "preserved": [
+      "account role/status/edge-readiness counts",
+      "workspace state counts",
+      "settled request count and cost",
+      "runtime configuration SHA-256",
+      "allocation SHA-256"
+    ],
+    "accounts": {
+      "active_admins": 4,
+      "active_users": 7
+    },
+    "workspaces": {
+      "stopped": 7
+    },
+    "recorded_model_usage": {
+      "settled_requests": 105,
+      "settled_usd_micros": 9725,
+      "reserved_or_unknown_requests": 0
+    }
+  },
+  "post_reboot_http": {
+    "all_nine_https_routes": "Each followed exactly one redirect to the expected Access login page, HTTP 200, with successful TLS verification",
+    "unauthenticated_origin_admin": 401,
+    "unauthenticated_origin_portal": 401,
+    "proves_authenticated_redirect_repair": false
+  },
+  "authenticated_browser": {
+    "status": "owner-confirmed success after reboot",
+    "owner_report": "Both logins and refreshes work",
+    "admin": "Fresh login and subsequent refresh passed per owner response to the explicit no-manual-refresh test request",
+    "user": "Fresh login and subsequent refresh passed per owner response to the explicit no-manual-refresh test request",
+    "browser_name_and_version": "not provided",
+    "independent_authenticated_browser_trace": false,
+    "not_exercised": [
+      "expired-session renewal",
+      "two-browser comparison",
+      "authenticated cross-role/cross-user denial",
+      "live CSRF rejection"
+    ]
+  },
+  "limitations": [
+    "Host reboot and bounded state preservation do not establish unattended full-demo recovery: the connector needed an explicit start and the expired broker allocation prevented broker recovery.",
+    "Hosted inference and workspace terminal/data operations were not exercised after reboot.",
+    "U.07 and U.G remain open; this task does not repeat the complete admin walkthrough."
+  ],
+  "later_authorized_recovery": "allocation-90d-recovery-20261003.json records the later budget reconciliation, 90-day renewal and restored workspace/model flow; reboot observations above remain historical."
+}

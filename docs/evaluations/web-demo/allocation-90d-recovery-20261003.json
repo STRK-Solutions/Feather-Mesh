@@ -1,0 +1,142 @@
+{
+  "recorded_at_utc": "2026-10-03T19:27:09.275604Z",
+  "scope": "Owner-authorized restoration of hosted AI, a 50 USD allocation for 90 days within the existing 100 USD project ceiling, and reconciliation of unused old allocations",
+  "implementation": {
+    "maximum_allocation_days": 90,
+    "existing_signed_expiry_unchanged": true,
+    "automatic_replenishment": false,
+    "affected_source_sha256": {
+      "web_demo/internal/budget/allocation.go": "1d83b5ca588d10de19c482d2a0fd941dd0eaac4029f62d2955ae4874c86d0da7",
+      "web_demo/internal/budget/budget_test.go": "8e16d5d16357eaafa6c257c1da043fed574bae5bef5b5bee20858392cd1749cc"
+    }
+  },
+  "validation": {
+    "go_version": "1.27.1",
+    "mac": [
+      "go test -race ./... passed",
+      "go vet ./... passed",
+      "go build -trimpath ./cmd/... passed"
+    ],
+    "ubuntu_native": {
+      "source_sha256": "0ce381b7ab7c4e6f9e988ba14b074fcff8ed16462463c813c54d9d8bdb8f7d37",
+      "source_files": 133,
+      "checks": [
+        {
+          "command": "go test -race ./...",
+          "exit": 0,
+          "output_lines": 23
+        },
+        {
+          "command": "go vet ./...",
+          "exit": 0,
+          "output_lines": 0
+        }
+      ],
+      "built_commands": 10
+    },
+    "initial_mac_attempts": "Missing dependency downloads and sandbox-denied Unix sockets; pinned dependencies were fetched and the full suite passed outside the sandbox.",
+    "boundaries_tested": [
+      "existing seven-day document",
+      "exactly 90 days",
+      "90 days plus one nanosecond rejected",
+      "zero and negative duration rejected",
+      "expiry instant rejected",
+      "before not-before rejected",
+      "broker initialize and reopen"
+    ]
+  },
+  "reconciliation": {
+    "project_ceiling_usd_micros": 100000000,
+    "expired_allocation": {
+      "amount_usd_micros": 50000000,
+      "provider_requests_verified": 105,
+      "provider_total_usd": "0.009672774",
+      "settled_usd_micros": 9725,
+      "rounding": "Each charge rounded upward to whole USD micros; every request matches the broker ledger.",
+      "unsettled_requests": 0,
+      "unused_released_usd_micros": 49990275,
+      "state": "closed"
+    },
+    "superseded_uninstalled_allocation": {
+      "amount_usd_micros": 10000000,
+      "settled_usd_micros": 0,
+      "unused_released_usd_micros": 10000000,
+      "proof": "Installation never attempted; current host still used the expired allocation and proposed run state files were absent.",
+      "state": "closed"
+    },
+    "total_released_usd_micros": 59990275,
+    "new_allocation_usd_micros": 50000000,
+    "unallocated_ceiling_usd_micros": 49990275,
+    "operator_project_revision": 7,
+    "evidence_sha256": {
+      "provider-review.json": "6f6bbfe14645687968dcb040e373c8ac09da8af9791cb13c2b0cb959a648b02e",
+      "expired-allocation-reconciliation.json": "1684a237ca695287e39ae4e18dfaaf5130280724fe1cf25049108604a787c9b5",
+      "unused-allocation-reconciliation.json": "cfe1dfdfc16bd8ebc4b30e0e43af361015d40917cc75dc739289f7585c8a1d23"
+    }
+  },
+  "new_allocation": {
+    "amount_usd_micros": 50000000,
+    "not_before": "2026-10-03T19:15:23Z",
+    "expires_at": "2027-01-01T19:15:23Z",
+    "duration_days": 90,
+    "request_limit_usd_micros": 30000,
+    "user_daily_limit_usd_micros": 50000000,
+    "model": "deepseek/deepseek-v4.1-flash",
+    "provider": "deepinfra/fp8",
+    "signing_and_encryption_keys": "Retained only on the Mac"
+  },
+  "deployment": {
+    "method": "Existing Ansible services role with new immutable native release; initialize only new broker run/capability databases",
+    "ansible": {
+      "ok": 44,
+      "changed": 9,
+      "unreachable": 0,
+      "failed": 0,
+      "skipped": 4
+    },
+    "release_sha256": "0ce381b7ab7c4e6f9e988ba14b074fcff8ed16462463c813c54d9d8bdb8f7d37",
+    "runtime_manifest_sha256": "5bb2e2babb00bc8c8c5eedaa8561e3840f4e8784b22b36e864357824cb6abd65",
+    "all_seven_services_active": true,
+    "health_exit_codes": {
+      "gateway": 0,
+      "controller": 0,
+      "broker": 0,
+      "collector": 0,
+      "pipeline": 0,
+      "reconciler": 0
+    },
+    "connector_readiness_http": 200,
+    "broker_workspace_sockets": 7,
+    "operator_vault_revision": 95,
+    "preserved": [
+      "old broker databases and signed allocation",
+      "gateway/controller/collector/pipeline/reconciler state",
+      "workspace slot contents",
+      "participant image and Rust FEAM artifact",
+      "11 active and edge-ready accounts",
+      "archive lineage and private Mac archive-copy records"
+    ],
+    "precheck_interruption": "Initial precheck stopped before installation because an already-failed stopped broker retained failed status. Verified all six MainPIDs were zero, then resumed the same deployment. No initialization was replayed."
+  },
+  "workspace_recovery": {
+    "cause": "Expired allocation prevented broker startup; missing model Unix socket made the workspace container exit, leaving its start outcome unknown.",
+    "procedure": "Controller stopped; exact job and request hash reviewed; documented abort-job revoked capabilities and closed the uncertain job without replay.",
+    "job_outcome": "operator_aborted_no_replay",
+    "generation_before": 4,
+    "generation_after": 5,
+    "fresh_start_observed": "running",
+    "new_run_requests": [
+      {
+        "state": "settled",
+        "requests": 2,
+        "cost": 551
+      }
+    ],
+    "user_browser_confirmation": "Owner confirmed: Running; terminal and AI work"
+  },
+  "limitations": [
+    "This restores the requested demo flow; full U.07 administrator grant/reset/revocation walkthrough remains pending.",
+    "No claim of unattended host reboot recovery: the on-demand connector remains disabled at boot.",
+    "The new 90-day expiry and dollar guards are validated in boundary tests; no 90-day endurance test was run."
+  ]
+}

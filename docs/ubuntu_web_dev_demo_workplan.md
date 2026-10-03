@@ -1,6 +1,6 @@
 # Web-accessible FEAM demo development workplan
 
-Status: **Current Ubuntu release deployed; final fresh admin acceptance unavailable.** U.01–U.06 have bounded evidence, including the updated native image, actual eleven-account reconciliation, two participant browser/data sessions, live model/capture and ordinary same-allocation restart. U.07 operator handoff is prepared; its fresh admin walkthrough and U.G remain unchecked because the owner cannot complete email-PIN sign-in. See the [operator handoff](evaluations/web-demo/ubuntu-operator-handoff-20260925.md). Cloud VMs, R2 and extended tests remain deferred.
+Status: **Admin/user login redirects repaired; hosted AI restored under a US$50 allocation valid for 90 days.** The owner confirmed both fresh logins and refreshes work on October 3. U.01–U.06 retain their earlier bounded evidence; U.07's complete admin walkthrough and U.G remain open. See the [cookie/reboot evidence](evaluations/web-demo/access-lax-reboot-20261003.json) and earlier [operator handoff](evaluations/web-demo/ubuntu-operator-handoff-20260925.md). Cloud VMs, R2 and extended tests remain deferred.
 
 W0/W1 are complete; W2–W10 retain their extended scope below. The [updated release](evaluations/web-demo/u07-updated-release.json) includes main's guided tutorial/UI and the tested no-tool transport correction. Four admins and seven users are active; all seven workspaces have the exact approved climate release. The [live smoke](evaluations/web-demo/u06-live-functional-smoke.json) settled eleven provider requests at US$0.003119, including one rejected model handle proposal and a separate successful local reviewed copy. The [maintenance/archive receipt](evaluations/web-demo/u07-live-maintenance.json) records restart/convergence and the verified private Mac copy. Earlier three-person PIN and revocation evidence remains separate from current configuration readiness; no eleven-person login claim is made.
 
@@ -17,17 +17,60 @@ all exact workspace hosts. The gateway CSRF cookie remains Strict.
   tests pass; all 18 edge Python tests pass in the available PyYAML environment.
   The first Python attempt lacked PyYAML; rerunning in the equipped environment
   passed without a source change.
-- [ ] Push the isolated change to main.
-- [ ] Apply only the Access cookie changes and verify all live applications.
-- [ ] Reboot the Ubuntu host and record service/tunnel recovery.
-- [ ] Verify fresh admin/user email-PIN redirects with the owner; record other
-  browser checks and limitations separately.
+- [x] Push the isolated change to main: `85a1a9b`; all three hosted CI workflows pass.
+- [x] Apply only the Access cookie changes and verify all nine live applications.
+  API comparisons changed only SameSite and update timestamps; Terraform records
+  the same desired policy. No policy, IdP, session-duration or audience changes.
+- [x] Reboot the Ubuntu host and record service/tunnel recovery. A new boot ID,
+  five recovered application services and four tunnel connections are verified.
+  The connector required an explicit start; the broker failed on its expired
+  allocation. This is partial service recovery, not full-demo reboot acceptance.
+- [x] Verify fresh admin/user email-PIN redirects with the owner: "Both logins
+  and refreshes work." This is owner-reported acceptance, without an independent
+  authenticated trace or browser/version details. Expired-session renewal,
+  two-browser comparison and live authorization/CSRF regression checks were not
+  repeated in this task.
 
-Pre-change read-only inspection found all six participant services and the
-connector active, seven stopped workspaces, no pending lifecycle jobs and no
-in-flight model requests. The existing model allocation expired on September 27;
-renewing spending is outside this cookie/reboot task. The connector is not
-enabled at boot and needs an explicit start after reboot. U.07/U.G remain open.
+Pre/post comparisons preserve account/workspace counts, all 105 settled requests
+at US$0.009725, and runtime/allocation hashes. All nine HTTPS routes reach the
+Access login page after one redirect; both origins still reject unauthenticated
+requests with 401. These probes do not prove authenticated redirect repair.
+The existing model allocation expired on September 27. The owner subsequently
+authorized the separately recorded allocation renewal and workspace recovery below.
+U.07/U.G remain open. See the
+[cookie/reboot evidence](evaluations/web-demo/access-lax-reboot-20261003.json).
+
+### Allocation reconciliation and workspace recovery — 2026-10-03
+
+The owner authorized restored hosted AI within the existing US$100 project
+ceiling, then specified US$50 for 90 days and reconciliation of unused old
+allocations. See the [sanitized recovery receipt](evaluations/web-demo/allocation-90d-recovery-20261003.json).
+
+- [x] Raise the signed allocation validity limit from seven to 90 days; preserve
+  explicit expiry, price, per-request, daily, run and project spending limits.
+  Boundary, broker initialize/reopen and full Go race/vet/build checks pass on
+  the Mac; native Ubuntu race/vet and all ten command builds pass.
+- [x] Close the expired US$50 allocation at US$0.009725. All 105 requests match
+  independent provider metadata after per-request upward microdollar rounding.
+  Close the superseded, never-installed US$10 allocation at zero, with absence
+  of installation/run state verified. Total released: US$59.990275.
+- [x] Issue and deploy exactly US$50 from 2026-10-03T19:15:23Z through
+  2027-01-01T19:15:23Z. The ceiling remains US$100; US$49.990275 is unallocated.
+  Ordinary restarts do not replenish funds or extend the signed expiry.
+- [x] Install the immutable native release through Ansible and initialize only
+  distinct new broker databases. Six application health checks and connector
+  readiness pass; all eleven accounts and old accounting are preserved.
+- [x] Review and abort the exact uncertain workspace start without replay or
+  slot deletion; advance generation 4 to 5. A fresh start is now Running and
+  two new model requests settled at US$0.000551. The owner confirmed:
+  "Running; terminal and AI work."
+
+The original startup failure was the missing broker socket after the expired
+allocation refused service startup. Old databases, signed records, workspace
+files, participant image, archive lineage and existing Mac copies remain.
+An initial deployment precheck stopped on the broker's retained `failed` label;
+all six process IDs were verified zero before continuing, with no repeated
+initialization. This recovery does not close the complete U.07 admin walkthrough.
 
 Source of truth: [Ubuntu web demo design](ubuntu_web_dev_demo_design.md), with the owner's Ubuntu-only functional scope recorded here and in the design. This milestone supersedes earlier requirements to finish cloud, clean-VM recreation, extended model evaluation, capacity or reboot acceptance before delivery. Keep architectural decisions in the design and delivery status here.
 
@@ -111,7 +154,7 @@ Manage only the demo's explicit DNS records, Tunnel routes and Access applicatio
 | --- | --- | --- | --- |
 | I1 | W0/W1 and the expanded storage pool have Ubuntu evidence. Dedicated `feam-deploy` SSH and noninteractive root sudo are verified; reuse this access and recheck the FEAM resource scope before mutation. | U.01–U.04; no reboot window is needed for current delivery. | Local changes and private Ubuntu integration. |
 | I2 | Hostname selection is settled: `feam.613202690.xyz`, with the sibling routes above. The original four-route activation, three real email-PIN dashboards, authenticated WebSocket/role checks and measured revocation pass; nine approved routes and exact full-roster groups are now configured. Preserve the existing account/zone, unrelated resources and MFA. Capture renewal terms for handoff; no repeat domain purchase, nameserver change, onboarding or connection setup is required. | U.05 functional edge checks pass; explicit expired-assertion probing is deferred. | Preserve the approved routes through the updated release and finish handoff. See [activation record](evaluations/web-demo/u05-public-activation-proposal.md) and [browser acceptance](evaluations/web-demo/u05-browser-acceptance.json). |
-| I3 | Existing encrypted US$100 Mac project ledger issued exactly one active US$50 shared allocation. Signing/encryption keys remain on the Mac; Ubuntu has the signed document and public verification key. | U.04/U.06 measured; ordinary maintenance preserves the same project revision/allocation. | No reinitialization or replenishment. |
+| I3 | Encrypted US$100 Mac project ledger now holds one active US$50/90-day shared allocation; two old allocations are reconciled closed. US$49.990275 remains unallocated. Signing/encryption keys remain on the Mac; Ubuntu has only the signed document and public verification key. | U.04/U.06 measured; ordinary maintenance preserves the same project revision/allocation. | No reinitialization or replenishment. |
 | I4 | Owner supplied the private OpenRouter key and superseded the older US$1 proposal with a US$50 shared cap for seven users. US$0.03/request, 1,024 output tokens, expiry 2026-09-27 08:00 UTC, DeepSeek V4.1 Flash via deepinfra/fp8, no fallback/retry. Eleven live smoke requests settled at US$0.003119. | [U.06 live evidence](evaluations/web-demo/u06-live-functional-smoke.json); remaining allowance available to the cohort. | Preserve actual usage and finite expiry. |
 | I5 | **Shelved: all cloud-host work.** Preserve the [prior NYC3 proposal](evaluations/web-demo/cloud-archive-proposal.md), recipes and evidence. No resources were created. Do not request another provider, account, size or budget. | No current milestone dependency. | Ubuntu delivery only. |
 | I6 | Thirty-day retention and Saif as sole reviewer/Phase 2 owner remain settled. R2 is shelved. Actual local archives and provenance have independently verified owner-only Mac copies, including live capture. | [U.07 maintenance/copy](evaluations/web-demo/u07-live-maintenance.json). | Maintain retained copies for withdrawal/expiry; destructive teardown remains unauthorized. |
@@ -159,8 +202,8 @@ Implement only gaps that prevent this flow. Reuse the existing code and host res
 - [x] U.04 [MAC → UBUNTU] **Deploy one current private release.** Exact native Go/Rust sources and immutable image passed local/native checks and installed while stopped. Existing state, W1 slots and reset data survived; five workspaces were assigned and two images upgraded. All eleven accounts and seven exact grants reconciled. Real A/B browser starts/data/reconnect and private role/isolation checks pass. Ordinary maintenance preserves the active allocation and repeat converge passes. [Release](evaluations/web-demo/u07-updated-release.json), [maintenance](evaluations/web-demo/u07-live-maintenance.json). Earlier browser reset/revocation evidence remains scoped to its original session; no fresh admin login is claimed.
 - [x] U.05 [MAC → EDGE + UBUNTU; I2] **Expose only the Ubuntu route.** The owner-approved exact four DNS/Tunnel/Access routes and connector were applied without cloud-host or direct-origin exposure. Three approved participants completed real email-PIN login; dashboards and both owner terminal WebSockets worked. All 25 authenticated/negative HTTP and WebSocket probes passed, including wrong-user/role/audience and Origin denial. Admin browser disable closed the second regular alias’s current WebSocket in 0.506 seconds (<30 seconds), and its old portal/workspace JWTs returned 403; that alias was later restored under the owner-approved full roster. Initial redirect, wrong-IdP, native form-Origin and connector HTTP/2 Unix-WebSocket failures and their scoped repairs are retained in [activation](evaluations/web-demo/u05-public-activation-proposal.md) and [browser acceptance](evaluations/web-demo/u05-browser-acceptance.json). Explicit expired-assertion testing remains an extended check; invitations are separate.
 - [x] U.06 [UBUNTU → OpenRouter; I3/I4] **Run a small live functional smoke.** Five browser-driven tasks and two bounded guide explanations produced eleven settled requests, US$0.003119, zero live reservations/unknowns and correlated non-synthetic capture on the pinned route. Discovery/exact resolve worked. One model stage handle was rejected without writing; a fresh manual review committed the exact copy. A separate explicit-handle proposal opened review and was denied with no destination/receipt. Guide mode retained ordinary tool history and advanced after real Help navigation. [Measured results and limitations](evaluations/web-demo/u06-live-functional-smoke.json). This proves functional compatibility and review enforcement, not five-of-five model success or benchmark quality.
-- [ ] U.07 [MAC browser + UBUNTU] **Final fresh admin acceptance unavailable.** The updated-release two-user data/model walkthrough, actual eleven-account readiness, ordinary restart/converge, retained spend, private archive copy and [operator handoff](evaluations/web-demo/ubuntu-operator-handoff-20260925.md) are complete. The saved admin Access session expired and the owner cannot provide fresh email-PIN sign-in. Earlier real admin grant/reset/revocation evidence remains valid for its recorded scope; audited operator grants do not substitute for a fresh browser walkthrough. Commit/push/merge is explicitly authorized; invitations were not sent.
-- [ ] U.G [UBUNTU + EDGE] **Final acceptance pending the unavailable fresh admin browser check in U.07.** The deployed participant browser/data/hosted flow, isolation, settled spend, capture, ordinary restart and verified Mac copy have evidence. Do not label the full gate accepted while that admin check is missing. Ten-user capacity, unattended reboot, broad recovery, benchmark quality and all cloud/R2 acceptance remain deferred; they are not additional blockers.
+- [ ] U.07 [MAC browser + UBUNTU] **Complete admin walkthrough pending.** The updated-release two-user data/model walkthrough, eleven-account readiness, ordinary restart/converge, retained spend, private archive copy and [operator handoff](evaluations/web-demo/ubuntu-operator-handoff-20260925.md) retain their September 25 evidence. On October 3 the owner confirmed fresh admin/user logins and refreshes after the Lax cookie repair and requested reboot; the complete grant/reset/revocation walkthrough was not repeated. Earlier admin action evidence remains valid for its recorded scope. Invitations were not sent.
+- [ ] U.G [UBUNTU + EDGE] **Final acceptance pending U.07.** The earlier participant browser/data/hosted flow, isolation, settled spend, capture, ordinary restart and verified Mac copy retain their evidence. The October 3 reboot exposed an expired allocation; the later authorized 90-day renewal restored the broker, a fresh Running workspace and settled model requests. Fresh login now passes per the owner, but does not replace the complete admin walkthrough. Ten-user capacity, unattended full-demo recovery, benchmark quality and cloud/R2 acceptance remain deferred.
 
 ### Deferred work and shelved scope
 
@@ -396,7 +439,7 @@ Update this section with task checkboxes. Allowed statuses: `not started`, `in p
 
 | Phase | Implementation status | Required verification status | Evidence / next action |
 | --- | --- | --- | --- |
-| U | U.01–U.06 complete with bounded evidence; U.07 final fresh admin check unavailable; U.G pending | Updated release, eleven-account configuration, two-user data/live flow, settled usage and maintenance/copy pass | Fresh admin email-PIN walkthrough; owner cannot provide it in this session. |
+| U | U.01–U.06 retain bounded evidence; fresh admin/user login repaired October 3; U.07/U.G pending | Owner confirms both logins and refreshes after Lax change/reboot; broker fails on expired allocation | Complete admin walkthrough and separately scoped allocation renewal to restore hosted inference. |
 | Planning | Complete | Documentation checks recorded below; no runtime evidence | Workplan, design and agent/README routing prepared. |
 | W0 | Complete | MAC + native Ubuntu checks, LINUX full-VM proof and actual-host preflight including owner-run privileged inventory passed | [W0 evidence](evaluations/web-demo/w0-baseline.md). All eight tasks and exit gate complete. |
 | W1 | Complete | W1.01–W1.07 and W1.G pass on MAC/LINUX/UBUNTU, including browser manual/fake flows, resource/socket enforcement, persistence/reset, lingering and zero-change repeat converge | [W1 execution record](evaluations/web-demo/w1-progress.md) and [actual-Ubuntu acceptance](evaluations/web-demo/w1-ubuntu-acceptance.json). Reuse this evidence; host reboot is deferred. |

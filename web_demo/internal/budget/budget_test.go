@@ -52,6 +52,56 @@ func TestAllocationIdentityPriceAndSignature(t *testing.T) {
 	}
 }
 
+func TestAllocationDurationLimitAndExpiry(t *testing.T) {
+	pub, key, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name     string
+		duration time.Duration
+		valid    bool
+	}{
+		{"existing_seven_days", 7 * 24 * time.Hour, true},
+		{"ninety_days", 90 * 24 * time.Hour, true},
+		{"over_ninety_days", 90*24*time.Hour + time.Nanosecond, false},
+		{"zero_duration", 0, false},
+		{"negative_duration", -time.Second, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			a := allocation()
+			a.ExpiresAt = a.NotBefore.Add(tc.duration)
+			doc, err := Sign(a, key)
+			if !tc.valid {
+				if !errors.Is(err, ErrInvalid) {
+					t.Fatalf("invalid lifetime was signed: %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = doc.Verify(pub, testID, 1, a.ExpiresAt.Add(-time.Nanosecond)); err != nil {
+				t.Fatal("valid allocation rejected before expiry", err)
+			}
+			if doc.Verify(pub, testID, 1, a.ExpiresAt) == nil || doc.Verify(pub, testID, 1, a.NotBefore.Add(-time.Nanosecond)) == nil {
+				t.Fatal("allocation accepted outside its signed validity window")
+			}
+			path := filepath.Join(t.TempDir(), "run.sqlite")
+			run, err := InitializeRun(path, doc, pub, testID, 1)
+			if err != nil {
+				t.Fatal("broker initialization rejected valid allocation", err)
+			}
+			run.Close()
+			run, err = OpenRun(path, doc, pub, testID, 1)
+			if err != nil {
+				t.Fatal("broker restart rejected valid allocation", err)
+			}
+			run.Close()
+		})
+	}
+}
+
 func TestDrainReceiptPreservesUnknownAndPauseAcrossRestart(t *testing.T) {
 	doc, pub, _ := signed(t)
 	path := filepath.Join(t.TempDir(), "run.sqlite")

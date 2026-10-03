@@ -1,6 +1,29 @@
 # Web demo acceptance index
 
-Updated 2026-09-25. **The current Ubuntu participant demo is deployed; final
+**2026-10-03 cookie/reboot follow-up:** admin, portal and all seven workspace
+Access applications now use SameSite Lax. The requested Ubuntu reboot completed;
+five application services recovered and the on-demand connector was explicitly
+started. The model broker failed on the existing expired allocation. All nine
+unauthenticated login routes pass; the owner confirmed fresh admin/user logins
+and subsequent refreshes work. Browser/version details and an independent
+authenticated trace were not recorded. Account/workspace counts, settled
+accounting and configuration hashes survived. See
+[the scoped evidence](evaluations/web-demo/access-lax-reboot-20261003.json).
+This does not establish full-demo reboot recovery or close U.07/U.G.
+
+**2026-10-03 allocation/recovery follow-up:** the expired allocation is now
+reconciled at US$0.009725 using all 105 provider records, and the never-installed
+US$10 replacement is closed at zero. A new US$50 allocation is installed for
+exactly 90 days through January 1, 2027 at 19:15:23 UTC; US$49.990275 remains
+unallocated under the unchanged US$100 ceiling. Native/local Go checks pass.
+All six application services and the connector are healthy. The exact uncertain
+start was aborted without replay or file deletion; a fresh generation is Running
+and two model requests settled successfully. The owner confirmed the terminal
+and AI work after the fresh Start. See the
+[recovery evidence](evaluations/web-demo/allocation-90d-recovery-20261003.json).
+Full admin walkthrough and unattended reboot acceptance remain separate.
+
+September 25 checkpoint (historical; see the current follow-up above): **The Ubuntu participant demo was deployed; final
 fresh admin-browser acceptance is unavailable.** U.01–U.06 have bounded evidence.
 U.07's operator delivery is complete, but its fresh admin walkthrough and U.G
 remain unchecked because the owner cannot complete email-PIN sign-in. See the

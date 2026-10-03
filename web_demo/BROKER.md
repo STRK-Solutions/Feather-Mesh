@@ -92,13 +92,18 @@ browser authentication mechanism or a remotely callable permission check.
 
 The unsigned document is the [Allocation Go DTO](internal/budget/allocation.go).
 It binds project/run/deployment/activation, amount, finite validity (at most
-seven days), fixed model/provider/profile, maximum output, integer price ceilings
+90 days), fixed model/provider/profile, maximum output, integer price ceilings
 and a conservative fee multiplier. `ledger_revision` is set by the locked writer.
 Required `request_limit_usd_micros` and `user_daily_limit_usd_micros` bound
 individual requests and each account's UTC-day exposure inside that run.
 Resets cannot clear them; a new day only changes the daily guardrail and never
 replenishes the run or project allowance. Their admission check shares the same
 transaction as the global reservation.
+The duration limit does not extend existing signed documents. An expired run
+needs a newly issued allocation and distinct broker databases. Preserve the old
+records, verify final provider charges, and reconcile the old allocation before
+reusing its unused project ceiling. A signed replacement that was never
+installed can be closed at zero only after verifying that no run was started.
 Prices and fees must be independently verified before a real allocation.
 Reservation uses request bytes as a conservative token bound, the complete
 output allowance and upward integer rounding. Provider usage cost is parsed

@@ -16,6 +16,9 @@ const Provider = "deepinfra/fp8"
 const Profile = "phase1-demo"
 const Protocol = "feam.web.v1"
 
+// MaxAllocationDuration bounds an operator-approved run; it never renews funds.
+const MaxAllocationDuration = 90 * 24 * time.Hour
+
 var ErrInvalid = errors.New("invalid allocation or accounting state")
 var ErrExhausted = errors.New("budget_exhausted")
 var ErrConflict = errors.New("conflict")
@@ -56,7 +59,7 @@ func (a Allocation) Validate() error {
 	if a.RequestLimit < 1 || a.RequestLimit > a.Amount || a.UserDailyLimit < 1 || a.UserDailyLimit > a.Amount {
 		return ErrInvalid
 	}
-	if a.Protocol != Protocol || !ValidID(a.ID) || !ValidID(a.ProjectID) || !ValidID(a.RunID) || !ValidID(a.DeploymentID) || a.ActivationGeneration < 1 || a.LedgerRevision < 1 || a.Amount < 1 || a.Amount > 1_000_000_000_000 || a.Model != Model || a.Provider != Provider || a.Profile != Profile || a.InputPrice < 1 || a.OutputPrice < 1 || a.InputPrice > 1_000_000_000 || a.OutputPrice > 1_000_000_000 || a.FeeBasisPoints < 10000 || a.FeeBasisPoints > 100000 || a.MaxOutputTokens < 1 || a.MaxOutputTokens > 8192 || a.NotBefore.IsZero() || !a.ExpiresAt.After(a.NotBefore) || a.ExpiresAt.Sub(a.NotBefore) > 7*24*time.Hour {
+	if a.Protocol != Protocol || !ValidID(a.ID) || !ValidID(a.ProjectID) || !ValidID(a.RunID) || !ValidID(a.DeploymentID) || a.ActivationGeneration < 1 || a.LedgerRevision < 1 || a.Amount < 1 || a.Amount > 1_000_000_000_000 || a.Model != Model || a.Provider != Provider || a.Profile != Profile || a.InputPrice < 1 || a.OutputPrice < 1 || a.InputPrice > 1_000_000_000 || a.OutputPrice > 1_000_000_000 || a.FeeBasisPoints < 10000 || a.FeeBasisPoints > 100000 || a.MaxOutputTokens < 1 || a.MaxOutputTokens > 8192 || a.NotBefore.IsZero() || !a.ExpiresAt.After(a.NotBefore) || a.ExpiresAt.Sub(a.NotBefore) > MaxAllocationDuration {
 		return ErrInvalid
 	}
 	return nil
