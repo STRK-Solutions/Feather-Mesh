@@ -101,10 +101,11 @@ resource "cloudflare_zero_trust_access_application" "host" {
   allow_authenticate_via_warp = false
   allow_iframe                = false
   http_only_cookie_attribute  = true
-  same_site_cookie_attribute  = "strict"
-  options_preflight_bypass    = false
-  session_duration            = each.value == "admin" ? "1h" : "8h"
-  policies                    = [{ id = cloudflare_zero_trust_access_policy.cohort[each.value].id, precedence = 1 }]
+  # Access login redirects cross sites; Strict can cause redirect loops.
+  same_site_cookie_attribute = "lax"
+  options_preflight_bypass   = false
+  session_duration           = each.value == "admin" ? "1h" : "8h"
+  policies                   = [{ id = cloudflare_zero_trust_access_policy.cohort[each.value].id, precedence = 1 }]
 }
 resource "cloudflare_zero_trust_tunnel_cloudflared" "site" {
   for_each   = var.provisioned_sites

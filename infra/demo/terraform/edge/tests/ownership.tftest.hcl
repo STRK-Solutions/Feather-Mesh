@@ -27,7 +27,7 @@ run "disabled_by_default" {
     error_message = "Use exact sibling hosts and a separate short admin session."
   }
   assert {
-    condition     = length(cloudflare_ruleset.https) == 0 && alltrue([for a in cloudflare_zero_trust_access_application.host : length(a.allowed_idps) == 1 && contains(a.allowed_idps, var.email_pin_idp_id) && a.http_only_cookie_attribute && a.same_site_cookie_attribute == "strict" && !a.allow_authenticate_via_warp && !a.options_preflight_bypass && !a.allow_iframe])
+    condition     = length(cloudflare_ruleset.https) == 0 && alltrue([for a in cloudflare_zero_trust_access_application.host : length(a.allowed_idps) == 1 && contains(a.allowed_idps, var.email_pin_idp_id) && a.http_only_cookie_attribute && a.same_site_cookie_attribute == "lax" && !a.allow_authenticate_via_warp && !a.options_preflight_bypass && !a.allow_iframe])
     error_message = "Default must not claim zone redirect ownership or relax application admission."
   }
 }
@@ -43,6 +43,10 @@ run "one_selected_site" {
     activation_receipt_sha256         = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     manage_https_redirect             = true
     redirect_ownership_receipt_sha256 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  }
+  assert {
+    condition     = alltrue([for host, app in cloudflare_zero_trust_access_application.host : app.same_site_cookie_attribute == "lax" && app.http_only_cookie_attribute && app.session_duration == (host == "admin.613202690.xyz" ? "1h" : "8h")])
+    error_message = "Admin, portal and workspace Access cookies must allow login redirects while retaining HttpOnly and their session durations."
   }
   assert {
     condition     = length(cloudflare_dns_record.host) == 3 && toset(keys(cloudflare_zero_trust_tunnel_cloudflared_config.site)) == toset(["ubuntu"])

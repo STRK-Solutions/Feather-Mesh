@@ -4,7 +4,30 @@ Status: **Current Ubuntu release deployed; final fresh admin acceptance unavaila
 
 W0/W1 are complete; W2–W10 retain their extended scope below. The [updated release](evaluations/web-demo/u07-updated-release.json) includes main's guided tutorial/UI and the tested no-tool transport correction. Four admins and seven users are active; all seven workspaces have the exact approved climate release. The [live smoke](evaluations/web-demo/u06-live-functional-smoke.json) settled eleven provider requests at US$0.003119, including one rejected model handle proposal and a separate successful local reviewed copy. The [maintenance/archive receipt](evaluations/web-demo/u07-live-maintenance.json) records restart/convergence and the verified private Mac copy. Earlier three-person PIN and revocation evidence remains separate from current configuration readiness; no eleven-person login claim is made.
 
-Updated: 2026-09-25.
+Updated: 2026-10-03.
+
+### Access redirect repair — 2026-10-03
+
+The owner requested SameSite Lax for both admin and user Access applications,
+push to main, a host reboot and a redirect retest. This includes the portal and
+all exact workspace hosts. The gateway CSRF cookie remains Strict.
+
+- [x] Change the edge Terraform cookie policy and assertions; update W8 guidance.
+- [x] Run edge validation: pinned Terraform format/validate and all ten mock
+  tests pass; all 18 edge Python tests pass in the available PyYAML environment.
+  The first Python attempt lacked PyYAML; rerunning in the equipped environment
+  passed without a source change.
+- [ ] Push the isolated change to main.
+- [ ] Apply only the Access cookie changes and verify all live applications.
+- [ ] Reboot the Ubuntu host and record service/tunnel recovery.
+- [ ] Verify fresh admin/user email-PIN redirects with the owner; record other
+  browser checks and limitations separately.
+
+Pre-change read-only inspection found all six participant services and the
+connector active, seven stopped workspaces, no pending lifecycle jobs and no
+in-flight model requests. The existing model allocation expired on September 27;
+renewing spending is outside this cookie/reboot task. The connector is not
+enabled at boot and needs an explicit start after reboot. U.07/U.G remain open.
 
 Source of truth: [Ubuntu web demo design](ubuntu_web_dev_demo_design.md), with the owner's Ubuntu-only functional scope recorded here and in the design. This milestone supersedes earlier requirements to finish cloud, clean-VM recreation, extended model evaluation, capacity or reboot acceptance before delivery. Keep architectural decisions in the design and delivery status here.
 
