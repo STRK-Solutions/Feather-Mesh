@@ -762,7 +762,7 @@ pub static CURRICULUM: &[CurriculumStep] = &[
         "Assistant controls",
         "controls.help",
         "Review assistant controls",
-        "Run :help. Use a to ask, s to stop a response, and :guide start or :guide stop to show or hide Guide. :guide skip skips one action. :tutorial start, stop, and skip are compatibility names.",
+        "Run :help. Use a to ask and s to stop a response. In Guide, f focuses its scrollable pane, b returns one action, R repeats, and x skips. Commands include :guide skip, :guide previous-lesson, and :guide repeat-lesson; :tutorial start, stop, skip, previous, and repeat are compatibility names. Revisited steps never undo prior operations.",
         ExpectedEvent::Command(GuideCommand::Help),
         "assistant and guide controls were reviewed",
         Applicability::Always
@@ -772,7 +772,7 @@ pub static CURRICULUM: &[CurriculumStep] = &[
         "Project and profile controls",
         "controls.context",
         "Review reset commands",
-        "Run :help once more. After the guide, :init NAMESPACE [SERVING_DIR] creates a project, :project \"ROOT\" switches projects, and :agent-profile NAME|off changes the assistant. These reset the chat and Guide, so try them afterward. :guide restart restarts lessons; reset the disposable demo before repeating writes. q exits cleanly.",
+        "Run :help once more. After the guide, :init NAMESPACE [SERVING_DIR] creates a project, :project \"ROOT\" switches projects, and :agent-profile NAME|off changes the assistant. These reset the chat and Guide, so try them afterward. :guide restart restarts the tour; :guide repeat repeats an action without undoing side effects. Reset the disposable demo before repeating writes. q exits cleanly.",
         ExpectedEvent::Command(GuideCommand::Help),
         "project, profile, restart, and exit controls were reviewed",
         Applicability::Always
@@ -793,6 +793,25 @@ pub enum ObservationDisposition {
     Retry,
     Unrelated,
     Completed,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GuideNavigation {
+    PreviousAction,
+    PreviousLesson,
+    RepeatAction,
+    RepeatLesson,
+}
+
+impl GuideNavigation {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::PreviousAction => "returned to the previous action",
+            Self::PreviousLesson => "returned to the previous lesson",
+            Self::RepeatAction => "repeated the current action",
+            Self::RepeatLesson => "repeated the current lesson",
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -838,6 +857,7 @@ impl GuideState {
             self.ordinary_transition_pending = true;
         }
         self.active = false;
+        self.pending.clear();
     }
 
     pub fn restart(&mut self) {
@@ -935,6 +955,58 @@ impl GuideState {
         Some(skipped)
     }
 
+    /// Moves the application-owned curriculum cursor without attempting to
+    /// undo or replay any local operation. Revisited mutation steps must still
+    /// observe current authoritative state and pass their normal review.
+    pub fn navigate(&mut self, navigation: GuideNavigation) -> Option<&'static CurriculumStep> {
+        let completed = self.index >= CURRICULUM.len();
+        let anchor = self.index.min(CURRICULUM.len().saturating_sub(1));
+        if CURRICULUM.is_empty() {
+            return None;
+        }
+        let target = match navigation {
+            GuideNavigation::PreviousAction if completed => anchor,
+            GuideNavigation::PreviousAction => anchor.checked_sub(1)?,
+            GuideNavigation::RepeatAction => anchor,
+            GuideNavigation::RepeatLesson => {
+                let lesson = CURRICULUM[anchor].lesson;
+                CURRICULUM
+                    .iter()
+                    .position(|step| step.lesson == lesson)
+                    .unwrap_or(anchor)
+            }
+            GuideNavigation::PreviousLesson => {
+                let lesson = CURRICULUM[anchor].lesson;
+                if completed {
+                    CURRICULUM
+                        .iter()
+                        .position(|step| step.lesson == lesson)
+                        .unwrap_or(anchor)
+                } else {
+                    let previous = CURRICULUM[..anchor]
+                        .iter()
+                        .rev()
+                        .find(|step| step.lesson < lesson)?
+                        .lesson;
+                    CURRICULUM
+                        .iter()
+                        .position(|step| step.lesson == previous)
+                        .unwrap_or(anchor)
+                }
+            }
+        };
+        self.index = target;
+        self.active = true;
+        self.pending.clear();
+        self.last_result = Some(format!(
+            "Guide navigation: {}; prior side effects remain unchanged",
+            navigation.label()
+        ));
+        self.state = GuideRunState::Explaining;
+        self.ordinary_transition_pending = false;
+        self.current()
+    }
+
     pub fn apply(&mut self, observation: &GuideObservation) -> ObservationDisposition {
         let Some(step) = self.current() else {
             self.state = GuideRunState::Complete;
@@ -972,6 +1044,24 @@ impl GuideState {
             step.instruction,
             step.success,
             step.applicability
+        )
+    }
+
+    pub fn navigation_prompt(&self, navigation: GuideNavigation) -> String {
+        let step = self.current().expect("guide navigation has a current step");
+        let (action, actions) = self.action_position();
+        format!(
+            "Guided curriculum {CURRICULUM_ID}. The user {}. Re-explain only this application-owned action using short sentences and simple words, then wait. Stay under 80 words. Prior side effects remain unchanged: never say that a write, approval, or review was undone or replayed. Lesson {} of {}: {}. Action {} of {} [{}] {}. Instruction: {} Success criterion: {}.",
+            navigation.label(),
+            step.lesson,
+            LESSON_COUNT,
+            step.lesson_title,
+            action,
+            actions,
+            step.id,
+            step.title,
+            step.instruction,
+            step.success
         )
     }
 
@@ -1114,6 +1204,82 @@ mod tests {
     }
 
     #[test]
+    fn guide_navigation_repeats_and_rewinds_without_retaining_observations() {
+        let mut guide = GuideState::default();
+        guide.start();
+        for action in [
+            GuideAction::HelpOpened,
+            GuideAction::SectionChanged("Peers".into()),
+            GuideAction::Scrolled,
+            GuideAction::SearchOpened,
+        ] {
+            assert_eq!(
+                guide.apply(&GuideObservation::success(action, "verified")),
+                ObservationDisposition::Advanced
+            );
+        }
+        assert_eq!(guide.current().unwrap().id, "catalog.search");
+        guide.enqueue(GuideObservation::success(
+            GuideAction::SearchCompleted,
+            "stale result",
+        ));
+
+        let repeated = guide.navigate(GuideNavigation::RepeatAction).unwrap();
+        assert_eq!(repeated.id, "catalog.search");
+        assert!(guide.pop().is_none());
+        assert!(guide.active());
+        assert_eq!(guide.state(), GuideRunState::Explaining);
+
+        let previous = guide.navigate(GuideNavigation::PreviousAction).unwrap();
+        assert_eq!(previous.id, "catalog.search-open");
+        let previous_lesson = guide.navigate(GuideNavigation::PreviousLesson).unwrap();
+        assert_eq!(previous_lesson.id, "orientation.help");
+
+        assert!(
+            guide
+                .navigation_prompt(GuideNavigation::PreviousLesson)
+                .contains("Prior side effects remain unchanged")
+        );
+        assert!(guide.navigate(GuideNavigation::PreviousLesson).is_none());
+    }
+
+    #[test]
+    fn completed_guide_can_revisit_its_final_action_or_lesson() {
+        let mut guide = GuideState::default();
+        guide.start();
+        while guide.current().is_some() {
+            guide.skip();
+        }
+        assert!(guide.finish_response());
+
+        let final_action = guide.navigate(GuideNavigation::PreviousAction).unwrap();
+        assert_eq!(final_action.id, "controls.context");
+        while guide.current().is_some() {
+            guide.skip();
+        }
+        assert!(guide.finish_response());
+        let final_lesson = guide.navigate(GuideNavigation::PreviousLesson).unwrap();
+        assert_eq!(final_lesson.lesson, LESSON_COUNT);
+        assert_eq!(final_lesson.id, "controls.context");
+    }
+
+    #[test]
+    fn stopping_guidance_discards_observations_from_the_old_run() {
+        let mut guide = GuideState::default();
+        guide.start();
+        guide.enqueue(GuideObservation::success(
+            GuideAction::HelpOpened,
+            "stale before stop",
+        ));
+
+        guide.stop();
+        guide.start();
+
+        assert!(guide.pop().is_none());
+        assert_eq!(guide.current().unwrap().id, "orientation.help");
+    }
+
+    #[test]
     fn curriculum_mentions_every_help_command() {
         let text = CURRICULUM
             .iter()
@@ -1139,6 +1305,8 @@ mod tests {
             ":recover",
             ":guide skip",
             ":guide restart",
+            ":guide previous-lesson",
+            ":guide repeat-lesson",
             ":tutorial",
             ":agent-profile",
             ":agent-draft",

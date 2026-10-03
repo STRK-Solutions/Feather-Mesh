@@ -206,6 +206,13 @@ unread marker and independent `PgUp`/`PgDn` scrolling. Transcripts are bounded
 to 1 MiB of rendered text, reset on project/profile changes, and are never
 persisted automatically.
 
+The hosted/fake guided curriculum adds an independently scrollable Guide pane.
+Press `f` to focus it, then use Up/Down, `j`/`k`, or PgUp/PgDn; content and Guide
+scroll positions remain separate. `b` revisits the previous action and `R`
+repeats the current action. `:guide previous-lesson` and
+`:guide repeat-lesson` navigate whole lessons. Revisiting instruction state
+never undoes or replays prior operations.
+
 Profiles, disclosure policy, API-key environment references, bounded tools,
 review semantics, and recovery outcomes are defined in
 [the Stage-1 contract](../docs/tui_agent_stage1_contract.md). See the

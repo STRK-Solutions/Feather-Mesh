@@ -23,9 +23,11 @@ mod controls;
 #[cfg_attr(not(feature = "agent-hosted"), allow(dead_code))]
 mod guide;
 use controls::{example, save_local_text, split_command};
+#[cfg(feature = "agent-hosted")]
+use guide::ObservationDisposition;
 use guide::{
-    GuideAction, GuideCommand, GuideObservation, GuideRunState, GuideState, PageDirection,
-    ReviewKind,
+    GuideAction, GuideCommand, GuideNavigation, GuideObservation, GuideRunState, GuideState,
+    PageDirection, ReviewKind,
 };
 use mesh_core::services::catalog_service::{
     CatalogEntry, CatalogPage, CatalogQuery, query_catalog,
@@ -580,6 +582,8 @@ struct App {
     no_color: bool,
     capture: capture::Capture,
     guide: GuideState,
+    guide_scroll: u16,
+    guide_focused: bool,
     #[cfg(feature = "agent-hosted")]
     agent: HostedAgentState,
     #[cfg(feature = "agent-hosted")]
@@ -620,6 +624,8 @@ impl App {
             no_color: std::env::var_os("NO_COLOR").is_some(),
             capture: capture::Capture::from_environment(),
             guide: GuideState::default(),
+            guide_scroll: 0,
+            guide_focused: false,
             #[cfg(feature = "agent-hosted")]
             agent: hosted_agent,
             #[cfg(feature = "agent-hosted")]
@@ -944,6 +950,7 @@ impl App {
     fn stop_guide(&mut self) {
         if self.guide.active() {
             self.guide.stop();
+            self.guide_focused = false;
             self.status = "Guidance stopped; the shared Assistant conversation and usage remain available. Press g or run :guide start to resume.".into();
         } else {
             self.status = "Guidance is already stopped; press g or run :guide start.".into();
@@ -979,9 +986,89 @@ impl App {
                     "The guide is already finished. Use :guide restart to begin again.".into();
                 return;
             };
+            self.guide_scroll = 0;
             let prompt = self.guide.skip_prompt(skipped);
             if let Err(error) =
                 self.start_guide_request(prompt, AssistantRequestKind::GuidedObservation)
+            {
+                self.status = error;
+            }
+        }
+    }
+
+    fn toggle_guide_focus(&mut self) {
+        if !self.guide.active() {
+            self.status = "Start guidance before focusing the Guide pane.".into();
+            return;
+        }
+        self.guide_focused = !self.guide_focused;
+        self.status = if self.guide_focused {
+            "Guide pane focused; use Up/Down, j/k, or PgUp/PgDn to scroll it. Press f to return focus to content.".into()
+        } else {
+            "Content pane focused; Guide scroll position was preserved.".into()
+        };
+    }
+
+    fn scroll_guide_down(&mut self, lines: u16) {
+        self.guide_scroll = self.guide_scroll.saturating_add(lines);
+        self.status = format!(
+            "Guide pane is {} lines down; press Up, k, or PgUp to move back.",
+            self.guide_scroll
+        );
+    }
+
+    fn scroll_guide_up(&mut self, lines: u16) {
+        self.guide_scroll = self.guide_scroll.saturating_sub(lines);
+        self.status = if self.guide_scroll == 0 {
+            "Guide pane is at the top.".into()
+        } else {
+            format!(
+                "Guide pane is {} lines down; press Down, j, or PgDn for later text.",
+                self.guide_scroll
+            )
+        };
+    }
+
+    fn navigate_guide(&mut self, navigation: GuideNavigation) {
+        #[cfg(not(feature = "agent-hosted"))]
+        {
+            let _ = navigation;
+            self.status = "Guidance is unavailable in this build.".into();
+        }
+        #[cfg(feature = "agent-hosted")]
+        {
+            if !self.agent.is_configured() {
+                self.status = format!("Guidance unavailable: {}", self.agent.status());
+                return;
+            }
+            if self.review.is_some() {
+                self.status =
+                    "A review is open. Finish or deny it before navigating the Guide.".into();
+                return;
+            }
+            if self.pending.is_some() {
+                self.status =
+                    "Wait for the local action to finish before navigating the Guide.".into();
+                return;
+            }
+            if self.agent.is_pending() {
+                self.status = "The assistant is still responding. Wait, or press s to stop it, before navigating the Guide.".into();
+                return;
+            }
+            if self.guide.navigate(navigation).is_none() {
+                self.status = match navigation {
+                    GuideNavigation::PreviousAction | GuideNavigation::PreviousLesson => {
+                        "The Guide is already at its first available action.".into()
+                    }
+                    GuideNavigation::RepeatAction | GuideNavigation::RepeatLesson => {
+                        "No Guide action is available to repeat.".into()
+                    }
+                };
+                return;
+            }
+            self.guide_scroll = 0;
+            let prompt = self.guide.navigation_prompt(navigation);
+            if let Err(error) = self.start_guide_request(prompt, AssistantRequestKind::GuidedLesson)
             {
                 self.status = error;
             }
@@ -1018,6 +1105,8 @@ impl App {
             } else {
                 self.guide.start();
             }
+            self.guide_scroll = 0;
+            self.guide_focused = false;
             let prompt = self.guide.initial_prompt();
             if let Err(error) = self.start_guide_request(prompt, AssistantRequestKind::GuidedLesson)
             {
@@ -1069,6 +1158,12 @@ impl App {
             return;
         };
         let disposition = self.guide.apply(&observation);
+        if matches!(
+            disposition,
+            ObservationDisposition::Advanced | ObservationDisposition::Completed
+        ) {
+            self.guide_scroll = 0;
+        }
         let prompt = self.guide.observation_prompt(&observation, disposition);
         if let Err(error) =
             self.start_guide_request(prompt, AssistantRequestKind::GuidedObservation)
@@ -1149,6 +1244,20 @@ impl App {
             self.skip_guide();
             return false;
         }
+        if code == KeyCode::Char('b')
+            && matches!(self.input, InputMode::None)
+            && self.guide.active()
+        {
+            self.navigate_guide(GuideNavigation::PreviousAction);
+            return false;
+        }
+        if code == KeyCode::Char('R')
+            && matches!(self.input, InputMode::None)
+            && self.guide.active()
+        {
+            self.navigate_guide(GuideNavigation::RepeatAction);
+            return false;
+        }
         if self.review.is_some() {
             return self.handle_review_key(code);
         }
@@ -1161,6 +1270,34 @@ impl App {
         #[cfg(feature = "agent-hosted")]
         if matches!(self.input, InputMode::Agent(_)) {
             return self.handle_agent_input(code);
+        }
+        if code == KeyCode::Char('f') && self.guide.active() {
+            self.toggle_guide_focus();
+            return false;
+        }
+        if self.guide.active() && self.guide_focused {
+            let handled = match code {
+                KeyCode::PageDown => {
+                    self.scroll_guide_down(10);
+                    true
+                }
+                KeyCode::PageUp => {
+                    self.scroll_guide_up(10);
+                    true
+                }
+                KeyCode::Char('j') | KeyCode::Down => {
+                    self.scroll_guide_down(1);
+                    true
+                }
+                KeyCode::Char('k') | KeyCode::Up => {
+                    self.scroll_guide_up(1);
+                    true
+                }
+                _ => false,
+            };
+            if handled {
+                return false;
+            }
         }
         match code {
             KeyCode::Char('q') | KeyCode::Esc => self.request_quit(),
@@ -1636,7 +1773,7 @@ impl App {
                     self.agent = HostedAgentState::from_profile_request(self.options.agent_profile.as_deref());
                     self.assistant_view = AssistantViewState::default();
                 }
-                self.guide.reset();
+                self.guide.reset(); self.guide_scroll = 0; self.guide_focused = false;
                 self.reload();
             }
             ["resolve", reference, version] => self.resolve_view(reference.to_string(), version.to_string(), GuideAction::Command(guide_command)),
@@ -1740,7 +1877,7 @@ impl App {
                 self.agent.stop(); self.review = None; self.session += 1;
                 self.options.agent_profile = if *profile == "off" { None } else { Some(profile.to_string()) };
                 self.agent = HostedAgentState::from_profile_request(self.options.agent_profile.as_deref());
-                self.assistant_view = AssistantViewState::default(); self.guide.reset(); self.status = self.agent.status();
+                self.assistant_view = AssistantViewState::default(); self.guide.reset(); self.guide_scroll = 0; self.guide_focused = false; self.status = self.agent.status();
             }
             #[cfg(feature = "agent-hosted")]
             ["integrity-consent", reference, version] => {
@@ -1768,6 +1905,18 @@ impl App {
             ["guide", "stop"] | ["tutorial", "stop"] => self.stop_guide(),
             ["guide", "restart"] => self.start_guide(true),
             ["guide", "skip"] | ["tutorial", "skip"] => self.skip_guide(),
+            ["guide", "previous"] | ["tutorial", "previous"] => {
+                self.navigate_guide(GuideNavigation::PreviousAction)
+            }
+            ["guide", "repeat"] | ["tutorial", "repeat"] => {
+                self.navigate_guide(GuideNavigation::RepeatAction)
+            }
+            ["guide", "previous-lesson"] => {
+                self.navigate_guide(GuideNavigation::PreviousLesson)
+            }
+            ["guide", "repeat-lesson"] => {
+                self.navigate_guide(GuideNavigation::RepeatLesson)
+            }
             ["help"] => {
                 self.select_section(Section::Help);
                 self.observe(GuideObservation::success(GuideAction::Command(GuideCommand::Help), "current help opened"));
@@ -2390,7 +2539,7 @@ fn render(frame: &mut Frame, app: &App) {
         render_body(frame, app, rows[1]);
     }
     let prompt = match &app.input {
-        InputMode::None => key_hints(app.section, app.guide.active()),
+        InputMode::None => key_hints(app.section, app.guide.active(), app.guide_focused),
         InputMode::Search(value) => format!("Search: {value}"),
         InputMode::Command(value) => format!("Command: {value}"),
         #[cfg(feature = "agent-hosted")]
@@ -2406,7 +2555,7 @@ fn render(frame: &mut Frame, app: &App) {
     }
 }
 
-fn key_hints(section: Section, guide_active: bool) -> String {
+fn key_hints(section: Section, guide_active: bool, guide_focused: bool) -> String {
     let mut hints: String = match section {
         Section::Catalog => "/ search | : command | ↑/↓ select | Enter details | e examples | p preview | [/] page | g guide | Tab menu | q exit".into(),
         Section::Lineage => "/ search | : command | ↑/↓ select | PgUp/PgDn scroll | g guide | Tab menu | q exit".into(),
@@ -2415,7 +2564,14 @@ fn key_hints(section: Section, guide_active: bool) -> String {
         _ => "/ search | : command | PgUp/PgDn scroll | r refresh | g guide | Tab menu | ? help | q exit".into(),
     };
     if guide_active {
-        hints = hints.replace("g guide", "x skip | g stop guide");
+        if guide_focused {
+            hints = "Guide focus: ↑/↓ or j/k scroll | PgUp/PgDn page | f content | b back | R repeat | x skip | g stop".into();
+        } else {
+            hints = hints.replace(
+                "g guide",
+                "f Guide focus | b back | R repeat | x skip | g stop",
+            );
+        }
     }
     hints
 }
@@ -2655,7 +2811,7 @@ fn render_guide(frame: &mut Frame, app: &App, area: Rect) {
             })
             .unwrap_or_default();
         format!(
-            "{}\nLesson {position}/{total}: {}\nAction {action}/{actions}: {}\n\nDo this\n{}\n\nState\n{state}{result}\n\nControls\nx skip | g stop guide",
+            "{}\nLesson {position}/{total}: {}\nAction {action}/{actions}: {}\n\nDo this\n{}\n\nState\n{state}{result}\n\nControls\nf focus | ↑/↓ or j/k scroll when focused\nb previous | R repeat | x skip | g stop",
             guide::CURRICULUM_ID,
             step.lesson_title,
             step.title,
@@ -2671,7 +2827,16 @@ fn render_guide(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(
         Paragraph::new(sanitize_terminal_text(&text))
             .wrap(Wrap { trim: false })
-            .block(Block::default().title("Guide").borders(Borders::ALL)),
+            .scroll((app.guide_scroll, 0))
+            .block(
+                Block::default()
+                    .title(if app.guide_focused {
+                        "Guide [focused]"
+                    } else {
+                        "Guide"
+                    })
+                    .borders(Borders::ALL),
+            ),
         area,
     );
 }
@@ -3100,6 +3265,37 @@ mod tests {
             BodyLayout::Inactive
         );
         assert!(screen_text(&app, 100, 30).contains("PINNED PRODUCT DETAIL"));
+    }
+
+    #[cfg(feature = "agent-hosted")]
+    #[test]
+    fn guide_focus_scrolls_independently_from_catalog_content_and_selection() {
+        let (_temp, mut app) = test_app();
+        app.page = Some(catalog_page());
+        app.views.catalog.text = Some(
+            (0..80)
+                .map(|line| format!("catalog line {line:02}"))
+                .collect::<Vec<_>>()
+                .join("\n"),
+        );
+        app.guide.start();
+
+        app.handle_key(KeyCode::Char('f'));
+        assert!(app.guide_focused);
+        app.handle_key(KeyCode::PageDown);
+        app.handle_key(KeyCode::Down);
+        assert_eq!(app.guide_scroll, 11);
+        assert_eq!(app.views.catalog.scroll, 0);
+        assert_eq!(app.selected, 0);
+        assert!(screen_text(&app, 120, 30).contains("Guide [focused]"));
+
+        app.handle_key(KeyCode::Char('f'));
+        assert!(!app.guide_focused);
+        app.handle_key(KeyCode::PageDown);
+        assert_eq!(app.guide_scroll, 11);
+        assert_eq!(app.views.catalog.scroll, 10);
+        app.handle_key(KeyCode::Down);
+        assert_eq!(app.selected, 1);
     }
 
     #[test]

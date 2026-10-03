@@ -116,6 +116,16 @@ Every other menu is a full-width view with its own PgUp/PgDn position. `/` searc
 returns to Catalog, while `:filter '{"quality":"production"}'` applies the
 shared filters. `NO_COLOR=1` disables color. Minimum size is 80×24.
 
+In guided mode, `f` moves scroll focus between the current content and Guide
+pane. A focused Guide uses Up/Down, `j`/`k`, and PgUp/PgDn without changing the
+Catalog selection or the current menu's saved scroll position. `b` revisits the
+previous action, `R` repeats the current action, and `x` skips one action.
+`:guide previous-lesson` and `:guide repeat-lesson` rewind at lesson boundaries;
+`:guide previous` and `:guide repeat` are their action-level equivalents.
+Rewinding clears queued observations but never undoes, reapproves, or replays a
+completed operation. Reset the disposable fixture before deliberately repeating
+publication, staging, or withdrawal writes.
+
 ```text
 :project "/work/another project"
 :draft new table
@@ -130,6 +140,7 @@ shared filters. `NO_COLOR=1` disables color. Minimum size is 80×24.
 :agent-draft
 :integrity-consent product://climate/observations v1
 :usage
+:guide previous|repeat|previous-lesson|repeat-lesson
 ```
 
 Draft editing uses JSON pointers and values; table/raster templates expose the
