@@ -1,5 +1,7 @@
 # Web demo acceptance index
 
+Remote developer access (2026-10-31): [Tailscale enrollment evidence](evaluations/web-demo/tailscale-developer-access-20261031.md) verifies Ubuntu is online and its SSH listener responds from the host. The owner confirmed sending invitations; recipient acceptance, key enrollment and external SSH/sudo acceptance remain pending. Existing U/W gate status is unchanged.
+
 Updated 2026-09-25. **The current Ubuntu participant demo is deployed; final
 fresh admin-browser acceptance is unavailable.** U.01–U.06 have bounded evidence.
 U.07's operator delivery is complete, but its fresh admin walkthrough and U.G

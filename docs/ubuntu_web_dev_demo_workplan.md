@@ -8,6 +8,8 @@ Updated: 2026-09-25.
 
 Source of truth: [Ubuntu web demo design](ubuntu_web_dev_demo_design.md), with the owner's Ubuntu-only functional scope recorded here and in the design. This milestone supersedes earlier requirements to finish cloud, clean-VM recreation, extended model evaluation, capacity or reboot acceptance before delivery. Keep architectural decisions in the design and delivery status here.
 
+Remote developer access (2026-10-31): the existing Tailscale service is enrolled and online, with boot enablement and its tailnet SSH listener verified; the owner confirmed sending invitations. The [evidence](evaluations/web-demo/tailscale-developer-access-20261031.md) and [developer runbook](../infra/demo/DEVELOPER_ACCESS.md) record the handoff. Next: developer accepts an invitation and supplies a public SSH key, then provision and verify their individual sudo login from outside the LAN. Application acceptance status is unchanged.
+
 ## 1. Instructions for the implementing agent
 
 1. Read [AGENTS.md](../AGENTS.md), the design, this plan, and the latest [execution record](#8-execution-record). Inspect the checkout and preserve unrelated edits. Create or resume the task's feature branch before implementation; do not make untracked host edits the source of truth.

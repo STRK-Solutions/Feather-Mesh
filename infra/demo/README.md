@@ -69,6 +69,10 @@ are authorized by example placeholders alone.
 
 ## Unattended Ubuntu deployment access
 
+For another developer connecting from outside the LAN, use the
+[developer access runbook](DEVELOPER_ACCESS.md) and
+[owner Tailscale handoff](TAILSCALE_OWNER.md).
+
 Verified on 2026-09-25 after owner setup: the dedicated `feam-deploy` account
 authenticates with the operator Mac's `~/.ssh/feam_ubuntu_deploy` key, and
 `sudo -n id -u` returns `0` without prompting. See the
