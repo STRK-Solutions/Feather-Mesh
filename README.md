@@ -14,7 +14,7 @@ is a personal orientation guide, not an implementation contract.
 
 For agent-specific repository guidance, use [`AGENTS.md`](/AGENTS.md). Keep that file concise and focused on durable project context, crate boundaries, and validation rules.
 
-For peer data access, start with the [requirements](data_access.md), the settled
+For peer data access, start with the [requirements](docs/data_access.md), the settled
 [contract](docs/data_access_contract.md), and the
 [implementation workplan](data_access_implementation_workplan.md). The workplan's
 execution record distinguishes locally delivered behavior from target-HPC

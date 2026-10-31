@@ -329,7 +329,7 @@ typed proposals; it has no terminal or direct peer-mutation authority. The
 Python SDK invokes the structured CLI protocol and does not reimplement peer
 visibility or publication rules.
 
-For general product background, see `Feather_Mesh_PDD_Revised.pdf` at the repository root. For peer data access, [data_access.md](../data_access.md) supplies confirmed requirements and [`docs/data_access_contract.md`](../docs/data_access_contract.md) supplies the settled implementation contract. The legacy SQLite workflow above remains available for migration but does not bypass peer publication or discovery rules.
+For general product background, see `Feather_Mesh_PDD_Revised.pdf` at the repository root. For peer data access, [data_access.md](../docs/data_access.md) supplies confirmed requirements and [`docs/data_access_contract.md`](../docs/data_access_contract.md) supplies the settled implementation contract. The legacy SQLite workflow above remains available for migration but does not bypass peer publication or discovery rules.
 
 ---
 

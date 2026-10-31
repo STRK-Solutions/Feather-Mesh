@@ -7,11 +7,9 @@ Date: **2026-09-22**.
 Implementation status: Stage-1 implementation has begun on the feature branch.
 Optional `mesh_tui` and `mesh_agent` crates, a manifest-backed bounded catalog
 interface, review-bound operations, and a private operation journal now exist.
-The implementation decisions are in [the Stage-1 contract](docs/tui_agent_stage1_contract.md).
 This local code is not evidence of hosted-model quality, live-router success,
 or target-HPC acceptance; those gates remain explicit.
 
-Implementation handoff: [stage-1 workplan](tui_agent_harness_stage1_workplan.md), covering the manual TUI and hosted-model development/demo stage.
 
 Repository baseline: `558e187` (`Merge feature/data-access-implementation`), including `0569b4f` (`Implement peer data access workflow`).
 
@@ -32,7 +30,7 @@ The central architectural decision is to separate **interaction**, **agent orche
 
 ## 2. Current repository foundation
 
-The settled [peer-data-access contract](docs/data_access_contract.md) governs data behavior. The earlier [requirements](data_access.md) explain intent, while the [implementation workplan's execution record](data_access_implementation_workplan.md#8-execution-record-for-the-implementing-agent) records local validation. Earlier gap assessments in those documents predate the latest implementation.
+The settled [peer-data-access contract](data_access_contract.md) governs data behavior. The earlier [requirements](data_access.md) explain intent; current source and tests establish implemented behavior.
 
 | Area | Present in this baseline | Design implication |
 | --- | --- | --- |
@@ -45,7 +43,7 @@ The settled [peer-data-access contract](docs/data_access_contract.md) governs da
 | Agent/TUI | No implementation in the workspace | UI, model transport, tool execution control, and evaluation are new work |
 | HPC evidence | Local validation is recorded; target-filesystem, separate-identity, and multi-node acceptance remain pending | A local-model demonstration alone cannot establish HPC readiness |
 
-Primary implementation anchors: [CLI dispatch](feather-mesh/mesh_cli/src/main.rs), [peer services](feather-mesh/mesh_core/src/services/peer_access.rs), [public peer re-export](feather-mesh/mesh_core/src/peer.rs), [Python SDK](feather-mesh/python_sdk/README.md), and [STAC HTTP adapter](feather-mesh/mesh_core/src/stac_http.rs).
+Primary implementation anchors: [CLI dispatch](../feather-mesh/mesh_cli/src/main.rs), [peer services](../feather-mesh/mesh_core/src/services/peer_access.rs), [public peer re-export](../feather-mesh/mesh_core/src/peer.rs), [Python SDK](../feather-mesh/python_sdk/README.md), and [STAC HTTP adapter](../feather-mesh/mesh_core/src/stac_http.rs).
 
 ### 2.1 Existing limits relevant to this design
 
@@ -306,7 +304,7 @@ Show token usage and estimated cost when available; mark unknown costs as unknow
 
 ### 8.2 Reproducible demo
 
-Create a disposable provider/client project pair using the existing [peer-access fixtures](feather-mesh/mesh_core/tests/data/peer_access/README.md). Include a registered Parquet table, a registered GeoTIFF, an unregistered file, and an unavailable peer. Keep the demo reset script scoped to its own generated directory.
+Create a disposable provider/client project pair using the existing [peer-access fixtures](../feather-mesh/mesh_core/tests/data/peer_access/README.md). Include a registered Parquet table, a registered GeoTIFF, an unregistered file, and an unavailable peer. Keep the demo reset script scoped to its own generated directory.
 
 The walkthrough should demonstrate manual browsing, equivalent assistant discovery, a pinned SDK example, a corrected metadata draft, confirmed staging, withdrawal, and a changed-route failure. Record actual tool results in the UI. A deterministic fake provider supports CI and rehearsals; clearly label replay mode. Live hosted acceptance uses a real key and records the selected model/provider and evaluation date.
 
@@ -450,7 +448,7 @@ cargo clippy -- -D warnings
 cargo test
 ```
 
-Add concrete commands for new crates, build-feature combinations, provider tests, demo setup, and model evaluations when those components exist. Update CI and agent guidance in the same implementation phase. No new runnable test commands or passing runtime results are implied by this design document. Preserve the separate [peer-access HPC acceptance checklist](docs/data_access_hpc_checklist.md), and add inference/TUI evidence alongside it.
+Add concrete commands for new crates, build-feature combinations, provider tests, demo setup, and model evaluations when those components exist. Update CI and agent guidance in the same implementation phase. No new runnable test commands or passing runtime results are implied by this design document. Preserve the separate [peer-access HPC acceptance checklist](data_access_hpc_checklist.md), and add inference/TUI evidence alongside it.
 
 ## 12. Delivery sequence
 

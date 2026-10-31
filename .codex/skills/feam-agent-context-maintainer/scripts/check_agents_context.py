@@ -25,8 +25,7 @@ SKILLS = (
     "feam-peer-data-access",
 )
 ROUTES = (
-    "data_access.md",
-    "data_access_implementation_workplan.md",
+    "docs/data_access.md",
     "feather-mesh/.agents/feather_mesh_workplan.md",
     "feather-mesh/mesh_core/Cargo.toml",
     "feather-mesh/mesh_cli/Cargo.toml",
@@ -129,7 +128,7 @@ def check(root):
             f"missing discovery link to canonical skill: {discovered_path}",
         )
 
-    for route in ROUTES[:3]:
+    for route in ("docs/data_access.md", "feather-mesh/.agents/feather_mesh_workplan.md"):
         path = root / route
         check_links(root, path, read(path))
 

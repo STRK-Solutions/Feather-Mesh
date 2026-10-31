@@ -1,10 +1,10 @@
 # Feather Mesh programmatic peer data access
 
-Assessment and design proposal: **2026-09-19**. This document builds on [map.md](map.md), the current Rust implementation, and the user's clarified priorities: **Python notebooks and HPC jobs**, accessing peer data through symbolic links inside a project directory; **STAC for TIFF-based raster discovery/access**, and **Polars for tabular products restricted to Parquet**. Proposed APIs and commands below do not exist yet.
+Assessment and design proposal: **2026-09-19**. This document builds on [map.md](../map.md), the current Rust implementation, and the user's clarified priorities: **Python notebooks and HPC jobs**, accessing peer data through symbolic links inside a project directory; **STAC for TIFF-based raster discovery/access**, and **Polars for tabular products restricted to Parquet**. Proposed APIs and commands below do not exist yet.
 
 **Confirmed publication model:** a client project's peer symlink points to a specific **serving directory inside a provider's project**. The provider must explicitly register each dataset with the required metadata before Feather Mesh recognizes it. File presence in that directory alone does not publish a dataset. Provider and client are roles in a sharing relationship; a project can perform both roles.
 
-For implementation, follow [AGENTS.md](AGENTS.md), the [workplan](data_access_implementation_workplan.md), and the [shared peer-access skill](.codex/skills/feam-peer-data-access/SKILL.md). Explicit user instructions take precedence. Confirmed requirements here govern over proposed defaults; once P0 creates `docs/data_access_contract.md`, use it for settled schema/API and migration decisions. Current source behavior and older PDDs/plans are not substitutes for this feature contract.
+For current implementation behavior, follow [AGENTS.md](../AGENTS.md), the [settled contract](data_access_contract.md), and the [shared peer-access skill](../.codex/skills/feam-peer-data-access/SKILL.md). Explicit user instructions take precedence. Confirmed requirements here and the settled contract govern. Current source behavior and older PDDs/plans are not substitutes for this feature contract.
 
 ## 1. Recommended direction
 
@@ -238,7 +238,7 @@ flowchart TB
 
 ## 7. Current product gaps
 
-These findings come from the current source and the earlier runtime probes recorded in [map.md](map.md). This review did not implement or execute a STAC/Polars integration.
+These findings come from the current source and the earlier runtime probes recorded in [map.md](../map.md). This review did not implement or execute a STAC/Polars integration.
 
 | Gap | Current evidence | Consequence for this feature |
 | --- | --- | --- |
@@ -259,7 +259,7 @@ These findings come from the current source and the earlier runtime probes recor
 | Freshness and provenance | No peer cache age/revocation handling; receipts always have null checksums | Consumers cannot establish which manifest revision and asset set a result used |
 | Acceptance fixtures | Current demonstration uses a CSV and a simple file copy | No evidence yet for TIFF windows, Parquet queries, partitions, or cross-group execution |
 
-Key implementation locations: [request DTOs and workflows](feather-mesh/mesh_core/src/services/registry_service.rs), [source validation and asset types](feather-mesh/mesh_core/src/domain.rs), [version model](feather-mesh/mesh_core/src/models/entities/data_product_version.rs), [schema](feather-mesh/mesh_core/src/db.rs), [CLI](feather-mesh/mesh_cli/src/main.rs), and [current workflow tests](feather-mesh/mesh_cli/tests/cli_workflow_tests.rs).
+Key implementation locations: [request DTOs and workflows](../feather-mesh/mesh_core/src/services/registry_service.rs), [source validation and asset types](../feather-mesh/mesh_core/src/domain.rs), [version model](../feather-mesh/mesh_core/src/models/entities/data_product_version.rs), [schema](../feather-mesh/mesh_core/src/db.rs), [CLI](../feather-mesh/mesh_cli/src/main.rs), and [current workflow tests](../feather-mesh/mesh_cli/tests/cli_workflow_tests.rs).
 
 ## 8. Reproducibility and HPC behavior to settle early
 

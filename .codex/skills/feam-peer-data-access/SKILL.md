@@ -7,7 +7,7 @@ description: Implement or review Feather Mesh peer publication/manifests, projec
 
 ## Sources and Scope
 
-Read [AGENTS.md](../../../AGENTS.md), [requirements](../../../data_access.md), and the [workplan](../../../data_access_implementation_workplan.md). Explicit user instructions take precedence. Confirmed requirements and the [settled contract](../../../docs/data_access_contract.md) govern. Keep detailed schemas, link policies and migration decisions in that contract; source and tests establish observed behavior.
+Read [AGENTS.md](../../../AGENTS.md) and the [requirements](../../../docs/data_access.md). Explicit user instructions take precedence. Confirmed requirements and the [settled contract](../../../docs/data_access_contract.md) govern. Keep detailed schemas, link policies and migration decisions in that contract; source and tests establish observed behavior.
 
 Peer publication and reads use authoritative `serving/manifest.json` records through `mesh_core::services::peer_access`. The supported `python_sdk/` subprocess adapter and STAC HTTP adapter are implemented. Legacy SQLite remains separate and is not a peer authority. Older central-registry/copy-first plans do not govern this feature. Direct peer reads are first-class; staging is explicit.
 
@@ -44,6 +44,6 @@ Run [Rust checks](../feam-rust-workflow/SKILL.md) for Rust changes and [CLI/prot
 | Native inspectors | Run documented supported feature configurations and native-library versions, including enabled-format validation and required-inspector-unavailable failures. Record exact flags/dependencies as introduced. |
 | Target HPC | Record actual separate-user/group allowed/denied access, shared-filesystem publication/lock/rename behavior, and multi-node jobs with separate host/process-local caches. Verify no multi-node shared SQLite WAL cache. Local mocks do not establish this evidence. |
 
-Add real install/test/fixture commands, dependencies, and supported configurations to guidance and CI in the phase introducing each component, before marking it complete. Do not defer this to P8 or invent runnable SDK/STAC commands before components exist. The workplan execution record owns phase evidence.
+Add real install/test/fixture commands, dependencies, and supported configurations to guidance and CI in the phase introducing each component, before marking it complete. Do not defer this to P8 or invent runnable SDK/STAC commands before components exist. Current tests, CI, and the HPC checklist own completion evidence.
 
 Report missing tools/dependencies and every unexecuted required check with its unverified behavior. An unavailable cluster leaves HPC acceptance pending while independent implementation continues. Skipped tests, default-only builds, static STAC output, and local permission mocks cannot establish missing runtime or deployment behavior.
