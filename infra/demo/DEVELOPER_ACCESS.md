@@ -33,6 +33,9 @@ choose another filename instead of overwriting it. Send Saif the `.pub` line,
 your preferred username, and the email you use for Tailscale. Keep the private
 key and passphrase on your computer.
 
+The public key's final label is just a comment; a default label such as
+`your-name-feam` does not affect authentication.
+
 ## 3. Connect after Saif confirms enrollment
 
 Saif supplies your Ubuntu username, its Tailscale IPv4 address and its ED25519

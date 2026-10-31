@@ -40,7 +40,8 @@ def main():
             ["ansible-playbook", "--syntax-check", "-i", "infra/demo/ansible/inventories/example.yml", "infra/demo/ansible/runtime-participant.yml"],
             ["ansible-playbook", "--syntax-check", "-i", "infra/demo/ansible/inventories/example.yml", "infra/demo/ansible/pipeline-tools.yml"],
             ["ansible-playbook", "--syntax-check", "-i", "infra/demo/ansible/inventories/example.yml", "infra/demo/ansible/edge.yml"],
-            ["ansible-lint", "--offline", "infra/demo/ansible/preflight.yml", "infra/demo/ansible/host.yml", "infra/demo/ansible/deploy-w1.yml", "infra/demo/ansible/pool.yml", "infra/demo/ansible/services.yml", "infra/demo/ansible/runtime-participant.yml", "infra/demo/ansible/pipeline-tools.yml", "infra/demo/ansible/edge.yml"],
+            ["ansible-playbook", "--syntax-check", "-i", "infra/demo/ansible/inventories/example.yml", "infra/demo/ansible/developer-access.yml"],
+            ["ansible-lint", "--offline", "infra/demo/ansible/preflight.yml", "infra/demo/ansible/host.yml", "infra/demo/ansible/deploy-w1.yml", "infra/demo/ansible/pool.yml", "infra/demo/ansible/services.yml", "infra/demo/ansible/runtime-participant.yml", "infra/demo/ansible/pipeline-tools.yml", "infra/demo/ansible/edge.yml", "infra/demo/ansible/developer-access.yml"],
         ]
         for command in commands:
             if shutil.which(command[0]) is None:

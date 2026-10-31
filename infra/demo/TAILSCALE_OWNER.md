@@ -36,10 +36,28 @@ Review the node's key-expiry date and arrange renewal before it expires.
 
 ## Enroll the developer's Ubuntu account
 
-Obtain their preferred username and public SSH key. Use the host's reviewed
-Ansible configuration to create a separate login with a home directory and Bash
-shell. Keep it separate from `feam-deploy`, the owner and runtime service users.
-For that account, configure:
+Obtain their preferred username and public SSH key. The
+[developer enrollment playbook](ansible/developer-access.yml) creates a separate
+login with a home directory and Bash shell. It refuses unmanaged existing
+accounts and preserves any existing authorized keys on an enrolled account.
+Keep the actual username/key in a private variables file:
+
+```yaml
+feam_developer_name: chosen_username
+feam_developer_public_key: 'ssh-ed25519 REPLACE_WITH_PUBLIC_KEY optional-comment'
+feam_developer_full_sudo: true
+```
+
+Use the existing deployment inventory with `ansible_user: feam-deploy`, its
+private key, strict host checking and noninteractive sudo:
+
+```bash
+ansible-playbook -i /private/operator/inventory.yml infra/demo/ansible/developer-access.yml -e @/private/operator/developer-access.yml
+```
+
+The playbook validates the public key before creating the account, validates
+sudoers before installing it, then verifies root sudo under the developer's
+identity. A second run should report `changed=0`. The account configuration is:
 
 | Item | Required value |
 | --- | --- |

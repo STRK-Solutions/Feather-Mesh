@@ -1,0 +1,180 @@
+---
+- name: Enroll an explicitly authorized Ubuntu host developer
+  hosts: demo
+  become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Require a separate username, one public key and explicit root delegation
+      ansible.builtin.assert:
+        that:
+          - feam_developer_name is defined
+          - feam_developer_public_key is defined
+          - feam_developer_name is string
+          - feam_developer_public_key is string
+          - feam_developer_full_sudo | default(false) | bool
+          - feam_developer_name is match('^[a-z][a-z0-9_-]{0,30}$')
+          - feam_developer_name not in ['root', 'nobody', 'saif', 'ubuntu']
+          - not feam_developer_name.startswith('feam-')
+          - feam_developer_public_key.splitlines() == [feam_developer_public_key]
+          - feam_developer_public_key is match('^ssh-ed25519 [A-Za-z0-9+/]+={0,2}( .*)?$')
+      no_log: true
+
+    - name: Validate the public key before creating an account
+      ansible.builtin.command:
+        argv: [/usr/bin/ssh-keygen, -lf, /dev/stdin]
+        stdin: '{{ feam_developer_public_key }}'
+      changed_when: false
+      check_mode: false
+      no_log: true
+
+    - name: Inspect the requested login before provisioning
+      ansible.builtin.command:
+        argv: [getent, passwd, '{{ feam_developer_name }}']
+      register: feam_developer_account
+      changed_when: false
+      failed_when: feam_developer_account.rc not in [0, 2]
+      check_mode: false
+
+    - name: Inspect the requested primary group before provisioning
+      ansible.builtin.command:
+        argv: [getent, group, '{{ feam_developer_name }}']
+      register: feam_developer_group
+      changed_when: false
+      failed_when: feam_developer_group.rc not in [0, 2]
+      check_mode: false
+
+    - name: Inspect account paths without following symbolic links
+      ansible.builtin.stat:
+        path: '{{ item }}'
+        follow: false
+      loop:
+        - '/home/{{ feam_developer_name }}'
+        - '/etc/feam/developer-access/{{ feam_developer_name }}'
+        - '/etc/sudoers.d/90-feam-dev-{{ feam_developer_name }}'
+        - '/home/{{ feam_developer_name }}/.ssh'
+        - '/home/{{ feam_developer_name }}/.ssh/authorized_keys'
+      register: feam_developer_paths
+
+    - name: Reject symbolic links and unexpected account path types
+      ansible.builtin.assert:
+        that:
+          - not item.stat.exists or not item.stat.islnk
+          - not item.stat.exists or (item.stat.isdir if ansible_loop.index0 in [0, 3] else item.stat.isreg)
+      loop: '{{ feam_developer_paths.results }}'
+      loop_control:
+        extended: true
+        label: '{{ item.item }}'
+
+    - name: Read the existing enrollment marker
+      ansible.builtin.slurp:
+        src: '/etc/feam/developer-access/{{ feam_developer_name }}'
+      when: feam_developer_paths.results[1].stat.exists
+      register: feam_developer_marker
+      no_log: true
+
+    - name: Refuse existing unmanaged users, groups or home directories
+      ansible.builtin.assert:
+        that:
+          - >-
+            (feam_developer_account.rc == 2
+             and feam_developer_group.rc == 2
+             and not feam_developer_paths.results[0].stat.exists
+             and not feam_developer_paths.results[1].stat.exists
+             and not feam_developer_paths.results[2].stat.exists)
+            or
+            (feam_developer_account.rc == 0
+             and feam_developer_group.rc == 0
+             and feam_developer_paths.results[1].stat.exists
+             and feam_developer_paths.results[1].stat.isreg
+             and feam_developer_paths.results[1].stat.uid == 0
+             and feam_developer_paths.results[1].stat.mode == '0600'
+             and feam_developer_marker.content | b64decode == 'feam-host-developer-v1\n'
+             and feam_developer_account.stdout.split(':')[2] | int >= 1000
+             and feam_developer_account.stdout.split(':')[3] == feam_developer_group.stdout.split(':')[2]
+             and feam_developer_account.stdout.split(':')[5] == '/home/' + feam_developer_name)
+        fail_msg: Existing account or path requires owner review before enrollment.
+
+  tasks:
+    - name: Create the developer primary group
+      ansible.builtin.group:
+        name: '{{ feam_developer_name }}'
+        state: present
+
+    - name: Create the key-authenticated developer login
+      ansible.builtin.user:
+        name: '{{ feam_developer_name }}'
+        group: '{{ feam_developer_name }}'
+        home: '/home/{{ feam_developer_name }}'
+        shell: /bin/bash
+        create_home: true
+        password_lock: true
+
+    - name: Create root-owned enrollment records
+      ansible.builtin.file:
+        path: /etc/feam/developer-access
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+
+    - name: Mark this account as managed by the developer enrollment playbook
+      ansible.builtin.copy:
+        dest: '/etc/feam/developer-access/{{ feam_developer_name }}'
+        content: "feam-host-developer-v1\n"
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Keep the developer home private
+      ansible.builtin.file:
+        path: '/home/{{ feam_developer_name }}'
+        state: directory
+        owner: '{{ feam_developer_name }}'
+        group: '{{ feam_developer_name }}'
+        mode: '0700'
+
+    - name: Create the developer SSH directory
+      ansible.builtin.file:
+        path: '/home/{{ feam_developer_name }}/.ssh'
+        state: directory
+        owner: '{{ feam_developer_name }}'
+        group: '{{ feam_developer_name }}'
+        mode: '0700'
+
+    - name: Authorize the supplied public key while preserving existing keys
+      ansible.builtin.lineinfile:
+        path: '/home/{{ feam_developer_name }}/.ssh/authorized_keys'
+        line: '{{ feam_developer_public_key }}'
+        create: true
+        owner: '{{ feam_developer_name }}'
+        group: '{{ feam_developer_name }}'
+        mode: '0600'
+        validate: /usr/bin/ssh-keygen -lf %s
+      no_log: true
+
+    - name: Install the explicitly delegated root sudo rule
+      ansible.builtin.copy:
+        dest: '/etc/sudoers.d/90-feam-dev-{{ feam_developer_name }}'
+        content: "{{ feam_developer_name }} ALL=(root) NOPASSWD: ALL\n"
+        owner: root
+        group: root
+        mode: '0440'
+        validate: /usr/sbin/visudo -cf %s
+
+    - name: Validate the complete sudo configuration
+      ansible.builtin.command:
+        argv: [/usr/sbin/visudo, -c]
+      changed_when: false
+      check_mode: false
+
+    - name: Verify root sudo under the developer identity
+      ansible.builtin.command:
+        argv: [/usr/sbin/runuser, -u, '{{ feam_developer_name }}', --, /usr/bin/sudo, -n, /usr/bin/id, -u]
+      register: feam_developer_sudo_check
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Require root UID from the developer sudo check
+      ansible.builtin.assert:
+        that: feam_developer_sudo_check.stdout == '0'
+      when: not ansible_check_mode
