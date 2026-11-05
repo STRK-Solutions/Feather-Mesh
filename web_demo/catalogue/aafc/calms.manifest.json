@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "feam.source-product-suite.v1",
+  "id": "calms",
+  "title": "AAFC Canadian Ag-Land Monitoring System",
+  "peer": "earth-observation",
+  "publication_boundary": "catalogue_only",
+  "source_specification": {
+    "title": "CALMS Data Products Data Product Specification",
+    "url": "https://agriculture.canada.ca/atlas/data_donnees/calms/supportdocument_documentdesupport/en/ISO_19131_CALMS_DATA_PRODUCTS_Data_Product_Specification.pdf"
+  },
+  "default_publication_profile": {
+    "data_kind": "raster",
+    "data_format": "geotiff",
+    "source_delivery": "zip_archive_containing_geotiff",
+    "publication_readiness": "requires_archive_unpack_bounded_derivative_and_feam_validation"
+  },
+  "categories": [
+    {
+      "id": "vegetation-condition",
+      "title": "Vegetation Condition",
+      "products": [
+        {
+          "id": "weekly-best-quality-maximum-ndvi",
+          "title": "Weekly Best-Quality Maximum NDVI",
+          "cadence": "weekly",
+          "value_type": "continuous",
+          "semantic_measure": "normalized-difference-vegetation-index"
+        },
+        {
+          "id": "days-of-week-maximum-ndvi",
+          "title": "Days of Week Maximum NDVI",
+          "cadence": "weekly",
+          "value_type": "categorical_provenance",
+          "semantic_measure": "source-day-for-weekly-maximum-ndvi"
+        },
+        {
+          "id": "quality-control-cloud-and-snow-flags",
+          "title": "Quality Control, Cloud and Snow Flags",
+          "cadence": "weekly",
+          "value_type": "quality_flags"
+        },
+        {
+          "id": "mean-weekly-best-quality-maximum-ndvi",
+          "title": "Mean Weekly Best-Quality Maximum NDVI",
+          "cadence": "weekly",
+          "value_type": "baseline"
+        },
+        {
+          "id": "count-of-mean-weekly-best-quality-maximum-ndvi",
+          "title": "Count of Mean Weekly Best-Quality Maximum NDVI",
+          "cadence": "weekly",
+          "value_type": "observation_count"
+        },
+        {
+          "id": "weekly-best-quality-maximum-ndvi-anomalies",
+          "title": "Weekly Best-Quality Maximum NDVI Anomalies",
+          "cadence": "weekly",
+          "value_type": "anomaly"
+        }
+      ]
+    }
+  ]
+}

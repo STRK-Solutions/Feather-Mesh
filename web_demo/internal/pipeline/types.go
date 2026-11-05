@@ -218,9 +218,14 @@ func uniqueJSON(data []byte) error {
 	return nil
 }
 
-func utc(s string) bool {
+func parseUTC(s string) (time.Time, bool) {
 	t, err := time.Parse(time.RFC3339, s)
-	return err == nil && strings.HasSuffix(s, "Z") && !t.IsZero()
+	return t, err == nil && strings.HasSuffix(s, "Z") && !t.IsZero()
+}
+
+func utc(s string) bool {
+	_, ok := parseUTC(s)
+	return ok
 }
 
 func (j Job) Validate() error {
@@ -238,7 +243,7 @@ func (j Job) Validate() error {
 			seen[key] = true
 		}
 	}
-	if j.Protocol != Protocol || !uuidPattern.MatchString(j.ID) || !slug.MatchString(j.Bundle) || j.Namespace != j.Bundle || (j.ParentDigest != "" && !digestPattern.MatchString(j.ParentDigest)) || j.ImporterVersion != "1" {
+	if j.Protocol != Protocol || !uuidPattern.MatchString(j.ID) || !slug.MatchString(j.Bundle) || j.Namespace != j.Bundle || (j.ParentDigest != "" && !digestPattern.MatchString(j.ParentDigest)) || (j.ImporterVersion != "1" && j.ImporterVersion != "2") {
 		return bad
 	}
 	if len(j.Sources) < 1 || len(j.Sources) > 2 || len(j.Products) != len(j.Sources) || j.Policy.Audience != "invited-users" || j.Policy.ModelPayload {
@@ -271,7 +276,12 @@ func (j Job) Validate() error {
 			}
 		} else {
 			st := s.ScientificTime
-			if len(s.BBox) != 4 || s.BBox[0] < -180 || s.BBox[1] < -90 || s.BBox[2] > 180 || s.BBox[3] > 90 || s.BBox[0] >= s.BBox[2] || s.BBox[1] >= s.BBox[3] || s.Resampling != "nearest" || s.Station != "" || s.StartDate != "" || s.EndDate != "" || !utc(st.Start) || !utc(st.End) || st.End < st.Start || st.Evidence == "" || (st.Kind != "instant" && st.Kind != "climatology-interval") || (st.Kind == "instant" && st.Start != st.End) {
+			start, startOK := parseUTC(st.Start)
+			end, endOK := parseUTC(st.End)
+			validTime := st.Kind == "instant" || st.Kind == "climatology-interval" || (j.ImporterVersion == "2" && st.Kind == "interval")
+			isInstant := st.Kind == "instant" && start.Equal(end)
+			isInterval := st.Kind != "instant" && end.After(start)
+			if len(s.BBox) != 4 || s.BBox[0] < -180 || s.BBox[1] < -90 || s.BBox[2] > 180 || s.BBox[3] > 90 || s.BBox[0] >= s.BBox[2] || s.BBox[1] >= s.BBox[3] || s.Resampling != "nearest" || s.Station != "" || s.StartDate != "" || s.EndDate != "" || !startOK || !endOK || st.Evidence == "" || !validTime || (!isInstant && !isInterval) {
 				return bad
 			}
 		}

@@ -1,0 +1,63 @@
+{
+  "protocol": "feam.pipeline.v1",
+  "id": "8e2c159d-2c4b-47d9-a0ce-2c0e4d1fd4fa",
+  "bundle": "climate",
+  "namespace": "climate",
+  "parent_digest": "",
+  "importer_version": "2",
+  "sources": [
+    {
+      "id": "nasdi-weekly-precipitation",
+      "importer": "aafc-geotiff",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/nasdi/data_donnees/weekly/accumulated_precipitation/nasdi_pcp_mm_2026W42.tif",
+      "sha256": "6c95e8d7959cb7252e80aa66cff44fbf214cd613af1777ac0c2e521840899cfa",
+      "max_bytes": 4194304,
+      "upstream_version": "2026-W42",
+      "retrieved_at": "2026-10-28T00:00:00Z",
+      "license": "https://open.canada.ca/en/open-government-licence-canada",
+      "attribution": "Agriculture and Agri-Food Canada; bounded demonstration derivative",
+      "station": "",
+      "start_date": "",
+      "end_date": "",
+      "scientific_time": {
+        "kind": "interval",
+        "start": "2026-10-12T00:00:00Z",
+        "end": "2026-10-19T00:00:00Z",
+        "evidence": "NASDI weekly accumulated-precipitation filename 2026W42; represented as ISO week 42 of 2026 in UTC."
+      },
+      "bbox": [-76.0, 45.0, -75.0, 46.0],
+      "resampling": "nearest",
+      "variable": "accumulated_precipitation",
+      "unit": "mm"
+    }
+  ],
+  "products": [
+    {
+      "source_id": "nasdi-weekly-precipitation",
+      "id": "accumulated-precipitation-weekly",
+      "version": "v2026w42",
+      "name": "NASDI weekly accumulated precipitation bounded demo",
+      "description": "Ottawa-area WGS84 derivative of the NASDI ISO week 42 2026 weekly accumulated precipitation source.",
+      "intended_use": "Web-demo catalogue and bounded raster-read demonstration.",
+      "limitations": "Demonstration subset only; not a national replacement for the NASDI source raster.",
+      "producer": "Agriculture and Agri-Food Canada",
+      "contact": "open-data@example.invalid",
+      "asset_id": "precipitation"
+    }
+  ],
+  "limits": {
+    "source_bytes": 4194304,
+    "output_bytes": 8388608,
+    "candidate_bytes": 16777216,
+    "elapsed_seconds": 300,
+    "redirects": 3,
+    "archive_entries": 0,
+    "expanded_bytes": 0
+  },
+  "policy": {
+    "audience": "invited-users",
+    "model_metadata": true,
+    "model_payload": false,
+    "research_eligible": true
+  }
+}

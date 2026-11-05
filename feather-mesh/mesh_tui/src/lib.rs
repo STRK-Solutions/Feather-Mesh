@@ -22,6 +22,7 @@ mod capture;
 mod controls;
 #[cfg_attr(not(feature = "agent-hosted"), allow(dead_code))]
 mod guide;
+mod source_catalogue;
 use controls::{example, save_local_text, split_command};
 use guide::{
     GuideAction, GuideCommand, GuideObservation, GuideRunState, GuideState, PageDirection,
@@ -41,6 +42,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Tabs, Wrap};
 use ratatui::{Frame, Terminal};
+use source_catalogue::SourceCatalogue;
 use thiserror::Error;
 
 #[cfg(feature = "agent-hosted")]
@@ -54,6 +56,9 @@ pub const TUI_FEATURE_GUIDANCE: &str = "rebuild with `--features tui` to enable 
 #[derive(Debug, Clone)]
 pub struct TuiOptions {
     pub project_root: PathBuf,
+    /// Optional descriptive source-product catalogue. It is read-only and is
+    /// never treated as a provider serving manifest.
+    pub source_catalogue: Option<PathBuf>,
     /// `None` means manual mode. Hosted configuration is deliberately outside
     /// the project and is loaded only by the `agent-hosted` feature.
     pub agent_profile: Option<String>,
@@ -90,6 +95,14 @@ pub fn run(mut options: TuiOptions) -> Result<(), TuiError> {
         ));
     }
     let mut app = App::new(options, journal);
+    if let Some(path) = app.source_catalogue_path.clone() {
+        match source_catalogue::load(&path) {
+            Ok(catalogue) => app.install_source_catalogue(catalogue),
+            Err(error) => {
+                app.views.source_catalogue.text = Some(error);
+            }
+        }
+    }
     app.recover();
     let mut terminal = TerminalGuard::enter()?;
     let tick = Duration::from_millis(25);
@@ -187,6 +200,7 @@ impl Drop for TerminalGuard {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Section {
     Catalog,
+    SourceCatalogue,
     Peers,
     Operations,
     Help,
@@ -199,8 +213,9 @@ enum Section {
 
 impl Section {
     #[cfg(not(feature = "agent-hosted"))]
-    const ALL: [Self; 7] = [
+    const ALL: [Self; 8] = [
         Self::Catalog,
+        Self::SourceCatalogue,
         Self::Peers,
         Self::Operations,
         Self::Help,
@@ -210,8 +225,9 @@ impl Section {
     ];
 
     #[cfg(feature = "agent-hosted")]
-    const ALL: [Self; 8] = [
+    const ALL: [Self; 9] = [
         Self::Catalog,
+        Self::SourceCatalogue,
         Self::Peers,
         Self::Operations,
         Self::Help,
@@ -239,6 +255,7 @@ impl Section {
     fn title(self) -> &'static str {
         match self {
             Self::Catalog => "Catalog",
+            Self::SourceCatalogue => "Sources",
             Self::Peers => "Peers",
             Self::Operations => "Operations",
             Self::Help => "Help",
@@ -260,6 +277,7 @@ struct TextViewState {
 #[derive(Debug, Default)]
 struct SectionViewState {
     catalog: TextViewState,
+    source_catalogue: TextViewState,
     peers: TextViewState,
     operations: TextViewState,
     help: TextViewState,
@@ -272,6 +290,7 @@ impl SectionViewState {
     fn get(&self, section: Section) -> &TextViewState {
         match section {
             Section::Catalog => &self.catalog,
+            Section::SourceCatalogue => &self.source_catalogue,
             Section::Peers => &self.peers,
             Section::Operations => &self.operations,
             Section::Help => &self.help,
@@ -286,6 +305,7 @@ impl SectionViewState {
     fn get_mut(&mut self, section: Section) -> &mut TextViewState {
         match section {
             Section::Catalog => &mut self.catalog,
+            Section::SourceCatalogue => &mut self.source_catalogue,
             Section::Peers => &mut self.peers,
             Section::Operations => &mut self.operations,
             Section::Help => &mut self.help,
@@ -535,6 +555,7 @@ impl Review {
 
 enum CoreUpdate {
     Catalog(CatalogPage),
+    SourceCatalogue(SourceCatalogue),
     Refreshed {
         page: CatalogPage,
         cache_text: String,
@@ -565,6 +586,9 @@ struct App {
     input: InputMode,
     page: Option<CatalogPage>,
     selected: usize,
+    source_catalogue: Option<SourceCatalogue>,
+    source_selected: usize,
+    source_catalogue_path: Option<PathBuf>,
     views: SectionViewState,
     status: String,
     review: Option<Review>,
@@ -595,13 +619,21 @@ impl App {
             .unwrap_or_else(|| "off".into());
         #[cfg(feature = "agent-hosted")]
         let hosted_agent = HostedAgentState::from_profile_request(options.agent_profile.as_deref());
+        let source_catalogue_path = options.source_catalogue.clone();
         Self {
             options,
             journal,
-            section: Section::Catalog,
+            section: if source_catalogue_path.is_some() {
+                Section::SourceCatalogue
+            } else {
+                Section::Catalog
+            },
             input: InputMode::None,
             page: None,
             selected: 0,
+            source_catalogue: None,
+            source_selected: 0,
+            source_catalogue_path,
             views: SectionViewState::default(),
             status: format!("Manual mode; agent: {agent_status}"),
             review: None,
@@ -700,6 +732,14 @@ impl App {
                         format!("catalog returned {count} versions across {peers} observed peers"),
                     ));
                 }
+            }
+            Ok(CoreUpdate::SourceCatalogue(catalogue)) => {
+                self.install_source_catalogue(catalogue);
+                self.status = format!(
+                    "Source catalogue loaded: {} suites / {} product shapes; descriptive metadata only.",
+                    self.source_catalogue.as_ref().unwrap().suite_count,
+                    self.source_catalogue.as_ref().unwrap().product_count
+                );
             }
             Ok(CoreUpdate::Refreshed { page, cache_text }) => {
                 let count = page.entries.len();
@@ -898,6 +938,21 @@ impl App {
             }
             Ok(CoreUpdate::Recovered(records))
         });
+    }
+    fn install_source_catalogue(&mut self, catalogue: SourceCatalogue) {
+        self.source_catalogue_path = Some(catalogue.path.clone());
+        self.source_catalogue = Some(catalogue);
+        self.source_selected = 0;
+        self.views.source_catalogue = TextViewState::default();
+        self.section = Section::SourceCatalogue;
+    }
+    fn load_source_catalogue(&mut self, path: PathBuf) {
+        self.section = Section::SourceCatalogue;
+        self.job(
+            "Loading bounded source-product catalogue…",
+            false,
+            move || source_catalogue::load(&path).map(CoreUpdate::SourceCatalogue),
+        );
     }
     fn reload(&mut self) {
         let root = self.options.project_root.clone();
@@ -1208,6 +1263,15 @@ impl App {
                 self.input = InputMode::Command(String::new());
                 false
             }
+            KeyCode::Char('r') if self.section == Section::SourceCatalogue => {
+                if let Some(path) = self.source_catalogue_path.clone() {
+                    self.load_source_catalogue(path);
+                } else {
+                    self.status =
+                        "Load a source catalogue with :source-catalogue \"CATALOGUE.json\".".into();
+                }
+                false
+            }
             KeyCode::Char('r') => {
                 self.refresh();
                 false
@@ -1232,6 +1296,27 @@ impl App {
                 if matches!(self.section, Section::Catalog | Section::Lineage) =>
             {
                 self.move_selection(-1);
+                false
+            }
+            KeyCode::Char('j') | KeyCode::Down if self.section == Section::SourceCatalogue => {
+                self.move_source_selection(1);
+                false
+            }
+            KeyCode::Char('k') | KeyCode::Up if self.section == Section::SourceCatalogue => {
+                self.move_source_selection(-1);
+                false
+            }
+            KeyCode::Enter if self.section == Section::SourceCatalogue => {
+                if let Some(entry) = self
+                    .source_catalogue
+                    .as_ref()
+                    .and_then(|catalogue| catalogue.entries.get(self.source_selected))
+                {
+                    self.status = format!(
+                        "Selected source shape {}; no asset or publication was selected.",
+                        entry.reference
+                    );
+                }
                 false
             }
             KeyCode::Enter if self.section == Section::Catalog => {
@@ -1497,6 +1582,23 @@ impl App {
         ));
     }
 
+    fn move_source_selection(&mut self, delta: isize) {
+        let len = self
+            .source_catalogue
+            .as_ref()
+            .map_or(0, |catalogue| catalogue.entries.len());
+        if len == 0 {
+            return;
+        }
+        self.source_selected =
+            (self.source_selected as isize + delta).clamp(0, len as isize - 1) as usize;
+        self.views.source_catalogue.scroll = 0;
+        self.status = format!(
+            "Source shape {} of {len}; descriptive metadata only.",
+            self.source_selected + 1
+        );
+    }
+
     fn selected_entry(&self) -> Option<&CatalogEntry> {
         self.page.as_ref()?.entries.get(self.selected)
     }
@@ -1630,6 +1732,8 @@ impl App {
                 if journal.starts_with(&selected) { self.status = "Select a project outside the private operation journal.".into(); return; }
                 self.session += 1; self.section = Section::Catalog; self.review = None; self.draft = None; self.page = None;
                 self.views = SectionViewState::default(); self.review_scroll = 0;
+                self.source_catalogue = None; self.source_selected = 0; self.source_catalogue_path = None;
+                self.options.source_catalogue = None;
                 self.options.project_root = selected; self.query.cursor = None; self.history.clear();
                 #[cfg(feature = "agent-hosted")] {
                     self.agent.stop();
@@ -1638,6 +1742,15 @@ impl App {
                 }
                 self.guide.reset();
                 self.reload();
+            }
+            ["source-catalogue", path] => {
+                let selected = PathBuf::from(path);
+                let selected = if selected.is_absolute() {
+                    selected
+                } else {
+                    root.join(selected)
+                };
+                self.load_source_catalogue(selected);
             }
             ["resolve", reference, version] => self.resolve_view(reference.to_string(), version.to_string(), GuideAction::Command(guide_command)),
             ["publish", path] | ["draft", "load", path] => {
@@ -1778,6 +1891,11 @@ impl App {
     fn active_export_text(&self) -> Option<String> {
         match self.section {
             Section::Catalog => self.views.catalog.text.clone(),
+            Section::SourceCatalogue => self
+                .source_catalogue
+                .as_ref()
+                .map(SourceCatalogue::export_text)
+                .or_else(|| self.views.source_catalogue.text.clone()),
             Section::Peers => self
                 .page
                 .as_ref()
@@ -2409,6 +2527,7 @@ fn render(frame: &mut Frame, app: &App) {
 fn key_hints(section: Section, guide_active: bool) -> String {
     let mut hints: String = match section {
         Section::Catalog => "/ search | : command | ↑/↓ select | Enter details | e examples | p preview | [/] page | g guide | Tab menu | q exit".into(),
+        Section::SourceCatalogue => "↑/↓ select | Enter identify | PgUp/PgDn details | r reload | : command | Tab menu | ? help | q exit".into(),
         Section::Lineage => "/ search | : command | ↑/↓ select | PgUp/PgDn scroll | g guide | Tab menu | q exit".into(),
         #[cfg(feature = "agent-hosted")]
         Section::Assistant => "a ask | ↑/↓ or j/k scroll | PgUp/PgDn page | s stop | g guide | : command | Tab menu | ? help | q exit".into(),
@@ -2509,11 +2628,80 @@ fn render_body(frame: &mut Frame, app: &App, area: Rect) {
 fn render_current_view(frame: &mut Frame, app: &App, area: Rect) {
     match app.section {
         Section::Catalog => render_catalog(frame, app, area),
+        Section::SourceCatalogue => render_source_catalogue(frame, app, area),
         Section::Lineage => render_lineage(frame, app, area),
         #[cfg(feature = "agent-hosted")]
         Section::Assistant => render_assistant(frame, app, area),
         _ => render_section(frame, app, area),
     }
+}
+
+fn render_source_catalogue(frame: &mut Frame, app: &App, area: Rect) {
+    let cols =
+        Layout::horizontal([Constraint::Percentage(45), Constraint::Percentage(55)]).split(area);
+    let entries = app
+        .source_catalogue
+        .as_ref()
+        .map(|catalogue| catalogue.entries.as_slice())
+        .unwrap_or_default();
+    let start = app
+        .source_selected
+        .saturating_sub(cols[0].height.saturating_sub(4) as usize);
+    let list: Vec<_> = entries
+        .iter()
+        .enumerate()
+        .skip(start)
+        .map(|(index, entry)| {
+            let text = sanitize_terminal_text(&format!(
+                "{}{}",
+                if index == app.source_selected {
+                    "> "
+                } else {
+                    "  "
+                },
+                entry.label
+            ));
+            let style = if index == app.source_selected {
+                if app.no_color {
+                    Style::default().add_modifier(Modifier::REVERSED)
+                } else {
+                    Style::default().fg(Color::Black).bg(Color::Cyan)
+                }
+            } else {
+                Style::default()
+            };
+            ListItem::new(text).style(style)
+        })
+        .collect();
+    frame.render_widget(
+        List::new(list).block(
+            Block::default()
+                .title("Source product shapes")
+                .borders(Borders::ALL),
+        ),
+        cols[0],
+    );
+    let detail = app
+        .source_catalogue
+        .as_ref()
+        .and_then(|catalogue| catalogue.selected_detail(app.source_selected))
+        .map(str::to_owned)
+        .or_else(|| app.views.source_catalogue.text.clone())
+        .unwrap_or_else(|| {
+            "No source catalogue loaded.\n\nUse :source-catalogue \"/absolute/path/to/catalogue.json\".\n\nThis view describes possible product shapes; it never publishes assets."
+                .into()
+        });
+    frame.render_widget(
+        Paragraph::new(sanitize_terminal_text(&detail))
+            .wrap(Wrap { trim: false })
+            .scroll((app.views.source_catalogue.scroll, 0))
+            .block(
+                Block::default()
+                    .title("Source metadata (not published)")
+                    .borders(Borders::ALL),
+            ),
+        cols[1],
+    );
 }
 
 fn render_version_list(frame: &mut Frame, app: &App, area: Rect, title: &str) {
@@ -2703,6 +2891,9 @@ fn render_section(frame: &mut Frame, app: &App, area: Rect) {
         ),
         Section::Lineage => unreachable!("lineage has a dedicated renderer"),
         Section::Catalog => unreachable!("catalog has a dedicated renderer"),
+        Section::SourceCatalogue => {
+            unreachable!("source catalogue has a dedicated renderer")
+        }
         #[cfg(feature = "agent-hosted")]
         Section::Assistant => unreachable!("assistant has a dedicated renderer"),
     };
@@ -2818,6 +3009,7 @@ mod tests {
             TuiOptions {
                 project_root: temp.path().join("project"),
                 agent_profile: None,
+                source_catalogue: None,
             },
             journal,
         );
@@ -2898,6 +3090,31 @@ mod tests {
         assert!(app.pending.is_none());
         assert_eq!(app.selected, 0);
         assert_eq!(app.views.catalog.text.as_deref(), Some("CATALOG DETAIL"));
+    }
+
+    #[test]
+    fn source_catalogue_is_a_separate_read_only_tree() {
+        let (temp, mut app) = test_app();
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../web_demo/catalogue/aafc/catalogue.json");
+        app.install_source_catalogue(source_catalogue::load(&path).unwrap());
+
+        let sources = screen_text(&app, 110, 34);
+        assert!(sources.contains("Sources"));
+        assert!(sources.contains("Source product shapes"));
+        assert!(sources.contains("Agroclimate Data"));
+        assert!(sources.contains("catalogue only"));
+        assert!(!sources.contains("product://"));
+
+        app.handle_key(KeyCode::Down);
+        assert_eq!(app.source_selected, 1);
+        let suite = screen_text(&app, 110, 34);
+        assert!(suite.contains("Expected publication profile"));
+        assert!(suite.contains("not a FEAM serving manifest"));
+        app.handle_key(KeyCode::Enter);
+        assert!(app.status.contains("no asset or publication was selected"));
+        assert!(app.pending.is_none());
+        assert!(!temp.path().join("project/serving/manifest.json").exists());
     }
 
     #[test]
@@ -3124,6 +3341,7 @@ mod tests {
             TuiOptions {
                 project_root: temp.path().join("missing"),
                 agent_profile: None,
+                source_catalogue: None,
             },
             journal,
         );
@@ -3166,6 +3384,7 @@ mod workflow_tests {
             TuiOptions {
                 project_root: root,
                 agent_profile: None,
+                source_catalogue: None,
             },
             journal,
         );
@@ -3317,6 +3536,7 @@ mod workflow_tests {
             TuiOptions {
                 project_root: root,
                 agent_profile: None,
+                source_catalogue: None,
             },
             OperationJournal::open(journal_root).unwrap(),
         );

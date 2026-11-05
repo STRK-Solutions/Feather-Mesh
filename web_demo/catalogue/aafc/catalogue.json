@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "feam.source-product-catalogue.v1",
+  "id": "aafc-source-products",
+  "title": "Agriculture and Agri-Food Canada source-product catalogue",
+  "publication_boundary": "catalogue_only",
+  "publisher": {
+    "name": "Agriculture and Agri-Food Canada",
+    "short_name": "AAFC"
+  },
+  "peers": [
+    {
+      "id": "climate",
+      "title": "Climate data",
+      "bundle": "climate",
+      "namespace": "climate",
+      "suites": ["agroclimate", "nasdi"]
+    },
+    {
+      "id": "earth-observation",
+      "title": "Earth observation data",
+      "bundle": "earth-observation",
+      "namespace": "earth-observation",
+      "suites": ["calms"]
+    }
+  ],
+  "suites": [
+    {
+      "id": "agroclimate",
+      "title": "Agroclimate Data",
+      "manifest": "agroclimate.manifest.json"
+    },
+    {
+      "id": "nasdi",
+      "title": "National Agroclimate Series of Derived Indicators",
+      "manifest": "nasdi.manifest.json"
+    },
+    {
+      "id": "calms",
+      "title": "Canadian Ag-Land Monitoring System",
+      "manifest": "calms.manifest.json"
+    }
+  ],
+  "semantic_concepts": [
+    {
+      "id": "standardized-precipitation-index",
+      "title": "Standardized Precipitation Index",
+      "description": "A shared scientific measure represented by distinct AAFC product families; these references do not imply a parent-child publication relationship.",
+      "product_references": [
+        "agroclimate/drought-indicators/standardized-precipitation-index",
+        "nasdi/precipitation/standardized-precipitation-index-monthly",
+        "nasdi/precipitation/standardized-precipitation-index-weekly"
+      ]
+    },
+    {
+      "id": "standardized-precipitation-evapotranspiration-index",
+      "title": "Standardized Precipitation Evapotranspiration Index",
+      "description": "A shared scientific measure represented by distinct AAFC product families.",
+      "product_references": [
+        "agroclimate/drought-indicators/standardized-precipitation-evapotranspiration-index",
+        "nasdi/precipitation/standardized-precipitation-evapotranspiration-index-monthly",
+        "nasdi/precipitation/standardized-precipitation-evapotranspiration-index-weekly"
+      ]
+    }
+  ]
+}

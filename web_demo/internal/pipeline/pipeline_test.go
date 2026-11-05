@@ -77,6 +77,34 @@ func TestClosedJobAndExactApproval(t *testing.T) {
 	}
 }
 
+func TestImporterV2PermitsOnlyNonemptyRegularRasterIntervals(t *testing.T) {
+	job := fixtureJob()
+	job.ImporterVersion = "2"
+	job.Sources = []Source{{
+		ID: "monthly-precipitation", Importer: "aafc-geotiff", URL: "https://agriculture.canada.ca/atlas/data_donnees/nasdi/data_donnees/monthly/accumulated_precipitation/nasdi_pcp_mm_202609.tif",
+		SHA256: strings.Repeat("a", 64), MaxBytes: MiB, UpstreamVersion: "nasdi_pcp_mm_202609.tif", RetrievedAt: "2026-10-28T00:00:00Z",
+		License: "https://open.canada.ca/en/open-government-licence-canada", Attribution: "Agriculture and Agri-Food Canada", ScientificTime: ScientificTime{Kind: "interval", Start: "2026-09-01T00:00:00Z", End: "2026-09-30T23:59:59Z", Evidence: "monthly source filename and AAFC NASDI specification"},
+		BBox: []float64{-76, 45, -75, 46}, Resampling: "nearest", Variable: "accumulated precipitation", Unit: "mm",
+	}}
+	job.Products = []Product{{SourceID: "monthly-precipitation", ID: "nasdi-monthly-precipitation", Version: "v2026-09", Name: "NASDI monthly accumulated precipitation", Description: "Synthetic job fixture for the September 2026 source.", IntendedUse: "pipeline validation", Limitations: "synthetic fixture", Producer: "Agriculture and Agri-Food Canada", Contact: "open-data@example.invalid", AssetID: "precipitation"}}
+	data, _ := json.Marshal(job)
+	if _, err := DecodeJob(data); err != nil {
+		t.Fatalf("v2 interval job rejected: %v", err)
+	}
+
+	job.ImporterVersion = "1"
+	data, _ = json.Marshal(job)
+	if _, err := DecodeJob(data); err == nil {
+		t.Fatal("v1 job accepted the v2 interval semantics")
+	}
+	job.ImporterVersion = "2"
+	job.Sources[0].ScientificTime.End = job.Sources[0].ScientificTime.Start
+	data, _ = json.Marshal(job)
+	if _, err := DecodeJob(data); err == nil {
+		t.Fatal("zero-length interval accepted")
+	}
+}
+
 func TestFetchDestinationAndRedirectPolicy(t *testing.T) {
 	for _, raw := range []string{"127.0.0.1", "::1", "10.0.0.1", "172.16.0.1", "192.168.1.1", "169.254.169.254", "100.100.100.200", "::ffff:127.0.0.1", "0.0.0.1", "198.18.0.1", "192.0.2.1", "2001:db8::1", "64:ff9b::a00:1", "ff02::1"} {
 		if PublicAddress(netip.MustParseAddr(raw)) {

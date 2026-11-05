@@ -15,7 +15,7 @@ import math
 from pathlib import Path
 import sys
 
-VERSION = "1"
+SUPPORTED_VERSIONS = {"1", "2"}
 FIELDS = {
     "Max Temp (°C)": ("maximum_temperature", "degree_Celsius"),
     "Min Temp (°C)": ("minimum_temperature", "degree_Celsius"),
@@ -94,10 +94,12 @@ def geotiff_to_wgs84(source: Path, destination: Path, spec: dict) -> dict:
     if len(bbox) != 4 or not all(math.isfinite(v) for v in bbox) or not (-180 <= bbox[0] < bbox[2] <= 180 and -90 <= bbox[1] < bbox[3] <= 90):
         raise ValueError("invalid WGS84 subset")
     scientific = spec["scientific_time"]
-    if scientific["kind"] not in {"instant", "climatology-interval"} or not scientific["evidence"]:
+    if scientific["kind"] not in {"instant", "interval", "climatology-interval"} or not scientific["evidence"]:
         raise ValueError("source scientific time evidence is required")
     start, end = datetime.fromisoformat(scientific["start"]), datetime.fromisoformat(scientific["end"])
-    if not scientific["start"].endswith("Z") or not scientific["end"].endswith("Z") or end < start:
+    if (not scientific["start"].endswith("Z") or not scientific["end"].endswith("Z")
+            or (scientific["kind"] == "instant" and end != start)
+            or (scientific["kind"] != "instant" and end <= start)):
         raise ValueError("invalid scientific interval")
     if spec["resampling"] != "nearest":
         raise ValueError("unapproved resampling")
@@ -140,8 +142,14 @@ def geotiff_to_wgs84(source: Path, destination: Path, spec: dict) -> dict:
 
 
 def convert(job: dict, inputs: Path, output: Path, reports: Path) -> None:
-    if job["protocol"] != "feam.pipeline.v1" or job["importer_version"] != VERSION:
+    if job["protocol"] != "feam.pipeline.v1" or job["importer_version"] not in SUPPORTED_VERSIONS:
         raise ValueError("unsupported converter job")
+    if job["importer_version"] == "1" and any(
+        source["importer"] == "aafc-geotiff"
+        and source["scientific_time"]["kind"] == "interval"
+        for source in job["sources"]
+    ):
+        raise ValueError("regular raster intervals require importer version 2")
     sources = {source["id"]: source for source in job["sources"]}
     for product in job["products"]:
         spec = sources[product["source_id"]]
@@ -165,7 +173,7 @@ def convert(job: dict, inputs: Path, output: Path, reports: Path) -> None:
         for key in ("table", "raster"):
             if key in result:
                 metadata[key] = result[key]
-        provenance = {"protocol": "feam.pipeline.provenance.v1", "importer_version": VERSION, "source": spec,
+        provenance = {"protocol": "feam.pipeline.provenance.v1", "importer_version": job["importer_version"], "source": spec,
                       "output_path": relative.as_posix(), "output_sha256": sha256(target), "output_bytes": target.stat().st_size,
                       "conversion": result["conversion"]}
         (reports / (product["id"] + ".provenance.json")).write_text(json.dumps(provenance, sort_keys=True, indent=2) + "\n")

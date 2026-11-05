@@ -184,6 +184,23 @@ falls back to a legacy `registry.db`:
 cargo run -p mesh_cli --features tui -- tui --project /work/client --agent off
 ```
 
+An optional descriptive source-product catalogue opens in a separate read-only
+`Sources` tab. It does not add entries to the registered product catalog and is
+never treated as `serving/manifest.json`:
+
+```bash
+cargo run -p mesh_cli --features tui -- tui \
+  --project /work/client \
+  --agent off \
+  --source-catalogue ../web_demo/catalogue/aafc/catalogue.json
+```
+
+Inside an already running TUI, load or replace it with
+`:source-catalogue "/absolute/path/to/catalogue.json"`. The loader accepts
+bounded, versioned catalogue files in one directory, rejects symlinks and
+escaping suite references, and displays product shapes without inventing
+versions, assets, checksums, spatial bounds, or publication state.
+
 It supports manifest-backed catalog browsing with per-peer coverage, pinned
 details/lineage/inventory, direct-resolution CLI/SDK examples, peer refresh,
 and reviewed publication/staging/withdrawal. Catalog shows product versions

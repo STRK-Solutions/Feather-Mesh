@@ -26,9 +26,11 @@ all peer rules. Neither the TUI nor the agent can edit a manifest directly.
 ## Menu and view contract
 
 Catalog renders the product/version list beside selected product metadata.
-Lineage renders the same selectable list beside the product's version lineage. Peers, Operations,
-Help, Teams, and Cache are exclusive full-width views; Catalog-only open,
-example, and paging controls do nothing there. Each view and the modal review screen retain independent
+Sources renders an explicitly loaded descriptive source-product tree beside its
+selected metadata. Lineage renders the same selectable registered-product list
+beside the product's version lineage. Peers, Operations, Help, Teams, and Cache
+are exclusive full-width views; Catalog-only open, example, and paging controls
+do nothing there. Each view and the modal review screen retain independent
 scroll positions, and asynchronous view results update their originating view
 without stealing focus.
 
@@ -56,6 +58,24 @@ requirement rather than combining different views.
 The interface has no SQLite paths or schema. A later shared catalog can replace
 the manifest reader only if it preserves qualified identity, limits,
 freshness/coverage, and current-route checks before access.
+
+### Descriptive source catalogue
+
+`feam tui --source-catalogue PATH` or the local
+`:source-catalogue "PATH"` command may load a versioned descriptive catalogue.
+It is a separate UI projection and never participates in peer discovery,
+resolution, publication, STAC, SDK access, or model tool context. The loader
+accepts regular non-symlink JSON files of at most 1 MiB each, requires all suite
+manifests to be single filenames in the index directory, rejects unknown fields,
+unsupported versions, duplicate identities and inconsistent semantic links, and
+caps suite/category/product/variant counts. Every accepted index and suite must
+declare `publication_boundary: catalogue_only`.
+
+The view may describe potential product families and cross-suite scientific
+concepts. It cannot claim an asset, version, checksum, observation bounds,
+publication state, or authority over `serving/manifest.json`. Project switching
+clears the loaded source catalogue. A real product appears in Catalog only after
+the existing FEAM publication service validates and commits its exact inventory.
 
 ## Review-bound operations and recovery
 

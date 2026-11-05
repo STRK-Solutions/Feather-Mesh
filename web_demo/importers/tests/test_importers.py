@@ -104,6 +104,39 @@ class ImportTests(unittest.TestCase):
         self.assertEqual(report["raster"]["end_datetime"], spec["scientific_time"]["end"])
         self.assertEqual(report["conversion"]["scientific_time"], spec["scientific_time"])
 
+    def test_regular_interval_retains_period_and_never_invents_instant(self):
+        spec = self.spec()
+        spec["scientific_time"] = {"kind": "interval", "start": "2026-09-01T00:00:00Z", "end": "2026-09-30T23:59:59Z", "evidence": "synthetic monthly accumulation"}
+        report = converter.geotiff_to_wgs84(self.raster(), self.root / "monthly.tiff", spec)
+        self.assertIsNone(report["raster"]["datetime"])
+        self.assertEqual(report["raster"]["start_datetime"], spec["scientific_time"]["start"])
+        self.assertEqual(report["raster"]["end_datetime"], spec["scientific_time"]["end"])
+        self.assertEqual(report["conversion"]["scientific_time"], spec["scientific_time"])
+
+    def test_converter_requires_v2_for_regular_raster_interval(self):
+        source = self.spec()
+        source.update({
+            "id": "monthly-precipitation",
+            "importer": "aafc-geotiff",
+        })
+        source["scientific_time"] = {
+            "kind": "interval",
+            "start": "2026-09-01T00:00:00Z",
+            "end": "2026-09-30T23:59:59Z",
+            "evidence": "synthetic monthly accumulation",
+        }
+        job = {
+            "protocol": "feam.pipeline.v1",
+            "importer_version": "1",
+            "sources": [source],
+            "products": [],
+        }
+        with self.assertRaisesRegex(ValueError, "require importer version 2"):
+            converter.convert(job, self.root, self.root / "output", self.root / "reports")
+
+        job["importer_version"] = "2"
+        converter.convert(job, self.root, self.root / "output", self.root / "reports")
+
     def test_corrupt_renamed_missing_georeference_and_nodata_fail(self):
         source = self.root / "not-really.tiff"
         source.write_text("not a TIFF")

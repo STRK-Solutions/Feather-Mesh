@@ -105,8 +105,11 @@ gateway/controller still owns live account grants and read-only mounting.
 
 Raster publication now supports truthful intervals: `datetime: null` with
 `start_datetime` and `end_datetime`. Instant records retain their previous
-serialization. The January normal records both the 1991–2020 interval and January
-aggregation semantics; no retrieval/modification date becomes an observation time.
+serialization. Importer version `2` additionally permits an ordinary `interval`
+for bounded weekly and monthly source products; version `1` remains restricted to
+instant and climatology intervals. The January normal records both the 1991–2020
+interval and January aggregation semantics; no retrieval/modification date becomes
+an observation time.
 
 The [MAC source-reader receipt](../docs/evaluations/web-demo/w4-mac-real-source-readers.json)
 and [candidate review](../docs/evaluations/web-demo/w4-mac-candidate-review.json)

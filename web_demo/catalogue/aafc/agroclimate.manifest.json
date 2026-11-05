@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "feam.source-product-suite.v1",
+  "id": "agroclimate",
+  "title": "AAFC Agroclimate Data",
+  "peer": "climate",
+  "publication_boundary": "catalogue_only",
+  "source_specification": {
+    "title": "AgClimate Data Product Specification",
+    "url": "https://agriculture.canada.ca/atlas/data_donnees/agClimate/supportdocument_documentdesupport/en/ISO_19131_AgClimate_-_Data_Product_Specification.pdf"
+  },
+  "default_publication_profile": {
+    "data_kind": "raster",
+    "data_format": "geotiff",
+    "source_delivery": "direct_geotiff",
+    "publication_readiness": "requires_bounded_derivative_and_feam_validation"
+  },
+  "categories": [
+    {
+      "id": "precipitation",
+      "title": "Precipitation",
+      "products": [
+        { "id": "accumulated-precipitation", "title": "Accumulated Precipitation" },
+        { "id": "percent-of-average-precipitation", "title": "Percent of Average Precipitation" },
+        { "id": "departure-from-average-precipitation", "title": "Departure from Average Precipitation" },
+        { "id": "precipitation-percentile", "title": "Precipitation Percentile" },
+        { "id": "dry-spell", "title": "Dry Spell" }
+      ]
+    },
+    {
+      "id": "temperature-and-crop",
+      "title": "Temperature and Crop",
+      "products": [
+        { "id": "maximum-temperature", "title": "Maximum Temperature" },
+        { "id": "minimum-temperature", "title": "Minimum Temperature" },
+        { "id": "heat-wave", "title": "Heat Wave" },
+        { "id": "crop-heat-units", "title": "Crop Heat Units" },
+        { "id": "growing-degree-days", "title": "Growing Degree Days" },
+        { "id": "mean-temperature-difference-from-normal", "title": "Mean Temperature Difference from Normal" }
+      ]
+    },
+    {
+      "id": "drought-indicators",
+      "title": "Drought Indicators",
+      "products": [
+        { "id": "palmer-hydrological-drought-index", "title": "Palmer Hydrological Drought Index" },
+        { "id": "palmer-modified-drought-index", "title": "Palmer Modified Drought Index" },
+        { "id": "moisture-anomaly-index", "title": "Moisture Anomaly Index" },
+        { "id": "total-soil-moisture", "title": "Total Soil Moisture" },
+        { "id": "percent-of-normal-soil-moisture", "title": "Percent of Normal Soil Moisture" },
+        { "id": "difference-from-normal-soil-moisture", "title": "Difference from Normal Soil Moisture" },
+        {
+          "id": "standardized-precipitation-index",
+          "title": "Standardized Precipitation Index",
+          "semantic_concept_id": "standardized-precipitation-index",
+          "variants": [
+            { "id": "period-30-day", "title": "30-day SPI", "time_representation": "rolling_interval" }
+          ]
+        },
+        {
+          "id": "standardized-precipitation-evapotranspiration-index",
+          "title": "Standardized Precipitation Evapotranspiration Index",
+          "semantic_concept_id": "standardized-precipitation-evapotranspiration-index"
+        },
+        { "id": "blended-drought-indicator-short-term", "title": "Blended Drought Indicator, Short Term" },
+        { "id": "blended-drought-indicator-long-term", "title": "Blended Drought Indicator, Long Term" }
+      ]
+    }
+  ]
+}
