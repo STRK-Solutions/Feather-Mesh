@@ -187,9 +187,16 @@ Manage only the demo's explicit DNS records, Tunnel routes and Access applicatio
 
 The private roster is at `.local/demo-deployment/participants.yaml` on the Mac and is already retained in the encrypted operator vault. Use current private policy when bootstrapping; a fresh clone has no private inputs. Keep identities, keys and raw traces out of Git, images and public evidence. No new cloud credential is required for this milestone.
 
-### Proposed source layout
+### Source layout
 
 W0 provides `web_demo/{schemas,tests,validate.py,README.md}`, `infra/demo/{examples,scripts,tests,toolchain.json,toolchain.md,requirements-dev.lock,README.md}`, the read-only Ansible preflight/example inventory, and the acceptance/evidence index. W1 adds `web_demo/cmd/private-terminal`, `web_demo/internal/terminal`, scoped Ansible roles with `host.yml`/`deploy-w1.yml`, the terminal image and runtime probes. Participant services, in-package versioned migrations and Terraform modules are now implemented with local tests. Production lifecycle integration and named environment gates remain in progress. W0 selects Go host services/orchestration and Python climate conversion in the [implementation contract](ubuntu_web_dev_demo_contract.md).
+
+The static documentation site in [`demo_site/`](../demo_site/README.md) is
+implemented independently of the web/control service. CI builds it and retains
+a downloadable artifact; hosting it in the Ubuntu demo remains future work.
+The paths below are future web/control and infrastructure deliverables, not
+runnable paths today. W0 records any justified layout adjustment and updates
+routing/commands immediately.
 
 ```text
 web_demo/                             new web/control services, separate from FEAM authority
