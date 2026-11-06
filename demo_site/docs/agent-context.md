@@ -50,14 +50,14 @@ Read the sources that govern the task:
   routes work to the owning crate, task skills, and validation.
 - [`map.md`](https://github.com/STRK-Solutions/Feather-Mesh/blob/main/map.md)
   is a detailed repository orientation, not a contract.
-- [Peer data-access requirements](https://github.com/STRK-Solutions/Feather-Mesh/blob/main/data_access.md),
+- [Peer data-access requirements](https://github.com/STRK-Solutions/Feather-Mesh/blob/main/docs/data_access.md),
   [settled contract](https://github.com/STRK-Solutions/Feather-Mesh/blob/main/docs/data_access_contract.md),
   and [workplan](https://github.com/STRK-Solutions/Feather-Mesh/blob/main/data_access_implementation_workplan.md)
   govern peer access. The contract and confirmed requirements take precedence
   over historical plans.
 - [Workspace README](https://github.com/STRK-Solutions/Feather-Mesh/blob/main/feather-mesh/README.md)
   documents CLI usage and Rust workspace commands.
-- [TUI and agent Stage-1 contract](https://github.com/STRK-Solutions/Feather-Mesh/blob/main/docs/tui_agent_stage1_contract.md)
+- [TUI and agent harness design](https://github.com/STRK-Solutions/Feather-Mesh/blob/main/docs/tui_agent_harness_design.md)
   describes the optional assistant/TUI behavior and its evidence boundaries.
 
 The browser-based Ubuntu demo is a separate proposed service. Its
