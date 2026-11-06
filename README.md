@@ -20,6 +20,9 @@ For peer data access, start with the [requirements](docs/data_access.md), the se
 execution record distinguishes locally delivered behavior from target-HPC
 acceptance that is still pending.
 
+The [FEAM documentation site](demo_site/README.md) contains a concise product
+overview and model-readable agent context; its static build runs in CI.
+
 ## Repository Overview
 
 ### `feather-mesh/`
@@ -75,4 +78,5 @@ The product definition document, outlining an in-depth overview of the Feather M
 - For the proposed on-demand browser demo on Ubuntu or disposable cloud compute, with hosted assistance, shared datasets, retained research evidence, and Terraform/Ansible provisioning, see [Ubuntu web demo environment](docs/ubuntu_web_dev_demo_design.md).
 - To implement that demo, follow the [agent-ready development workplan](docs/ubuntu_web_dev_demo_workplan.md), with checkable tasks, Mac versus Ubuntu responsibilities, and separate deployment/acceptance gates.
 - W0's [web contracts and validation](web_demo/README.md), [operator preflight tools](infra/demo/README.md), and [acceptance index](docs/ubuntu_web_dev_demo_acceptance.md) are available; deployed services remain later work.
+- For the initial static docs site and its local preview/build commands, see [`demo_site/`](demo_site/README.md). It is not yet hosted or integrated into the Ubuntu web demo.
 - If you want architecture context, browse `diagrams/`, `proposal.md`, `Feather_Mesh_PDD_Revised.pdf`, and [`feather-mesh/README.md`](/feather-mesh/README.md).

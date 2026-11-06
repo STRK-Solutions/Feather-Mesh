@@ -30,6 +30,10 @@ The active demo runs on Ubuntu with Cloudflare browser access and OpenRouter. Cl
 
 The [web contract](docs/ubuntu_web_dev_demo_contract.md) defines process/IPC/state boundaries. [Web validation](web_demo/README.md) and [operator checks](infra/demo/README.md) document runnable schema checks and read-only preflight; use `python infra/demo/scripts/check.py` from the repository root after installing its locked environment. The [W1 private terminal](infra/demo/W1.md) and participant services live in `web_demo/cmd/` with separate gateway, controller, broker, collector, pipeline and reconciler owners. Run `go test -race ./...`, `go vet ./...` and `go build -trimpath ./cmd/...` from `web_demo/` with its pinned Go version. [Identity](web_demo/IDENTITY.md), [broker/accounting](web_demo/BROKER.md) and [Terraform modules](infra/demo/terraform/README.md) document their checks; consult the [acceptance index](docs/ubuntu_web_dev_demo_acceptance.md) for measured environment evidence. Implemented components and mock-provider tests do not establish public or cloud readiness.
 
+The standalone static [FEAM documentation site](demo_site/README.md) provides
+the human overview and model-readable [agent context](demo_site/docs/agent-context.md).
+Its CI artifact is not a deployment of the planned web demo.
+
 ## Validation
 
 Before finishing Rust changes, run the narrowest useful checks, then broaden as risk increases:

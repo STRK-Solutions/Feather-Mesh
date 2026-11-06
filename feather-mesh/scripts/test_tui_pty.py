@@ -18,9 +18,9 @@ CLI = Path(os.environ.get('FEAM_EXECUTABLE', WORKSPACE/'target/debug/mesh_cli'))
 PROBE = Path(os.environ.get('FEAM_TERMINAL_PROBE', WORKSPACE/'target/debug/examples/terminal_probe')).resolve()
 
 class Session:
-    def __init__(self, args, state, env=None):
+    def __init__(self, args, state, env=None, size=(24, 80)):
         self.master, self.slave = pty.openpty()
-        fcntl.ioctl(self.slave, termios.TIOCSWINSZ, struct.pack('HHHH', 24, 80, 0, 0))
+        fcntl.ioctl(self.slave, termios.TIOCSWINSZ, struct.pack('HHHH', *size, 0, 0))
         self.initial = termios.tcgetattr(self.slave)
         self.raw = b''
         environment = dict(os.environ, TERM='xterm-256color', NO_COLOR='1', XDG_STATE_HOME=str(state))
@@ -65,8 +65,8 @@ class TerminalTests(unittest.TestCase):
     def tearDown(self):
         for session in self.sessions: session.close()
         self.temp.cleanup()
-    def launch(self,args,env=None):
-        session=Session(args,self.root/'private-state',env);self.sessions.append(session);session.pump(.3);return session
+    def launch(self,args,env=None,size=(24,80)):
+        session=Session(args,self.root/'private-state',env,size);self.sessions.append(session);session.pump(.3);return session
     def test_keyboard_resize_explicit_init_and_clean_exit(self):
         project=self.root/'new project with spaces'
         s=self.launch([str(CLI),'--project',str(project),'tui','--agent','off'])
@@ -123,8 +123,7 @@ class TerminalTests(unittest.TestCase):
         import pyte
         project=self.root/'guided fake'
         subprocess.run([str(CLI),'--project',str(project),'init','--namespace','climate','--serving-dir','serving'],check=True,capture_output=True)
-        s=self.launch([str(CLI),'--project',str(project),'tui','--agent','fake'],{'FEAM_TUI_REPLAY':str(replay)})
-        fcntl.ioctl(s.slave,termios.TIOCSWINSZ,struct.pack('HHHH',24,120,0,0));s.process.send_signal(signal.SIGWINCH)
+        s=self.launch([str(CLI),'--project',str(project),'tui','--agent','fake'],{'FEAM_TUI_REPLAY':str(replay)},size=(24,120))
         screen=pyte.Screen(120,24);stream=pyte.Stream(screen);decoder=codecs.getincrementaldecoder('utf-8')('replace');offset=0
         def visible(marker):
             nonlocal offset

@@ -1,0 +1,23 @@
+site_name: Feather Mesh
+site_description: Documentation for Feather Mesh, an HPC-oriented data catalog and data-access layer.
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: cyan
+
+nav:
+  - Overview: index.md
+  - Agent context: agent-context.md
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
