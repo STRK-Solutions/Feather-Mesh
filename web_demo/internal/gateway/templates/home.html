@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feather Mesh</title>
+  {{if .WorkspaceUpdating}}<meta http-equiv="refresh" content="2">{{end}}
+  <style>{{instrumentCSS}}</style>
+</head>
+<body>
+<div class="shell">
+  <header class="masthead">
+    <a class="brand" href="/" aria-label="Feather Mesh home">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="brand-name">FEATHER MESH</span>
+    </a>
+    <div class="identity"><strong>{{.Account.Email}}</strong> &middot; {{.Account.Role}}</div>
+    <div class="system-state">
+      <span class="signal{{if not .BrokerStatus.Available}} warn{{end}}"></span>
+      {{if .BrokerStatus.Available}}System online{{else}}Status limited{{end}}
+    </div>
+  </header>
+
+  {{if .Accounts}}
+  <main>
+    <div class="hero">
+      <p class="eyebrow">Feather Mesh administration</p>
+      <h1>Demo operations</h1>
+      <p class="lede">Accounts, isolated workspaces, approved releases, and model capacity for this deployment.</p>
+    </div>
+
+    <section aria-labelledby="system-heading">
+      <div class="section-head"><p class="section-label" id="system-heading">System instrument</p></div>
+      {{with .BrokerStatus}}
+        {{if .Available}}
+        <div class="metrics">
+          <div class="metric"><span>Allocation</span><strong>{{.Allocated}}</strong></div>
+          <div class="metric"><span>Spent</span><strong>{{.Spent}}</strong></div>
+          <div class="metric"><span>Reserved</span><strong>{{.Reserved}}</strong></div>
+          <div class="metric"><span>Requests</span><strong>{{.Active}} active / {{.Queued}} queued</strong></div>
+        </div>
+        <div class="strip">
+          <div class="strip-group">
+            <span>Model {{$.Config.Model}}</span>
+            <span class="status{{if .Paused}} warning{{end}}">{{if .Paused}}Paused{{else}}Enabled{{end}}</span>
+          </div>
+          <div class="strip-group"><span>Alert {{.AlertPercent}}%</span><span>Recording {{if .Recording}}enabled{{else}}disabled{{end}}</span><span>Unknown {{.Unknown}}</span></div>
+        </div>
+        {{else}}
+        <div class="notice"><p role="status">Live budget, queue, and recording status are unavailable.</p></div>
+        {{end}}
+      {{end}}
+    </section>
+
+    <div class="split">
+      <div>
+        <section class="section" aria-labelledby="participants-heading">
+          <div class="section-head"><p class="section-label" id="participants-heading">Participants</p></div>
+          <p class="fine-print">Policy revision {{.Policy.Revision}}. Invitations remain pending until edge access and workspace setup are ready.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Access</th></tr></thead>
+              <tbody>
+                {{range .Accounts}}
+                <tr>
+                  <td class="dataset-name">{{.Email}}</td>
+                  <td>{{.Role}}</td>
+                  <td>{{.Status}}</td>
+                  <td>
+                    <form method="post" action="/accounts/disable">
+                      <input type="hidden" name="csrf" value="{{$.CSRF}}">
+                      <input type="hidden" name="account_id" value="{{.ID}}">
+                      <input type="hidden" name="auth_version" value="{{.AuthVersion}}">
+                      <button class="quiet">Disable</button>
+                    </form>
+                  </td>
+                </tr>
+                {{end}}
+              </tbody>
+            </table>
+          </div>
+          <details>
+            <summary>Invite an account</summary>
+            <form class="details-body form-stack" method="post" action="/accounts/invite">
+              <input type="hidden" name="csrf" value="{{.CSRF}}">
+              <div class="form-grid">
+                <label>Exact lowercase email<input name="email" type="email" required></label>
+                <label>Role<select name="role"><option value="user">User</option><option value="admin">Admin</option></select></label>
+              </div>
+              <div class="form-actions"><button class="primary">Create pending account</button></div>
+            </form>
+          </details>
+        </section>
+
+        <section class="section" aria-labelledby="workspaces-heading">
+          <div class="section-head"><p class="section-label" id="workspaces-heading">Participant workspaces</p></div>
+          <p class="fine-print">Dataset changes stop the workspace and close open terminals. Participants can restart after reconfiguration.</p>
+          {{range .Workspaces}}
+          <article class="workspace-row">
+            <h3>{{.OwnerEmail}}</h3>
+            <div class="workspace-meta">
+              <span>Generation {{.Generation}}</span><span>Grant {{.GrantVersion}}</span><span>{{if .Ready}}Ready{{else}}Stopped or pending{{end}}</span>
+            </div>
+            <form class="form-actions" method="post" action="/workspace/action">
+              <input type="hidden" name="csrf" value="{{$.CSRF}}">
+              <input type="hidden" name="workspace_id" value="{{.ID}}">
+              <input type="hidden" name="generation" value="{{.Generation}}">
+              <button class="quiet" name="action" value="workspace.stop">Stop</button>
+              <button class="danger" name="action" value="workspace.reset">Review reset</button>
+              <button class="danger" name="action" value="workspace.delete">Review delete</button>
+            </form>
+            {{$owner := .OwnerID}}{{$version := .GrantVersion}}
+            {{range .Grants}}
+            <div class="grant-row">
+              <div><strong>{{.Bundle}}</strong><div class="digest">{{.Digest}}</div></div>
+              <form method="post" action="/datasets/grant">
+                <input type="hidden" name="csrf" value="{{$.CSRF}}">
+                <input type="hidden" name="account_id" value="{{$owner}}">
+                <input type="hidden" name="grant_version" value="{{$version}}">
+                <input type="hidden" name="bundle" value="{{.Bundle}}">
+                <button class="quiet" name="action" value="revoke">Revoke</button>
+              </form>
+            </div>
+            {{else}}<p class="fine-print">No datasets assigned.</p>{{end}}
+            <details>
+              <summary>Assign an exact release</summary>
+              <form class="details-body form-stack" method="post" action="/datasets/grant">
+                <input type="hidden" name="csrf" value="{{$.CSRF}}">
+                <input type="hidden" name="account_id" value="{{.OwnerID}}">
+                <input type="hidden" name="grant_version" value="{{.GrantVersion}}">
+                <label>Bundle<input name="bundle" pattern="[a-z][a-z0-9-]{0,62}" required></label>
+                <label>Approved release digest<input name="digest" pattern="[0-9a-f]{64}" minlength="64" maxlength="64" required></label>
+                <div class="form-actions"><button class="primary" name="action" value="assign">Assign release</button></div>
+              </form>
+            </details>
+          </article>
+          {{else}}<div class="empty">No participant workspaces are assigned.</div>{{end}}
+        </section>
+      </div>
+
+      <aside>
+        <section class="section" aria-labelledby="pipeline-heading">
+          <div class="section-head"><p class="section-label" id="pipeline-heading">Dataset pipeline</p></div>
+          {{if .PipelineAvailable}}
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Job</th><th>Bundle</th><th>State</th></tr></thead>
+              <tbody>{{range .PipelineJobs}}<tr><td><a class="mono" href="/pipeline/review/{{.ID}}">{{.ID}}</a></td><td>{{.Bundle}}</td><td>{{.State}}</td></tr>{{else}}<tr><td colspan="3" class="fine-print">No pipeline jobs.</td></tr>{{end}}</tbody>
+            </table>
+          </div>
+          {{else}}<div class="notice"><p>Pipeline status unavailable. Existing approvals remain recorded privately.</p></div>{{end}}
+          <details>
+            <summary>Prepare a source job</summary>
+            <form class="details-body form-stack" method="post" action="/pipeline/plan">
+              <input type="hidden" name="csrf" value="{{.CSRF}}">
+              <label>Closed source job JSON<textarea name="job" rows="12" maxlength="65536" required></textarea></label>
+              <button class="primary">Review bounded source job</button>
+            </form>
+          </details>
+          <details>
+            <summary>Prepare a withdrawal</summary>
+            <form class="details-body form-stack" method="post" action="/pipeline/withdrawal-plan">
+              <input type="hidden" name="csrf" value="{{.CSRF}}">
+              <label>Bundle<input name="bundle" required></label>
+              <label>Current release digest<input name="digest" pattern="[0-9a-f]{64}" required></label>
+              <label>Product<input name="product" required></label>
+              <label>Version<input name="version" required></label>
+              <label>Reason<textarea name="reason" maxlength="2000" required></textarea></label>
+              <button class="danger">Review withdrawal job</button>
+            </form>
+          </details>
+        </section>
+
+        <section class="section" aria-labelledby="jobs-heading">
+          <div class="section-head"><p class="section-label" id="jobs-heading">Health and jobs</p></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Job</th><th>State</th></tr></thead>
+              <tbody>{{range .Jobs}}<tr><td><span class="mono">{{.ID}}</span>{{if .Error}}<div class="fine-print">{{.Error}}</div>{{end}}</td><td>{{.Status}}</td></tr>{{else}}<tr><td colspan="2" class="fine-print">No control jobs.</td></tr>{{end}}</tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="limits-heading">
+          <div class="section-head"><p class="section-label" id="limits-heading">Limits</p></div>
+          <p class="fine-print">Each workspace has a 2 GiB writable disk and two terminal connections. Runtime ceilings are operator approved. Administrators have no workspace by default.</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+  {{else}}
+  <main>
+    <div class="hero">
+      <p class="eyebrow">Participant workspace</p>
+      <h1>Climate research workspace</h1>
+      <p class="lede">Work with approved Canadian climate data in an isolated, assisted FEAM environment.</p>
+    </div>
+    {{with .Workspace}}
+    <section aria-labelledby="workspace-heading">
+      <div class="section-head"><p class="section-label" id="workspace-heading">Workspace</p></div>
+      <div class="instrument">
+        <div class="instrument-copy">
+          <h2>FEAM climate research</h2>
+          <p>Explore approved datasets, run reproducible analyses, and review results with model assistance.</p>
+          <div class="readouts">
+            <span class="status{{if ne $.LifecycleState "Running"}} neutral{{end}}">{{$.LifecycleState}}</span>
+            <span class="readout">Generation {{.Generation}}</span>
+            <span class="readout">Grant {{.GrantVersion}}</span>
+          </div>
+        </div>
+        <div class="actions">
+          {{if and .Ready (eq $.LifecycleState "Running")}}<a class="button primary" href="https://{{.Hostname}}/">Open assisted FEAM</a>{{end}}
+        </div>
+      </div>
+      {{if $.WarningAt}}<div class="notice"><p role="status">Idle warning: this workspace will stop after 30 minutes without activity. Return to the terminal and enter input to keep working.</p></div>{{end}}
+      {{if $.RetentionDeleteAfter}}<div class="notice danger"><p><strong>Retention notice:</strong> This inactive workspace is eligible for deletion after {{$.RetentionDeleteAfter}} UTC. Return to the terminal and enter input before that deadline.</p></div>{{end}}
+      {{if $.WorkspaceUpdating}}<div class="notice"><p role="status">Workspace update in progress. This page refreshes automatically.</p></div>{{end}}
+      {{if and (not $.WorkspaceUpdating) (not (and .Ready (eq $.LifecycleState "Running")))}}<p class="fine-print">Start the workspace when setup or dataset reconfiguration has completed.</p>{{end}}
+      <form method="post" action="/workspace/action">
+        <input type="hidden" name="csrf" value="{{$.CSRF}}">
+        <input type="hidden" name="workspace_id" value="{{.ID}}">
+        <input type="hidden" name="generation" value="{{.Generation}}">
+        <fieldset{{if $.WorkspaceUpdating}} disabled{{end}}>
+          <legend class="eyebrow section">Workspace controls</legend>
+          <div class="form-actions">
+            <button class="{{if and .Ready (eq $.LifecycleState "Running")}}quiet{{else}}primary{{end}}" name="action" value="workspace.start">Start</button>
+            <button class="quiet" name="action" value="workspace.stop">Stop</button>
+            <button class="danger" name="action" value="workspace.reset">Review reset</button>
+            <button class="danger" name="action" value="workspace.delete">Review delete</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="section" aria-labelledby="data-heading">
+      <div class="section-head"><p class="section-label" id="data-heading">Approved data</p></div>
+      {{if $.Grants}}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Dataset bundle</th><th>Release digest</th><th>Access</th></tr></thead>
+          <tbody>{{range $.Grants}}<tr><td class="dataset-name">{{.Bundle}}</td><td class="digest">{{.Digest}}</td><td><span class="status">Approved</span></td></tr>{{end}}</tbody>
+        </table>
+      </div>
+      {{else}}<div class="empty">No climate datasets are currently assigned to this workspace.</div>{{end}}
+    </section>
+
+    <div class="strip">
+      <div class="strip-group"><span>Model assistance</span><span>{{$.Config.Model}}</span></div>
+      <div class="strip-group">
+        {{with $.BrokerStatus}}{{if .Available}}<span class="status{{if not .Recording}} warning{{end}}">Recording {{if .Recording}}enabled{{else}}disabled{{end}}</span><span>{{.Active}} active / {{.Queued}} queued</span>{{else}}<span>Status unavailable</span>{{end}}{{end}}
+      </div>
+    </div>
+    <p class="fine-print">Idle stops preserve your files. Within a retained deployment, inactive workspace data is kept up to 30 days with advance warning before deletion. A confirmed reset, delete, or deployment teardown may discard it earlier.</p>
+    {{else}}<div class="empty">No workspace is assigned to this account.</div>{{end}}
+  </main>
+  {{end}}
+</div>
+</body>
+</html>

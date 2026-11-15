@@ -138,6 +138,12 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ws, err := g.Store.WorkspaceForOwner(r.Context(), a.ID)
 		if err == nil {
 			data.Workspace = &ws
+			assignments, assignmentErr := g.Store.Assignments(r.Context(), ws.ID)
+			if assignmentErr != nil {
+				e = assignmentErr
+			} else {
+				data.Grants = assignments.Grants
+			}
 			data.LifecycleState, data.WarningAt, data.RetentionNotified, data.RetentionDeleteAfter = g.workspaceStatus(r.Context(), ws)
 			data.WorkspaceUpdating = workspaceUpdating(data.LifecycleState, ws.Ready)
 		}
