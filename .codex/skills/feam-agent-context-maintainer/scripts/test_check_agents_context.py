@@ -23,9 +23,8 @@ class ContextCheckerTests(unittest.TestCase):
         for name in (".codex", ".github", "docs", "feather-mesh", "web_demo", "infra"):
             shutil.copytree(ROOT / name, self.root / name,
                             ignore=shutil.ignore_patterns("target", "__pycache__", ".DS_Store"))
-        for name in ("AGENTS.md", "data_access.md", "data_access_implementation_workplan.md",
-                     "data_access_agent_context_review.md", "map.md",
-                     "tui_agent_harness_design.md", "tui_agent_harness_stage1_workplan.md"):
+        # Copy required root files; project directories, including docs/, were copied above.
+        for name in ("AGENTS.md", "map.md"):
             shutil.copy2(ROOT / name, self.root / name)
         (self.root / ".agents").mkdir()
         (self.root / ".agents/skills").symlink_to("../.codex/skills", target_is_directory=True)
@@ -65,12 +64,12 @@ class ContextCheckerTests(unittest.TestCase):
         self.run_check(arguments=("--rot", self.root), expected=2)
 
     def test_missing_requirement_target(self):
-        (self.root / "data_access.md").unlink()
+        (self.root / "docs/data_access.md").unlink()
         self.assertIn("broken local link", self.run_check(expected=1).stderr)
 
     def test_requirement_filename_without_routing_link_is_insufficient(self):
         self.agents.write_text(self.agents.read_text().replace(
-            "[requirements](data_access.md)", "`data_access.md`"))
+            "[requirements](docs/data_access.md)", "`docs/data_access.md`"))
         self.assertIn("missing routing link", self.run_check(expected=1).stderr)
 
     def test_missing_skill_and_broken_resource(self):

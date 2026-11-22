@@ -39,7 +39,7 @@ Implemented commands:
 
 ## SDK Protocol and Migration
 
-For the supported `python_sdk/` subprocess interface, read the [requirements](../../../data_access.md), [contract](../../../docs/data_access_contract.md) and [workplan](../../../data_access_implementation_workplan.md). Project mode uses the versioned peer protocol and structured machine-mode errors; legacy registry behavior remains separate.
+For the supported `python_sdk/` subprocess interface, read the [requirements](../../../docs/data_access.md) and [contract](../../../docs/data_access_contract.md). Project mode uses the versioned peer protocol and structured machine-mode errors; legacy registry behavior remains separate.
 
 - Define versioned result and error schemas, compatibility/unknown-field rules, and explicit mappings from each domain error to a machine error kind and exit code. Retain documented exit meanings unless an authorized migration changes them.
 - Keep success stdout parseable as one result JSON value. In machine mode, use the documented structured error channel on failure (stderr for the current peer protocol); diagnostic text must not contaminate either JSON payload. Document how verbose diagnostics are separated.
@@ -65,4 +65,4 @@ cargo clippy -- -D warnings
 cargo test
 ```
 
-The optional `tui` command always requires `--project`; JSON mode is rejected before terminal setup. CLI owns flags and errors, while `mesh_tui` owns local input, reviews and restoration. Follow the [TUI contract](../../../docs/tui_agent_stage1_contract.md) and [PTY/demo checks](../../../docs/tui_agent_stage1_demo.md) for this surface.
+The optional `tui` command always requires `--project`; JSON mode is rejected before terminal setup. CLI owns flags and errors, while `mesh_tui` owns local input, reviews and restoration. Follow the [TUI design](../../../docs/tui_agent_harness_design.md) and validation scripts in [`feather-mesh/scripts/`](../../../feather-mesh/scripts/) for this surface.

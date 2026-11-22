@@ -224,19 +224,11 @@ to 1 MiB of rendered text, reset on project/profile changes, and are never
 persisted automatically.
 
 Profiles, disclosure policy, API-key environment references, bounded tools,
-review semantics, and recovery outcomes are defined in
-[the Stage-1 contract](../docs/tui_agent_stage1_contract.md). See the
-[demo runbook](../docs/tui_agent_stage1_demo.md) for a synthetic provider/client
-fixture and the [acceptance record](../docs/tui_agent_stage1_acceptance.md) for
-separate local/live/HPC evidence. Drafts are editable with `:draft` commands;
-`:recover` reconciles pending journal records without replay. The runbook includes
-PTY restoration tests, complete manual/fake walkthroughs and the fixture-backed
-100-task evaluation runner.
-
-For hosted model comparison, see the [synthetic screening runbook and results](../docs/tui_agent_model_screening.md).
-The screen exports the Rust tool schemas and simulates results; it does not
-execute peer operations or establish Stage-1 acceptance. Its offline checks are
-`python3 -m unittest discover -s scripts -p test_router_model_screen.py`.
+review semantics, and recovery outcomes are defined in the
+[TUI and agent-harness design](../docs/tui_agent_harness_design.md). Drafts are
+editable with `:draft` commands; `:recover` reconciles pending journal records
+without replay. Runnable terminal, evaluation, and router-screening checks live
+in [`scripts/`](scripts/); live router traffic requires explicit opt-in.
 
 ### Commands
 
@@ -346,7 +338,7 @@ typed proposals; it has no terminal or direct peer-mutation authority. The
 Python SDK invokes the structured CLI protocol and does not reimplement peer
 visibility or publication rules.
 
-For general product background, see `Feather_Mesh_PDD_Revised.pdf` at the repository root. For peer data access, [data_access.md](../data_access.md) supplies confirmed requirements and [`docs/data_access_contract.md`](../docs/data_access_contract.md) supplies the settled implementation contract. The legacy SQLite workflow above remains available for migration but does not bypass peer publication or discovery rules.
+For general product background, see `Feather_Mesh_PDD_Revised.pdf` at the repository root. For peer data access, [data_access.md](../docs/data_access.md) supplies confirmed requirements and [`docs/data_access_contract.md`](../docs/data_access_contract.md) supplies the settled implementation contract. The legacy SQLite workflow above remains available for migration but does not bypass peer publication or discovery rules.
 
 ---
 

@@ -12,7 +12,7 @@ Feather Mesh is an HPC-oriented data catalog and data mesh project. The current 
 
 ## Peer Data Access Routing
 
-Explicit user instructions take precedence. For peer data access, read [requirements](data_access.md), the settled [contract](docs/data_access_contract.md), and the [implementation workplan](data_access_implementation_workplan.md). Confirmed requirements and the contract govern; source and tests establish observed behavior.
+Explicit user instructions take precedence. For peer data access, read [requirements](docs/data_access.md) and the settled [contract](docs/data_access_contract.md). Confirmed requirements and the contract govern; source and tests establish observed behavior.
 
 Peer publication uses authoritative provider `serving/manifest.json` records and first-class direct reads. Legacy SQLite remains separate and is not a peer authority. `mesh_core::services::peer_access` owns project config, manifests, inspection, refresh, resolution, and staging; `mesh_core::stac`/`stac_http` are derived adapters; `python_sdk/` is the supported subprocess adapter. Older PDDs and plans are historical for this feature; see the [older agent-plan notice](feather-mesh/.agents/feather_mesh_workplan.md).
 
@@ -20,11 +20,7 @@ Use [feam-peer-data-access](.codex/skills/feam-peer-data-access/SKILL.md) for pu
 
 ## TUI and Agent Harness Routing
 
-For planned TUI and agent-harness work, read the [design](tui_agent_harness_design.md) and [stage-1 implementation workplan](tui_agent_harness_stage1_workplan.md). They distinguish planned components from existing behavior and define implementation scope and required evidence. Apply the Rust, CLI, peer-access, and context-maintenance skills above as appropriate.
-
-The [demo runbook](docs/tui_agent_stage1_demo.md) gives manual/fake/live commands and PTY/evaluation checks; the [acceptance record](docs/tui_agent_stage1_acceptance.md) distinguishes measured results from remaining gates.
-
-The [router model screening runbook](docs/tui_agent_model_screening.md) documents the synthetic development screen, schema export, and offline Python checks. Keep its development tasks separate from held-out acceptance; live runs require explicit opt-in.
+For TUI and agent-harness work, read the [design](docs/tui_agent_harness_design.md) and use the validation scripts in [`feather-mesh/scripts/`](feather-mesh/scripts/). Apply the Rust, CLI, peer-access, and context-maintenance skills above as appropriate; live router traffic requires explicit opt-in.
 
 ## Web Demo Routing
 
