@@ -1,0 +1,1 @@
+{"nodes": [{"id": "mesh_core_tests_data_readme_filesystem_fixtures", "label": "Deterministic Filesystem Fixtures", "file_type": "concept", "source_file": "mesh_core/tests/data/README.md", "source_location": "L3-L5", "rationale": "Simulate shared HPC filesystem data products locally and in CI without requiring external filesystem setup."}], "edges": [], "hyperedges": []}

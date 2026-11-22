@@ -1,0 +1,207 @@
+{
+  "node_count": 1525,
+  "unverified_node_count": 0,
+  "raw_edge_count": 4418,
+  "non_object_edges": 0,
+  "missing_endpoint_edges": 0,
+  "dangling_endpoint_edges": 542,
+  "external_reference_edges": 0,
+  "self_loop_edges": 1,
+  "valid_candidate_edges": 3876,
+  "exact_duplicate_edges": 11,
+  "directed_unique_endpoint_pairs": 3807,
+  "directed_same_endpoint_collapsed_edges": 69,
+  "undirected_unique_endpoint_pairs": 3807,
+  "undirected_same_endpoint_collapsed_edges": 69,
+  "same_endpoint_group_count": 58,
+  "relation_variant_groups": 22,
+  "source_file_variant_groups": 0,
+  "source_location_variant_groups": 21,
+  "context_variant_groups": 6,
+  "post_build_graph_type": "Graph",
+  "post_build_node_count": 1684,
+  "post_build_edge_count": 4313,
+  "post_build_error": "",
+  "producer_suppression": {
+    "path": "/Users/raiyanaziz/.local/share/uv/tools/graphifyy/lib/python3.13/site-packages/graphify/extract.py",
+    "total_sites": 12,
+    "sites": [
+      {
+        "line": 2056,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids = {n[\"id\"] for n in nodes}"
+      },
+      {
+        "line": 2751,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids = {n[\"id\"] for n in nodes}"
+      },
+      {
+        "line": 2753,
+        "name": "seen_doc_refs",
+        "tuple_arity": 0,
+        "sample": "seen_doc_refs: set[str] = set()"
+      },
+      {
+        "line": 3420,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids: set[str] = {n[\"id\"] for n in nodes}"
+      },
+      {
+        "line": 3567,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids = {n.get(\"id\") for n in nodes}"
+      },
+      {
+        "line": 5320,
+        "name": "seen_keys",
+        "tuple_arity": 0,
+        "sample": "seen_keys: set[tuple] = set()"
+      },
+      {
+        "line": 5506,
+        "name": "seen_keys",
+        "tuple_arity": 0,
+        "sample": "seen_keys: set[tuple] = set()"
+      },
+      {
+        "line": 10371,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids: set[str] = set()"
+      },
+      {
+        "line": 10479,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids: set[str] = set()"
+      },
+      {
+        "line": 10558,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids: set[str] = set()"
+      },
+      {
+        "line": 11083,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids: set[str] = set()"
+      },
+      {
+        "line": 11084,
+        "name": "seen_edges",
+        "tuple_arity": 4,
+        "sample": "seen_edges: set[tuple[str, str, str, str | None]] = set()"
+      }
+    ],
+    "error": ""
+  },
+  "examples": [
+    {
+      "source": "mesh_tui_src_lib_sectionviewstate",
+      "target": "mesh_tui_src_lib_textviewstate",
+      "edge_count": 8,
+      "relations": [
+        "references"
+      ],
+      "source_files": [
+        "mesh_tui/src/lib.rs"
+      ],
+      "source_locations": [
+        "L279",
+        "L280",
+        "L281",
+        "L282",
+        "L283",
+        "L284",
+        "L285",
+        "L286"
+      ],
+      "contexts": [
+        "field"
+      ]
+    },
+    {
+      "source": "mesh_tui_src_guide_guideaction",
+      "target": "mesh_tui_src_guide_reviewkind",
+      "edge_count": 4,
+      "relations": [
+        "references"
+      ],
+      "source_files": [
+        "mesh_tui/src/guide.rs"
+      ],
+      "source_locations": [
+        "L132",
+        "L133",
+        "L134",
+        "L135"
+      ],
+      "contexts": [
+        "field"
+      ]
+    },
+    {
+      "source": "mesh_agent_src_tools_toolexecution",
+      "target": "mesh_agent_src_tools_rs_value",
+      "edge_count": 3,
+      "relations": [
+        "references"
+      ],
+      "source_files": [
+        "mesh_agent/src/tools.rs"
+      ],
+      "source_locations": [
+        "L33",
+        "L38",
+        "L42"
+      ],
+      "contexts": [
+        "field"
+      ]
+    },
+    {
+      "source": "mesh_core_src_services_interactive_operations_recoveryidentity",
+      "target": "mesh_core_src_services_interactive_operations_recoveryidentity_from",
+      "edge_count": 3,
+      "relations": [
+        "method"
+      ],
+      "source_files": [
+        "mesh_core/src/services/interactive_operations.rs"
+      ],
+      "source_locations": [
+        "L120",
+        "L131",
+        "L144"
+      ],
+      "contexts": [
+        ""
+      ]
+    },
+    {
+      "source": "mesh_tui_src_guide_expectedevent",
+      "target": "mesh_tui_src_guide_reviewkind",
+      "edge_count": 3,
+      "relations": [
+        "references"
+      ],
+      "source_files": [
+        "mesh_tui/src/guide.rs"
+      ],
+      "source_locations": [
+        "L262",
+        "L263",
+        "L264"
+      ],
+      "contexts": [
+        "field"
+      ]
+    }
+  ]
+}

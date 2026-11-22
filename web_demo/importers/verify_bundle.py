@@ -6,6 +6,7 @@ release. Run with the supported installed SDK and exact-loopback socket access.
 """
 import argparse
 import csv
+from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -16,6 +17,7 @@ import subprocess
 import tempfile
 import time
 import urllib.request
+import zipfile
 
 import feam
 import polars as pl
@@ -31,6 +33,20 @@ def digest(path):
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             sha.update(chunk)
     return sha.hexdigest()
+
+
+@contextmanager
+def raster_source(path, source):
+    if source["importer"] != "aafc-calms-zip":
+        yield path
+        return
+    with tempfile.TemporaryDirectory(prefix="feam-calms-verification-") as temporary:
+        target = Path(temporary) / "source.tif"
+        archive = source["archive"]
+        with zipfile.ZipFile(path) as package, package.open(archive["primary_member"]) as incoming, target.open("xb") as output:
+            for block in iter(lambda: incoming.read(1024 * 1024), b""):
+                output.write(block)
+        yield target
 
 
 def verify(provider, raw, job, executable):
@@ -70,7 +86,7 @@ def verify(provider, raw, job, executable):
                 assert frame["total_precipitation_flag"][-1] == rows[-1]["Total Precip Flag"] == "T"
                 result.update(rows=frame.height, known_date="2023-01-01", known_values=list(actual), last_precipitation_flag="T", native_lazy_frame=True)
             else:
-                with rasterio.open(asset.path) as out, rasterio.open(raw / source["id"]) as original:
+                with raster_source(raw / source["id"], source) as original_path, rasterio.open(asset.path) as out, rasterio.open(original_path) as original:
                     assert out.crs.to_epsg() == 4326
                     assert out.nodata == original.nodata
                     window = out.read(1, window=Window(255, 255, 2, 2))
@@ -79,7 +95,11 @@ def verify(provider, raw, job, executable):
                             lon, lat = out.xy(row, column)
                             x, y = transform(out.crs, original.crs, [lon], [lat])
                             i, k = original.index(x[0], y[0])
-                            assert original.read(1, window=Window(k, i, 1, 1))[0, 0] == window[row - 255, column - 255]
+                            expected = original.read(1, window=Window(k, i, 1, 1))[0, 0]
+                            domain = source.get("value_domain")
+                            if domain and not any(value_range["min"] <= expected <= value_range["max"] for value_range in domain["ranges"]):
+                                expected = original.nodata
+                            assert expected == window[row - 255, column - 255]
                     result.update(shape=list(out.shape), crs=out.crs.to_string(), source_crs=original.crs.to_string(), nodata=out.nodata, known_window=window.tolist(), source_pixel_comparison=True)
             results["products"].append(result)
         with socket.socket() as probe:
@@ -96,13 +116,12 @@ def verify(provider, raw, job, executable):
             else:
                 raise RuntimeError("private STAC readiness timeout")
             catalog = Client.open(f"http://127.0.0.1:{port}")
-            found = list(catalog.search(datetime="2000-01-01T00:00:00Z", limit=1).items())
-            assert len(found) == 1 and found[0].datetime is None
-            assert found[0].properties["start_datetime"] == "1991-01-01T00:00:00Z"
-            assert found[0].properties["end_datetime"] == "2020-12-31T23:59:59Z"
-            assert list(catalog.search(datetime="2022-01-01T00:00:00Z").items()) == []
+            found = list(catalog.search(method="GET", datetime="1900-01-01T00:00:00Z/2100-01-01T00:00:00Z", limit=100).items())
+            expected = {(product["id"], product["version"]) for product in job["products"]}
+            observed = {(item.properties["feam:product_id"], item.properties["feam:version"]) for item in found}
+            assert expected.issubset(observed)
             results["stac"] = {"client": "pystac-client", "loopback": "127.0.0.1", "authentication": "none", "matched_items": len(found),
-                               "datetime": None, "start_datetime": found[0].properties["start_datetime"], "end_datetime": found[0].properties["end_datetime"], "outside_interval_empty": True}
+                               "expected_products": sorted(f"{product}/{version}" for product, version in expected)}
         finally:
             process.terminate()
             process.wait(timeout=5)

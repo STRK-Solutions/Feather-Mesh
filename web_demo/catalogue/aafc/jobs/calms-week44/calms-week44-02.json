@@ -1,0 +1,187 @@
+{
+  "protocol": "feam.pipeline.v1",
+  "id": "e1f5cef8-fdb5-5249-988b-8d51147c3827",
+  "bundle": "earth-observation",
+  "namespace": "earth-observation",
+  "parent_digest": "",
+  "importer_version": "3",
+  "sources": [
+    {
+      "id": "calms-best-ndvi-week44",
+      "importer": "aafc-calms-zip",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/calms/data_donnees/tif/mod_bestquality_maxndvi/2026/AgExtent_MOD_BestQuality_MaxNDVI_2026299_2026305.zip",
+      "sha256": "fb68bfaa530eb78aa224de45b1277f738b2529aee03a08a3666df391d8c08a0e",
+      "max_bytes": 91562863,
+      "upstream_version": "2026299-2026305",
+      "retrieved_at": "2026-11-14T21:57:53Z",
+      "license": "https://open.canada.ca/en/open-government-licence-canada",
+      "attribution": "Agriculture and Agri-Food Canada; bounded demonstration derivative",
+      "station": "",
+      "start_date": "",
+      "end_date": "",
+      "scientific_time": {
+        "kind": "interval",
+        "start": "2026-10-26T00:00:00Z",
+        "end": "2026-11-02T00:00:00Z",
+        "evidence": "CALMS filename Julian days 299-305 and ISO 19131 specification: ISO week 44 represented as a half-open UTC interval."
+      },
+      "bbox": [
+        -76.0,
+        45.0,
+        -75.0,
+        46.0
+      ],
+      "resampling": "nearest",
+      "variable": "normalized_difference_vegetation_index",
+      "unit": "1",
+      "archive": {
+        "primary_member": "AgExtent.MOD.BestQuality.MaxNDVI.2026299.2026305.tif",
+        "members": [
+          {
+            "name": "AgExtent.MOD.BestQuality.MaxNDVI.2026299.2026305.tfw",
+            "bytes": 96,
+            "sha256": "493a936ab554380cf7f2ad0224a025512a97bb9c725a3dd3fcadc8343098b2cf"
+          },
+          {
+            "name": "AgExtent.MOD.BestQuality.MaxNDVI.2026299.2026305.tif",
+            "bytes": 81569326,
+            "sha256": "a9f5b7efa101f904d7de495707bcf699aeaee824f53365eb2eab6140f1a54178"
+          },
+          {
+            "name": "AgExtent.MOD.BestQuality.MaxNDVI.2026299.2026305.tif.aux.xml",
+            "bytes": 1967,
+            "sha256": "863abd64a97f87bfc195e05a328aad9715b38bb91c523795ecb9264000cd93d2"
+          },
+          {
+            "name": "AgExtent.MOD.BestQuality.MaxNDVI.2026299.2026305.tif.ovr",
+            "bytes": 21975254,
+            "sha256": "6956f909654380fa86f6106c319c04e4484d2db41568316c79665f3fc30d52ec"
+          },
+          {
+            "name": "AgExtent.MOD.BestQuality.MaxNDVI.2026299.2026305.tif.xml",
+            "bytes": 6734,
+            "sha256": "d4114a0473f73452c11dbdb23da01801decee4f7371ff7eb6b6f33db2961919e"
+          }
+        ]
+      },
+      "value_domain": {
+        "ranges": [
+          {
+            "min": 0,
+            "max": 1
+          }
+        ],
+        "labels": {}
+      }
+    },
+    {
+      "id": "calms-anomaly-week44",
+      "importer": "aafc-calms-zip",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/calms/data_donnees/tif/mod_bestquality_maxndvi_anomaly/2026/AgExtent_MOD_Anomaly_BestQuality_MaxNDVI_2026299_2026305_Week_44.zip",
+      "sha256": "56f91132c48a6e82b44f3755a9a281d7a4c61990df496249aac9db5718c044e8",
+      "max_bytes": 101395147,
+      "upstream_version": "2026299-2026305; ISO week 44",
+      "retrieved_at": "2026-11-14T21:57:53Z",
+      "license": "https://open.canada.ca/en/open-government-licence-canada",
+      "attribution": "Agriculture and Agri-Food Canada; bounded demonstration derivative",
+      "station": "",
+      "start_date": "",
+      "end_date": "",
+      "scientific_time": {
+        "kind": "interval",
+        "start": "2026-10-26T00:00:00Z",
+        "end": "2026-11-02T00:00:00Z",
+        "evidence": "CALMS filename Julian days 299-305 and Week 44 plus ISO 19131 anomaly definition; represented as a half-open UTC interval."
+      },
+      "bbox": [
+        -76.0,
+        45.0,
+        -75.0,
+        46.0
+      ],
+      "resampling": "nearest",
+      "variable": "normalized_difference_vegetation_index_anomaly",
+      "unit": "1",
+      "archive": {
+        "primary_member": "AgExtent.MOD.Anomaly.BestQuality.MaxNDVI.2026299.2026305.Week.44.tif",
+        "members": [
+          {
+            "name": "AgExtent.MOD.Anomaly.BestQuality.MaxNDVI.2026299.2026305.Week.44.tfw",
+            "bytes": 96,
+            "sha256": "70ac20a52352521b9a12c316480fd62adda6c6490cde5543c5789b7fa250f686"
+          },
+          {
+            "name": "AgExtent.MOD.Anomaly.BestQuality.MaxNDVI.2026299.2026305.Week.44.tif",
+            "bytes": 93289698,
+            "sha256": "b0c7cb9f180d25c503856a11b1e1f7aa00193aac41db79e557293ae2728f89d7"
+          },
+          {
+            "name": "AgExtent.MOD.Anomaly.BestQuality.MaxNDVI.2026299.2026305.Week.44.tif.aux.xml",
+            "bytes": 1611,
+            "sha256": "b0e31b9eb325ff227444d461112588455d6070344146271c4a3b67cebdc463e5"
+          },
+          {
+            "name": "AgExtent.MOD.Anomaly.BestQuality.MaxNDVI.2026299.2026305.Week.44.tif.ovr",
+            "bytes": 22952596,
+            "sha256": "71ca61e15d2aa41e015bc0e1171c775c8197c09df4530d9e69907503f39386f4"
+          },
+          {
+            "name": "AgExtent.MOD.Anomaly.BestQuality.MaxNDVI.2026299.2026305.Week.44.tif.xml",
+            "bytes": 6845,
+            "sha256": "5c02c2d3e1f710f26fd84ecb80f9ec45e4b6438d56a39510e952de3428ead448"
+          }
+        ]
+      },
+      "value_domain": {
+        "ranges": [
+          {
+            "min": -2,
+            "max": 2
+          }
+        ],
+        "labels": {}
+      }
+    }
+  ],
+  "products": [
+    {
+      "source_id": "calms-best-ndvi-week44",
+      "id": "weekly-best-quality-maximum-ndvi",
+      "version": "v2026w44",
+      "name": "CALMS Weekly Best-Quality Maximum NDVI bounded demo",
+      "description": "Ottawa-area WGS84 derivative of the selected Agriculture and Agri-Food Canada CALMS Weekly Best-Quality Maximum NDVI source.",
+      "intended_use": "Web-demo catalogue and bounded raster-read demonstration.",
+      "limitations": "Demonstration subset only; not a national replacement for the Agriculture and Agri-Food Canada CALMS source raster.",
+      "producer": "Agriculture and Agri-Food Canada",
+      "contact": "agri-geomatics-agrog@agr.gc.ca",
+      "asset_id": "raster"
+    },
+    {
+      "source_id": "calms-anomaly-week44",
+      "id": "weekly-best-quality-maximum-ndvi-anomalies",
+      "version": "v2026w44",
+      "name": "CALMS Weekly Best-Quality Maximum NDVI Anomalies bounded demo",
+      "description": "Ottawa-area WGS84 derivative of the selected Agriculture and Agri-Food Canada CALMS Weekly Best-Quality Maximum NDVI Anomalies source.",
+      "intended_use": "Web-demo catalogue and bounded raster-read demonstration.",
+      "limitations": "Demonstration subset only; not a national replacement for the Agriculture and Agri-Food Canada CALMS source raster.",
+      "producer": "Agriculture and Agri-Food Canada",
+      "contact": "agri-geomatics-agrog@agr.gc.ca",
+      "asset_id": "raster"
+    }
+  ],
+  "limits": {
+    "source_bytes": 101395147,
+    "output_bytes": 8388608,
+    "candidate_bytes": 67108864,
+    "elapsed_seconds": 300,
+    "redirects": 3,
+    "archive_entries": 10,
+    "expanded_bytes": 219804223
+  },
+  "policy": {
+    "audience": "invited-users",
+    "model_metadata": true,
+    "model_payload": false,
+    "research_eligible": true
+  }
+}

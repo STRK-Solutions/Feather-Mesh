@@ -60,7 +60,8 @@ func sourceClient(source Source, limits Limits) *http.Client {
 }
 
 // Fetch downloads only an already approved, checksum-pinned source. No retries.
-// Archives are intentionally unsupported: expanded bytes and entries are zero.
+// Archive bytes remain opaque here; the offline converter validates the exact
+// approved member inventory before bounded extraction.
 func Fetch(ctx context.Context, source Source, limits Limits, destination string) error {
 	if source.MaxBytes < 1 || source.MaxBytes > limits.SourceBytes {
 		return errors.New("source byte bound missing")

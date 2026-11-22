@@ -26,11 +26,14 @@ manifest.
 - `agroclimate.manifest.json`, `nasdi.manifest.json`, and
   `calms.manifest.json` are the three source-suite catalogues.
 - `subset-selection.json` locks one exact direct GeoTIFF for every Agroclimate
-  and NASDI product, plus the common bounded publication profile. CALMS is not
-  included in this selection.
+  and NASDI product, plus the common bounded publication profile.
+- `calms-subset-selection.json` locks the six 2026 Week-44 CALMS ZIP archives,
+  every member hash/size, scientific value domains and the same Ottawa profile.
 - `build_subset_jobs.py` verifies a private source intake against the locked
   sizes and SHA-256 values, then emits the closed pipeline jobs in batches of
   at most two products.
+- `build_calms_jobs.py` performs the same private-intake verification and emits
+  three importer-version-3 `earth-observation` archive jobs.
 - `validate_catalogue.py` checks the repository-owned structural invariants
   using only Python's standard library.
 
@@ -83,10 +86,23 @@ python3 web_demo/catalogue/aafc/build_subset_jobs.py \
 The exclusion is only a resume aid: it rejects unknown or repeated IDs and
 does not withdraw or overwrite anything in the current release.
 
-The generated climate jobs use the `climate` bundle and namespace. CALMS is
-reserved for a later archive-unpack stage and its jobs must use the separate
-`earth-observation` bundle and namespace; a pipeline job must never mix products from the two
-peers.
+The generated climate jobs use the `climate` bundle and namespace. CALMS uses
+the separate `earth-observation` bundle and namespace; a pipeline job must never
+mix products from the two peers. Build the three CALMS templates from private
+archives named by their `source_id` values:
+
+```bash
+python3 web_demo/catalogue/aafc/build_calms_jobs.py \
+  --selection web_demo/catalogue/aafc/calms-subset-selection.json \
+  --input-dir /private/intake/calms-week44 \
+  --output-dir /private/jobs/calms-week44
+```
+
+The repository copy under `jobs/calms-week44/` is a reviewed template set. Its
+empty `parent_digest` fields are not permission to enqueue all three unchanged.
+Bind job 1 to the current `earth-observation` digest (or empty only when no
+release exists), then bind jobs 2 and 3 to each newly promoted predecessor.
+Review and approve each exact complete candidate separately.
 
 To browse it in the local Feather Mesh TUI, run from `feather-mesh/` with an
 existing FEAM project root:

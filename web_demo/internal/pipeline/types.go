@@ -9,8 +9,10 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math"
 	"net/url"
 	"path"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -51,24 +53,50 @@ type ScientificTime struct {
 	Evidence string `json:"evidence"`
 }
 
+type ArchiveMember struct {
+	Name   string `json:"name"`
+	Bytes  int64  `json:"bytes"`
+	SHA256 string `json:"sha256"`
+}
+
+type ArchiveSpec struct {
+	PrimaryMember string          `json:"primary_member"`
+	Members       []ArchiveMember `json:"members"`
+}
+
+type ValueRange struct {
+	Min float64 `json:"min"`
+	Max float64 `json:"max"`
+}
+
+// RasterValueDomain records the scientific values retained in a published
+// subset. Source pixels outside every range are converted to the source nodata
+// value; labels document categorical codes in the FEAM raster semantics.
+type RasterValueDomain struct {
+	Ranges []ValueRange      `json:"ranges"`
+	Labels map[string]string `json:"labels"`
+}
+
 type Source struct {
-	ID              string         `json:"id"`
-	Importer        string         `json:"importer"`
-	URL             string         `json:"url"`
-	SHA256          string         `json:"sha256"`
-	MaxBytes        int64          `json:"max_bytes"`
-	UpstreamVersion string         `json:"upstream_version"`
-	RetrievedAt     string         `json:"retrieved_at"`
-	License         string         `json:"license"`
-	Attribution     string         `json:"attribution"`
-	Station         string         `json:"station"`
-	StartDate       string         `json:"start_date"`
-	EndDate         string         `json:"end_date"`
-	ScientificTime  ScientificTime `json:"scientific_time"`
-	BBox            []float64      `json:"bbox"`
-	Resampling      string         `json:"resampling"`
-	Variable        string         `json:"variable"`
-	Unit            string         `json:"unit"`
+	ID              string             `json:"id"`
+	Importer        string             `json:"importer"`
+	URL             string             `json:"url"`
+	SHA256          string             `json:"sha256"`
+	MaxBytes        int64              `json:"max_bytes"`
+	UpstreamVersion string             `json:"upstream_version"`
+	RetrievedAt     string             `json:"retrieved_at"`
+	License         string             `json:"license"`
+	Attribution     string             `json:"attribution"`
+	Station         string             `json:"station"`
+	StartDate       string             `json:"start_date"`
+	EndDate         string             `json:"end_date"`
+	ScientificTime  ScientificTime     `json:"scientific_time"`
+	BBox            []float64          `json:"bbox"`
+	Resampling      string             `json:"resampling"`
+	Variable        string             `json:"variable"`
+	Unit            string             `json:"unit"`
+	Archive         *ArchiveSpec       `json:"archive,omitempty"`
+	ValueDomain     *RasterValueDomain `json:"value_domain,omitempty"`
 }
 
 type Product struct {
@@ -243,17 +271,19 @@ func (j Job) Validate() error {
 			seen[key] = true
 		}
 	}
-	if j.Protocol != Protocol || !uuidPattern.MatchString(j.ID) || !slug.MatchString(j.Bundle) || j.Namespace != j.Bundle || (j.ParentDigest != "" && !digestPattern.MatchString(j.ParentDigest)) || (j.ImporterVersion != "1" && j.ImporterVersion != "2") {
+	if j.Protocol != Protocol || !uuidPattern.MatchString(j.ID) || !slug.MatchString(j.Bundle) || j.Namespace != j.Bundle || (j.ParentDigest != "" && !digestPattern.MatchString(j.ParentDigest)) || (j.ImporterVersion != "1" && j.ImporterVersion != "2" && j.ImporterVersion != "3") {
 		return bad
 	}
 	if len(j.Sources) < 1 || len(j.Sources) > 2 || len(j.Products) != len(j.Sources) || j.Policy.Audience != "invited-users" || j.Policy.ModelPayload {
 		return bad
 	}
 	l := j.Limits
-	if l.SourceBytes < 1 || l.SourceBytes > 64*MiB || l.OutputBytes < 1 || l.OutputBytes > 250*MiB || l.CandidateBytes < l.OutputBytes || l.CandidateBytes > 250*MiB || l.ElapsedSeconds < 1 || l.ElapsedSeconds > 300 || l.Redirects < 0 || l.Redirects > 3 || l.ArchiveEntries != 0 || l.ExpandedBytes != 0 {
+	if l.SourceBytes < 1 || l.SourceBytes > 250*MiB || l.OutputBytes < 1 || l.OutputBytes > 250*MiB || l.CandidateBytes < l.OutputBytes || l.CandidateBytes > 250*MiB || l.ElapsedSeconds < 1 || l.ElapsedSeconds > 300 || l.Redirects < 0 || l.Redirects > 3 || l.ArchiveEntries < 0 || l.ArchiveEntries > 32 || l.ExpandedBytes < 0 || l.ExpandedBytes > 512*MiB {
 		return bad
 	}
 	seen := map[string]bool{}
+	archiveEntries := 0
+	var expandedBytes int64
 	for _, s := range j.Sources {
 		if s.MaxBytes < 1 || s.MaxBytes > j.Limits.SourceBytes {
 			return bad
@@ -268,6 +298,46 @@ func (j Job) Validate() error {
 		if s.Variable == "" || len(s.Variable) > 200 || s.Unit == "" || len(s.Unit) > 100 {
 			return bad
 		}
+		isArchive := s.Importer == "aafc-calms-zip"
+		if isArchive != (s.Archive != nil) || isArchive != (s.ValueDomain != nil) || (isArchive && j.ImporterVersion != "3") {
+			return bad
+		}
+		if s.Archive != nil {
+			if len(s.Archive.Members) < 1 || len(s.Archive.Members) > 16 || filepath.Base(s.Archive.PrimaryMember) != s.Archive.PrimaryMember || !strings.HasSuffix(strings.ToLower(s.Archive.PrimaryMember), ".tif") {
+				return bad
+			}
+			members := map[string]bool{}
+			primary := false
+			for _, member := range s.Archive.Members {
+				if member.Name == "" || len(member.Name) > 255 || filepath.Base(member.Name) != member.Name || strings.Contains(member.Name, "\\") || members[member.Name] || member.Bytes < 1 || member.Bytes > 250*MiB || !digestPattern.MatchString(member.SHA256) {
+					return bad
+				}
+				members[member.Name] = true
+				primary = primary || member.Name == s.Archive.PrimaryMember
+				archiveEntries++
+				expandedBytes += member.Bytes
+			}
+			if !primary {
+				return bad
+			}
+		}
+		if s.ValueDomain != nil {
+			if len(s.ValueDomain.Ranges) < 1 || len(s.ValueDomain.Ranges) > 16 || len(s.ValueDomain.Labels) > 32 {
+				return bad
+			}
+			last := math.Inf(-1)
+			for _, valueRange := range s.ValueDomain.Ranges {
+				if math.IsNaN(valueRange.Min) || math.IsNaN(valueRange.Max) || math.IsInf(valueRange.Min, 0) || math.IsInf(valueRange.Max, 0) || valueRange.Min > valueRange.Max || valueRange.Min <= last {
+					return bad
+				}
+				last = valueRange.Max
+			}
+			for code, label := range s.ValueDomain.Labels {
+				if strings.TrimSpace(code) == "" || strings.TrimSpace(label) == "" || len(code) > 32 || len(label) > 200 {
+					return bad
+				}
+			}
+		}
 		if s.Importer == "eccc-csv" {
 			a, e := time.Parse("2006-01-02", s.StartDate)
 			b, e2 := time.Parse("2006-01-02", s.EndDate)
@@ -278,13 +348,16 @@ func (j Job) Validate() error {
 			st := s.ScientificTime
 			start, startOK := parseUTC(st.Start)
 			end, endOK := parseUTC(st.End)
-			validTime := st.Kind == "instant" || st.Kind == "climatology-interval" || (j.ImporterVersion == "2" && st.Kind == "interval")
+			validTime := st.Kind == "instant" || st.Kind == "climatology-interval" || ((j.ImporterVersion == "2" || j.ImporterVersion == "3") && st.Kind == "interval")
 			isInstant := st.Kind == "instant" && start.Equal(end)
 			isInterval := st.Kind != "instant" && end.After(start)
 			if len(s.BBox) != 4 || s.BBox[0] < -180 || s.BBox[1] < -90 || s.BBox[2] > 180 || s.BBox[3] > 90 || s.BBox[0] >= s.BBox[2] || s.BBox[1] >= s.BBox[3] || s.Resampling != "nearest" || s.Station != "" || s.StartDate != "" || s.EndDate != "" || !startOK || !endOK || st.Evidence == "" || !validTime || (!isInstant && !isInterval) {
 				return bad
 			}
 		}
+	}
+	if archiveEntries != l.ArchiveEntries || expandedBytes != l.ExpandedBytes {
+		return bad
 	}
 	products := map[string]bool{}
 	sourceUse := map[string]bool{}
@@ -311,6 +384,7 @@ func validateURL(importer, raw string) error {
 	host := u.Hostname()
 	allowed := importer == "eccc-csv" && host == "climate.weather.gc.ca" && u.Path == "/climate_data/bulk_data_e.html"
 	allowed = allowed || (importer == "aafc-geotiff" && host == "agriculture.canada.ca" && strings.HasPrefix(u.Path, "/atlas/data_donnees/") && (strings.HasSuffix(strings.ToLower(u.Path), ".tif") || strings.HasSuffix(strings.ToLower(u.Path), ".tiff")) && u.RawQuery == "")
+	allowed = allowed || (importer == "aafc-calms-zip" && host == "agriculture.canada.ca" && strings.HasPrefix(u.Path, "/atlas/data_donnees/calms/data_donnees/tif/") && strings.HasSuffix(strings.ToLower(u.Path), ".zip") && u.RawQuery == "")
 	if !allowed {
 		return errors.New("unapproved source URL")
 	}

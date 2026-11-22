@@ -23,6 +23,13 @@ EXPECTED_PEERS = {
     "earth-observation": {"calms"},
 }
 SHA256 = re.compile(r"^[a-f0-9]{64}$")
+OTTAWA_SUBSET = {
+    "bbox": [-76.0, 45.0, -75.0, 46.0],
+    "target_crs": "EPSG:4326",
+    "maximum_width": 512,
+    "maximum_height": 512,
+    "resampling": "nearest",
+}
 
 
 def load_json(name: str) -> dict:
@@ -86,13 +93,7 @@ def validate_subset_selection(selection: dict, references: dict[str, str | None]
     if selection.get("publication_boundary") != "pipeline_input_selection":
         fail("subset selection: must not be mistaken for a serving manifest")
     subset = selection.get("subset", {})
-    if subset != {
-        "bbox": [-76.0, 45.0, -75.0, 46.0],
-        "target_crs": "EPSG:4326",
-        "maximum_width": 512,
-        "maximum_height": 512,
-        "resampling": "nearest",
-    }:
+    if subset != OTTAWA_SUBSET:
         fail("subset selection: the bounded Ottawa publication profile changed")
 
     expected = {
@@ -145,6 +146,73 @@ def validate_subset_selection(selection: dict, references: dict[str, str | None]
         fail("subset selection: transient source intake exceeds the 64 MiB demo bound")
 
 
+def validate_calms_selection(selection: dict, references: dict[str, str | None]) -> None:
+    if selection.get("schema_version") != 1 or selection.get("kind") != "feam.aafc-calms-demo-subset-selection.v1":
+        fail("CALMS selection: unsupported version")
+    if selection.get("publication_boundary") != "pipeline_input_selection" or selection.get("subset") != OTTAWA_SUBSET:
+        fail("CALMS selection: wrong publication boundary or Ottawa subset profile")
+    if not selection.get("contact") or selection.get("license") != "https://open.canada.ca/en/open-government-licence-canada":
+        fail("CALMS selection: contact and licence are required")
+    expected = {
+        product
+        for reference in references
+        for suite, _category, product in [reference.split("/")]
+        if suite == "calms"
+    }
+    products = selection.get("products", [])
+    actual = {product.get("product_id") for product in products}
+    if len(products) != 6 or actual != expected:
+        fail("CALMS selection: every CALMS product must occur exactly once")
+    if len({product.get("source_id") for product in products}) != len(products):
+        fail("CALMS selection: source ids must be unique")
+
+    total_bytes = 0
+    for product in products:
+        source_id = product.get("source_id", "")
+        if product.get("suite") != "calms" or not ID.fullmatch(source_id):
+            fail(f"CALMS selection: invalid source identity {source_id!r}")
+        url = urlparse(product.get("url", ""))
+        if (url.scheme != "https" or url.hostname != "agriculture.canada.ca"
+                or not url.path.startswith("/atlas/data_donnees/calms/data_donnees/tif/")
+                or not url.path.endswith(".zip") or url.query or url.fragment):
+            fail(f"CALMS selection: unapproved source URL for {source_id}")
+        expected_bytes = product.get("expected_bytes")
+        if not isinstance(expected_bytes, int) or not 0 < expected_bytes <= 250 * 1024 * 1024:
+            fail(f"CALMS selection: invalid byte bound for {source_id}")
+        total_bytes += expected_bytes
+        if not SHA256.fullmatch(product.get("sha256", "")):
+            fail(f"CALMS selection: invalid SHA-256 for {source_id}")
+        if not re.fullmatch(r"v[a-z0-9-]+", product.get("version", "")):
+            fail(f"CALMS selection: invalid FEAM version for {source_id}")
+
+        scientific = product.get("scientific_time", {})
+        if scientific.get("kind") not in {"interval", "climatology-interval"} or not scientific.get("evidence"):
+            fail(f"CALMS selection: incomplete scientific time for {source_id}")
+        if parse_utc(scientific.get("start", "")) >= parse_utc(scientific.get("end", "")):
+            fail(f"CALMS selection: empty scientific interval for {source_id}")
+
+        archive = product.get("archive", {})
+        members = archive.get("members", [])
+        names = [member.get("name") for member in members]
+        if (not 1 <= len(members) <= 16 or len(set(names)) != len(names)
+                or archive.get("primary_member") not in names
+                or not str(archive.get("primary_member", "")).endswith(".tif")):
+            fail(f"CALMS selection: invalid archive inventory for {source_id}")
+        for member in members:
+            name = member.get("name", "")
+            if Path(name).name != name or "\\" in name or not isinstance(member.get("bytes"), int) or member["bytes"] < 1 or not SHA256.fullmatch(member.get("sha256", "")):
+                fail(f"CALMS selection: unsafe or incomplete archive member for {source_id}")
+
+        domain = product.get("value_domain", {})
+        ranges = domain.get("ranges", [])
+        if not ranges or any(not isinstance(item.get("min"), (int, float)) or not isinstance(item.get("max"), (int, float)) or item["min"] > item["max"] for item in ranges):
+            fail(f"CALMS selection: invalid value domain for {source_id}")
+        if not isinstance(domain.get("labels"), dict) or not product.get("variable") or not product.get("unit"):
+            fail(f"CALMS selection: missing raster semantics for {source_id}")
+    if total_bytes > 512 * 1024 * 1024:
+        fail("CALMS selection: transient source intake exceeds the 512 MiB bound")
+
+
 def main() -> int:
     index = load_json("catalogue.json")
     if index.get("schema_version") != 1 or index.get("kind") != "feam.source-product-catalogue.v1":
@@ -193,6 +261,7 @@ def main() -> int:
             fail(f"catalogue: semantic concept {concept_id} omits product {reference}")
 
     validate_subset_selection(load_json("subset-selection.json"), references)
+    validate_calms_selection(load_json("calms-subset-selection.json"), references)
 
     print("AAFC source-product catalogue is valid")
     return 0

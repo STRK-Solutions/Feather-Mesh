@@ -166,8 +166,9 @@ func (m *Manager) reserve(ctx context.Context, j Job, approved string, actors ..
 			return err
 		}
 	}
-	// A complete candidate plus every raw input and metadata overhead is reserved.
-	reservation := j.Limits.CandidateBytes + MiB
+	// A complete candidate, every raw input, bounded archive expansion and
+	// metadata overhead are reserved before any source is fetched.
+	reservation := j.Limits.CandidateBytes + j.Limits.ExpandedBytes + MiB
 	for _, source := range j.Sources {
 		reservation += source.MaxBytes
 	}

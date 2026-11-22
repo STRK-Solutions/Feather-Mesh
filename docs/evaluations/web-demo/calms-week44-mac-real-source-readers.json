@@ -1,0 +1,90 @@
+{
+  "assigned": false,
+  "bbox": [-76.0, 45.0, -75.0, 46.0],
+  "environment": "Darwin",
+  "namespace": "earth-observation",
+  "products": [
+    {
+      "id": "days-of-week-maximum-ndvi",
+      "output_bytes": 38178,
+      "output_sha256": "eeb4802c1d78b7727795f190a9b63c4cbd22b49930fee3778eb13ad3d2e12431",
+      "version": "v2026w44"
+    },
+    {
+      "id": "quality-control-cloud-and-snow-flags",
+      "output_bytes": 7346,
+      "output_sha256": "c8a9e33b0fd0a76cf77f735a35dad6cf2ea6146ef0b38443810ce34d1ad4c161",
+      "version": "v2026w44"
+    },
+    {
+      "id": "weekly-best-quality-maximum-ndvi",
+      "output_bytes": 556688,
+      "output_sha256": "35f2c343d09d792ce8783471f09be250e36277024f546a8afa8a06394e58002e",
+      "version": "v2026w44"
+    },
+    {
+      "id": "weekly-best-quality-maximum-ndvi-anomalies",
+      "output_bytes": 649932,
+      "output_sha256": "326ea6d9a09c54ba445a97b56135f9b0fb9fe43df22864af3a72e5f6489db26e",
+      "version": "v2026w44"
+    },
+    {
+      "id": "count-of-mean-weekly-best-quality-maximum-ndvi",
+      "output_bytes": 43266,
+      "output_sha256": "ddc40973385de3e9a854b581e8a47dbef44ee0310fbcc4ed7d692d4ea383aa4d",
+      "version": "v2006-2025w44"
+    },
+    {
+      "id": "mean-weekly-best-quality-maximum-ndvi",
+      "output_bytes": 639454,
+      "output_sha256": "88540308912c2931fa2badc7d877470570eaaf467c6bb26a66a9c086edda46da",
+      "version": "v2006-2025w44"
+    }
+  ],
+  "promoted": false,
+  "protocol": "feam.pipeline.verification.v1",
+  "shape": [512, 512],
+  "sources": [
+    {
+      "bytes": 6129703,
+      "id": "calms-day-week44",
+      "sha256": "fa5f2f2ae57bd28072a87ca81c85f078580010ae87de1c7fc213836a09d23f5a"
+    },
+    {
+      "bytes": 2802328,
+      "id": "calms-quality-week44",
+      "sha256": "71689af48b0c990e86d7efaab156228ff78a713cd813ef3de6a2484ebbf35a19"
+    },
+    {
+      "bytes": 91562863,
+      "id": "calms-best-ndvi-week44",
+      "sha256": "fb68bfaa530eb78aa224de45b1277f738b2529aee03a08a3666df391d8c08a0e"
+    },
+    {
+      "bytes": 101395147,
+      "id": "calms-anomaly-week44",
+      "sha256": "56f91132c48a6e82b44f3755a9a281d7a4c61990df496249aac9db5718c044e8"
+    },
+    {
+      "bytes": 12741833,
+      "id": "calms-baseline-count-week44",
+      "sha256": "88c60929cc2102c3e4bba2f2e276c3269afe7a59aee78a34eef131354e3b3d17"
+    },
+    {
+      "bytes": 142057627,
+      "id": "calms-baseline-mean-week44",
+      "sha256": "c55c21fe3cd7de6216f78633f2c4b89d13ca1fa3bd44e62303411fc63c3e047a"
+    }
+  ],
+  "status": "private-local-source-readers-verified",
+  "target_crs": "EPSG:4326",
+  "verification": {
+    "archive_inventory": "exact names, sizes and SHA-256 verified for all 30 members",
+    "feam_metadata": "six metadata records validated and six versions published to a disposable provider",
+    "feam_sdk": "fresh installed SDK resolved all six assets with integrity verification",
+    "pipeline_host_admission": "production manager correctly refused before fetch because local free space was below the hard 20 GiB threshold",
+    "rasterio": "all six 512x512 outputs compared to known source pixels",
+    "stac": "pystac-client GET search over a tokenless loopback server matched all six items"
+  },
+  "verified_at": "2026-11-14T22:47:32Z"
+}

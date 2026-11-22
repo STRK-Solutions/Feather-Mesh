@@ -105,6 +105,73 @@ func TestImporterV2PermitsOnlyNonemptyRegularRasterIntervals(t *testing.T) {
 	}
 }
 
+func TestImporterV3AcceptsOnlyExactBoundedCALMSArchives(t *testing.T) {
+	job := fixtureJob()
+	job.Bundle, job.Namespace, job.ImporterVersion = "earth-observation", "earth-observation", "3"
+	members := []ArchiveMember{
+		{Name: "calms.tfw", Bytes: 10, SHA256: strings.Repeat("1", 64)},
+		{Name: "calms.tif", Bytes: 1000, SHA256: strings.Repeat("2", 64)},
+		{Name: "calms.tif.aux.xml", Bytes: 20, SHA256: strings.Repeat("3", 64)},
+		{Name: "calms.tif.ovr", Bytes: 100, SHA256: strings.Repeat("4", 64)},
+		{Name: "calms.tif.xml", Bytes: 30, SHA256: strings.Repeat("5", 64)},
+	}
+	job.Sources = []Source{{
+		ID: "calms-days", Importer: "aafc-calms-zip", URL: "https://agriculture.canada.ca/atlas/data_donnees/calms/data_donnees/tif/mod_allquality_day_of_week/2026/calms.zip",
+		SHA256: strings.Repeat("a", 64), MaxBytes: MiB, UpstreamVersion: "2026299-2026305", RetrievedAt: "2026-11-14T00:00:00Z",
+		License: "https://open.canada.ca/en/open-government-licence-canada", Attribution: "Agriculture and Agri-Food Canada", ScientificTime: ScientificTime{Kind: "interval", Start: "2026-10-26T00:00:00Z", End: "2026-11-02T00:00:00Z", Evidence: "CALMS Week 44 source filename and specification"},
+		BBox: []float64{-76, 45, -75, 46}, Resampling: "nearest", Variable: "day of week for maximum NDVI", Unit: "category",
+		Archive:     &ArchiveSpec{PrimaryMember: "calms.tif", Members: members},
+		ValueDomain: &RasterValueDomain{Ranges: []ValueRange{{Min: 1, Max: 7}}, Labels: map[string]string{"1": "Monday", "7": "Sunday"}},
+	}}
+	job.Products = []Product{{SourceID: "calms-days", ID: "days-of-week-maximum-ndvi", Version: "v2026w44", Name: "CALMS days", Description: "Bounded test", IntendedUse: "tests", Limitations: "bounded", Producer: "Agriculture and Agri-Food Canada", Contact: "agri-geomatics-agrog@agr.gc.ca", AssetID: "raster"}}
+	job.Limits = Limits{SourceBytes: MiB, OutputBytes: MiB, CandidateBytes: 4 * MiB, ElapsedSeconds: 30, Redirects: 1, ArchiveEntries: len(members), ExpandedBytes: 1160}
+	data, _ := json.Marshal(job)
+	if _, err := DecodeJob(data); err != nil {
+		t.Fatalf("valid CALMS archive rejected: %v", err)
+	}
+
+	for name, change := range map[string]func(*Job){
+		"old importer":        func(j *Job) { j.ImporterVersion = "2" },
+		"missing contract":    func(j *Job) { j.Sources[0].Archive = nil },
+		"traversal member":    func(j *Job) { j.Sources[0].Archive.Members[0].Name = "../calms.tfw" },
+		"wrong entry bound":   func(j *Job) { j.Limits.ArchiveEntries-- },
+		"wrong expanded size": func(j *Job) { j.Limits.ExpandedBytes-- },
+	} {
+		t.Run(name, func(t *testing.T) {
+			candidate := job
+			candidate.Sources = append([]Source(nil), job.Sources...)
+			archive := *job.Sources[0].Archive
+			archive.Members = append([]ArchiveMember(nil), archive.Members...)
+			candidate.Sources[0].Archive = &archive
+			change(&candidate)
+			encoded, _ := json.Marshal(candidate)
+			if _, err := DecodeJob(encoded); err == nil {
+				t.Fatal("invalid CALMS archive accepted")
+			}
+		})
+	}
+}
+
+func TestCALMSWeek44JobTemplatesMatchClosedGoContract(t *testing.T) {
+	paths, err := filepath.Glob("../../catalogue/aafc/jobs/calms-week44/*.json")
+	if err != nil || len(paths) != 3 {
+		t.Fatalf("expected three CALMS job templates: %v %v", paths, err)
+	}
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		job, err := DecodeJob(data)
+		if err != nil {
+			t.Fatalf("%s: %v", path, err)
+		}
+		if job.Bundle != "earth-observation" || job.ImporterVersion != "3" || len(job.Products) != 2 || job.ParentDigest != "" {
+			t.Fatalf("unexpected CALMS template %s", path)
+		}
+	}
+}
+
 func TestFetchDestinationAndRedirectPolicy(t *testing.T) {
 	for _, raw := range []string{"127.0.0.1", "::1", "10.0.0.1", "172.16.0.1", "192.168.1.1", "169.254.169.254", "100.100.100.200", "::ffff:127.0.0.1", "0.0.0.1", "198.18.0.1", "192.0.2.1", "2001:db8::1", "64:ff9b::a00:1", "ff02::1"} {
 		if PublicAddress(netip.MustParseAddr(raw)) {

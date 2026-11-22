@@ -1,10 +1,13 @@
 import copy
 import csv
 from datetime import date
+import hashlib
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
+import zipfile
 
 import numpy as np
 import polars as pl
@@ -145,6 +148,68 @@ class ImportTests(unittest.TestCase):
         for crs, nodata in [(None, -9999), ("EPSG:4326", None)]:
             with self.subTest(crs=crs, nodata=nodata), self.assertRaises(ValueError):
                 converter.geotiff_to_wgs84(self.raster(crs, nodata), self.root / "bad.tiff", self.spec())
+
+    def calms_archive(self):
+        raster = self.root / "calms.tif"
+        with rasterio.open(raster, "w", driver="GTiff", width=2, height=2, count=1, dtype="uint16",
+                           crs="EPSG:4326", transform=from_origin(-76, 46, .5, .5), nodata=256) as dataset:
+            dataset.write(np.array([[0, 1], [7, 8]], dtype=np.uint16), 1)
+        members = {
+            "calms.tfw": b"world file",
+            "calms.tif": raster.read_bytes(),
+            "calms.tif.aux.xml": b"<PAMDataset/>",
+            "calms.tif.ovr": b"overview",
+            "calms.tif.xml": b"<metadata/>",
+        }
+        archive = self.root / "calms-days"
+        with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as package:
+            for name, body in members.items():
+                package.writestr(name, body)
+        inventory = [{"name": name, "bytes": len(body), "sha256": hashlib.sha256(body).hexdigest()}
+                     for name, body in members.items()]
+        return archive, inventory
+
+    def test_calms_archive_exact_inventory_masks_invalid_values_and_records_semantics(self):
+        archive, inventory = self.calms_archive()
+        source = self.spec()
+        source.update({
+            "id": "calms-days", "importer": "aafc-calms-zip", "max_bytes": archive.stat().st_size,
+            "sha256": converter.sha256(archive),
+            "license": "https://open.canada.ca/en/open-government-licence-canada", "attribution": "AAFC fixture",
+            "archive": {"primary_member": "calms.tif", "members": inventory},
+            "value_domain": {"ranges": [{"min": 1, "max": 7}], "labels": {"1": "Monday", "7": "Sunday"}},
+        })
+        source["scientific_time"] = {"kind": "interval", "start": "2026-10-26T00:00:00Z", "end": "2026-11-02T00:00:00Z", "evidence": "synthetic ISO week"}
+        product = {"source_id": "calms-days", "id": "days-of-week-maximum-ndvi", "version": "v2026w44",
+                   "name": "CALMS days", "description": "synthetic", "intended_use": "tests", "limitations": "synthetic",
+                   "producer": "AAFC", "contact": "test@example.invalid", "asset_id": "raster"}
+        output, reports = self.root / "serving", self.root / "reports"
+        output.mkdir(); reports.mkdir()
+        job = {"protocol": "feam.pipeline.v1", "importer_version": "3", "namespace": "earth-observation",
+               "sources": [source], "products": [product],
+               "limits": {"output_bytes": 1024 * 1024, "archive_entries": 5,
+                          "expanded_bytes": sum(item["bytes"] for item in inventory)}}
+        converter.convert(job, self.root, output, reports)
+        published = output / "datasets/days-of-week-maximum-ndvi/v2026w44/raster.tiff"
+        with rasterio.open(published) as dataset:
+            self.assertEqual(dataset.read(1).tolist(), [[256, 1], [7, 256]])
+        provenance = json.loads((reports / "days-of-week-maximum-ndvi.provenance.json").read_text())
+        metadata = json.loads((reports / "days-of-week-maximum-ndvi.metadata.json").read_text())
+        self.assertEqual(provenance["archive"]["entries"], 5)
+        self.assertEqual(provenance["conversion"]["invalid_pixels_masked"], 2)
+        self.assertEqual(json.loads(metadata["raster"]["semantics"]["value_labels"])["1"], "Monday")
+
+    def test_calms_archive_rejects_unexpected_or_hash_mismatched_member(self):
+        archive, inventory = self.calms_archive()
+        spec = {"importer": "aafc-calms-zip", "archive": {"primary_member": "calms.tif", "members": copy.deepcopy(inventory)}}
+        spec["archive"]["members"][0]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "integrity mismatch"):
+            converter.extract_calms_geotiff(archive, self.root / "extracted.tif", spec,
+                                             {"archive_entries": 5, "expanded_bytes": sum(item["bytes"] for item in inventory)})
+        spec["archive"]["members"][0]["name"] = "../escape"
+        with self.assertRaisesRegex(ValueError, "flat names"):
+            converter.extract_calms_geotiff(archive, self.root / "escape.tif", spec,
+                                             {"archive_entries": 5, "expanded_bytes": sum(item["bytes"] for item in inventory)})
 
 
 if __name__ == "__main__":
