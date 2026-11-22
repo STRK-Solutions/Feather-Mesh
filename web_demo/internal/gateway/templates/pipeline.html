@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dataset review</title>
+  <style>{{instrumentCSS}}</style>
+</head>
+<body>
+<div class="shell">
+  <header class="masthead">
+    <a class="brand" href="/" aria-label="Feather Mesh administrator page">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="brand-name">FEATHER MESH</span>
+    </a>
+    <div class="system-state"><span class="signal"></span>Exact review</div>
+  </header>
+  <main>
+    <div class="hero">
+      <p class="eyebrow">Dataset pipeline</p>
+      <h1>Review dataset release</h1>
+      <p class="lede">Inspect the exact source, release inventory, hashes, limits, audience, and disclosure policy before advancing the recorded candidate.</p>
+    </div>
+
+    {{with .Plan}}
+    <section aria-labelledby="source-heading">
+      <div class="section-head"><p class="section-label" id="source-heading">Bounded source job</p></div>
+      <div class="instrument">
+        <div class="instrument-copy">
+          <h2>Preparation plan</h2>
+          <p>Confirmation queues private preparation. Release promotion requires a separate complete-candidate review.</p>
+          <div class="readouts"><span class="readout">Job hash {{.Hash}}</span></div>
+        </div>
+      </div>
+    </section>
+    {{end}}
+
+    {{with .Review}}
+    <section aria-labelledby="candidate-heading">
+      <div class="section-head"><p class="section-label" id="candidate-heading">Complete candidate</p></div>
+      <div class="metrics">
+        <div class="metric"><span>State</span><strong>{{.Status.State}}</strong></div>
+        <div class="metric"><span>Release</span><strong>{{.ReleaseStatus}}</strong></div>
+        <div class="metric"><span>Manifest</span><strong>{{.Status.ManifestOutcome}}</strong></div>
+        <div class="metric"><span>Promotion</span><strong>{{.Status.PromotionOutcome}}</strong></div>
+      </div>
+      <div class="readouts"><span class="readout">Job {{.Status.ID}}</span><span class="readout">{{.CandidateBytes}} bytes</span><span class="readout">SHA-256 {{.Status.CandidateHash}}</span></div>
+      <div class="table-wrap section">
+        <table>
+          <thead><tr><th>Relative path</th><th>Bytes</th><th>SHA-256</th></tr></thead>
+          <tbody>{{range .Inventory}}<tr><td class="dataset-name">{{.Path}}</td><td class="mono">{{.Bytes}}</td><td class="digest">{{.SHA256}}</td></tr>{{else}}<tr><td colspan="3" class="fine-print">No candidate inventory is available yet.</td></tr>{{end}}</tbody>
+        </table>
+      </div>
+    </section>
+    {{end}}
+
+    <section class="section" aria-labelledby="policy-heading">
+      <div class="section-head"><p class="section-label" id="policy-heading">Source and policy record</p></div>
+      <details><summary>Inspect exact job JSON</summary><div class="details-body"><pre>{{.JobJSON}}</pre></div></details>
+    </section>
+
+    {{if .Action}}
+    <section class="section" aria-labelledby="decision-heading">
+      <div class="section-head"><p class="section-label" id="decision-heading">Reviewed decision</p></div>
+      <form method="post" action="/pipeline/{{.Action}}">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <input type="hidden" name="review" value="{{.Token}}">
+        {{if .Plan}}<textarea name="job" hidden>{{.JobJSON}}</textarea>{{end}}
+        {{if eq .Action "enqueue"}}
+          <p class="fine-print">Queue private preparation for this exact bounded source job.</p>
+          <button class="primary">Confirm exact job and queue preparation</button>
+        {{else if eq .Action "approve"}}
+          <p class="fine-print">Approve the exact complete candidate shown above.</p>
+          <button class="primary">Approve this exact complete candidate</button>
+        {{else if eq .Action "promote"}}
+          <p class="fine-print">Promotion makes this approved release eligible for grants. A withdrawal release also revokes existing grants and stops affected workspaces.</p>
+          <button class="primary">Promote approved release</button>
+        {{else if eq .Action "prune"}}
+          <div class="notice danger"><p>Delete this exact retained release only if no active or pending grant, candidate, or withdrawal policy protects it. This cannot be undone.</p></div>
+          <div class="form-actions"><button class="danger">Delete unpinned retained release</button></div>
+        {{else}}
+          <p class="fine-print">Reconcile the recorded outcome without replaying the operation.</p>
+          <button>Reconcile recorded outcome without replay</button>
+        {{end}}
+      </form>
+    </section>
+    {{end}}
+    <a class="back-link" href="/">&larr; Administrator page</a>
+  </main>
+</div>
+</body>
+</html>

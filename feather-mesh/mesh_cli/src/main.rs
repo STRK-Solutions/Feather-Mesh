@@ -141,6 +141,9 @@ enum Command {
         agent: AgentMode,
         #[arg(long, requires = "agent")]
         agent_profile: Option<String>,
+        /// Read a descriptive source-product catalogue in a separate read-only TUI view.
+        #[arg(long)]
+        source_catalogue: Option<PathBuf>,
     },
 }
 
@@ -232,6 +235,7 @@ fn run(cli: Cli) -> Result<(), AppError> {
     if let Command::Tui {
         agent,
         agent_profile,
+        source_catalogue,
     } = &cli.command
     {
         if matches!(cli.format, OutputFormat::Json) {
@@ -239,7 +243,12 @@ fn run(cli: Cli) -> Result<(), AppError> {
                 "tui does not support --format json; use the noninteractive CLI".into(),
             ));
         }
-        return run_tui(cli.project.clone(), *agent, agent_profile.clone());
+        return run_tui(
+            cli.project.clone(),
+            *agent,
+            agent_profile.clone(),
+            source_catalogue.clone(),
+        );
     }
     if let Some(project_root) = cli.project.clone() {
         run_peer(cli, project_root).map_err(AppError::from)
@@ -252,6 +261,7 @@ fn run_tui(
     project_root: Option<PathBuf>,
     agent: AgentMode,
     agent_profile: Option<String>,
+    source_catalogue: Option<PathBuf>,
 ) -> Result<(), AppError> {
     let project_root = project_root.ok_or_else(|| {
         AppError::Tui("feam tui requires --project ROOT and never falls back to registry.db".into())
@@ -275,12 +285,13 @@ fn run_tui(
         mesh_tui::run(mesh_tui::TuiOptions {
             project_root,
             agent_profile: profile,
+            source_catalogue,
         })
         .map_err(|error| AppError::Tui(error.to_string()))
     }
     #[cfg(not(feature = "tui"))]
     {
-        let _ = (project_root, profile);
+        let _ = (project_root, profile, source_catalogue);
         Err(AppError::Tui(
             "feam tui is not enabled in this CLI-only build; rebuild with `--features tui`".into(),
         ))

@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "feam.source-product-suite.v1",
+  "id": "nasdi",
+  "title": "AAFC National Agroclimate Series of Derived Indicators",
+  "peer": "climate",
+  "publication_boundary": "catalogue_only",
+  "source_specification": {
+    "title": "NASDI Data Product Specification",
+    "url": "https://agriculture.canada.ca/atlas/data_donnees/nasdi/supportdocument_documentdesupport/en/ISO_19131_NASDI_-_Data_Product_Specification.pdf"
+  },
+  "default_publication_profile": {
+    "data_kind": "raster",
+    "data_format": "geotiff",
+    "source_delivery": "direct_geotiff",
+    "publication_readiness": "requires_bounded_derivative_and_feam_validation"
+  },
+  "categories": [
+    {
+      "id": "precipitation",
+      "title": "Precipitation",
+      "products": [
+        { "id": "accumulated-precipitation-monthly", "title": "Accumulated Precipitation, Monthly", "cadence": "monthly" },
+        { "id": "accumulated-precipitation-weekly", "title": "Accumulated Precipitation, Weekly", "cadence": "weekly" },
+        { "id": "percent-of-average-precipitation-monthly", "title": "Percent of Average Precipitation, Monthly", "cadence": "monthly" },
+        { "id": "percent-of-average-precipitation-weekly", "title": "Percent of Average Precipitation, Weekly", "cadence": "weekly" },
+        { "id": "difference-from-average-precipitation-monthly", "title": "Difference from Average Precipitation, Monthly", "cadence": "monthly" },
+        { "id": "difference-from-average-precipitation-weekly", "title": "Difference from Average Precipitation, Weekly", "cadence": "weekly" },
+        { "id": "precipitation-percentile-monthly", "title": "Precipitation Percentile, Monthly", "cadence": "monthly" },
+        { "id": "precipitation-percentile-weekly", "title": "Precipitation Percentile, Weekly", "cadence": "weekly" },
+        {
+          "id": "standardized-precipitation-index-monthly",
+          "title": "Standardized Precipitation Index, Monthly",
+          "cadence": "monthly",
+          "semantic_concept_id": "standardized-precipitation-index"
+        },
+        {
+          "id": "standardized-precipitation-index-weekly",
+          "title": "Standardized Precipitation Index, Weekly",
+          "cadence": "weekly",
+          "semantic_concept_id": "standardized-precipitation-index"
+        },
+        {
+          "id": "standardized-precipitation-evapotranspiration-index-monthly",
+          "title": "Standardized Precipitation Evapotranspiration Index, Monthly",
+          "cadence": "monthly",
+          "semantic_concept_id": "standardized-precipitation-evapotranspiration-index"
+        },
+        {
+          "id": "standardized-precipitation-evapotranspiration-index-weekly",
+          "title": "Standardized Precipitation Evapotranspiration Index, Weekly",
+          "cadence": "weekly",
+          "semantic_concept_id": "standardized-precipitation-evapotranspiration-index"
+        }
+      ]
+    },
+    {
+      "id": "temperature",
+      "title": "Temperature",
+      "products": [
+        { "id": "difference-from-normal-temperature-monthly", "title": "Difference from Normal Temperature, Monthly", "cadence": "monthly" },
+        { "id": "difference-from-normal-temperature-weekly", "title": "Difference from Normal Temperature, Weekly", "cadence": "weekly" }
+      ]
+    }
+  ]
+}

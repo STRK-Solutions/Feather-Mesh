@@ -1,0 +1,15 @@
+{
+  "runs": [
+    {
+      "date": "2026-11-22T21:22:45.086676+00:00",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 97,
+      "token_usage_status": "unavailable"
+    }
+  ],
+  "total_input_tokens": 0,
+  "total_output_tokens": 0,
+  "token_usage_status": "unavailable",
+  "token_usage_note": "Counters are placeholders; collaboration tool did not expose semantic token usage."
+}

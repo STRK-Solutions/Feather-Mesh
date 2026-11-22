@@ -45,7 +45,11 @@
       ]
     },
     "importer_version": {
-      "const": "1"
+      "enum": [
+        "1",
+        "2",
+        "3"
+      ]
     },
     "sources": {
       "type": "array",
@@ -81,7 +85,8 @@
           "importer": {
             "enum": [
               "eccc-csv",
-              "aafc-geotiff"
+              "aafc-geotiff",
+              "aafc-calms-zip"
             ]
           },
           "url": {
@@ -134,6 +139,7 @@
                 "enum": [
                   "dates-in-source",
                   "instant",
+                  "interval",
                   "climatology-interval"
                 ]
               },
@@ -177,7 +183,61 @@
           "max_bytes": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 67108864
+            "maximum": 262144000
+          },
+          "archive": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["primary_member", "members"],
+            "properties": {
+              "primary_member": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255,
+                "pattern": "^[^/\\\\]+\\.tif$"
+              },
+              "members": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 16,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["name", "bytes", "sha256"],
+                  "properties": {
+                    "name": {"type": "string", "minLength": 1, "maxLength": 255, "pattern": "^[^/\\\\]+$"},
+                    "bytes": {"type": "integer", "minimum": 1, "maximum": 262144000},
+                    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+                  }
+                }
+              }
+            }
+          },
+          "value_domain": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ranges", "labels"],
+            "properties": {
+              "ranges": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 16,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["min", "max"],
+                  "properties": {
+                    "min": {"type": "number"},
+                    "max": {"type": "number"}
+                  }
+                }
+              },
+              "labels": {
+                "type": "object",
+                "maxProperties": 32,
+                "additionalProperties": {"type": "string", "minLength": 1, "maxLength": 200}
+              }
+            }
           }
         },
         "allOf": [
@@ -222,11 +282,36 @@
                     "kind": {
                       "enum": [
                         "instant",
+                        "interval",
                         "climatology-interval"
                       ]
                     }
                   }
-                },
+                }
+              }
+            }
+          },
+          {
+            "if": {"properties": {"importer": {"const": "aafc-calms-zip"}}},
+            "then": {
+              "required": ["archive", "value_domain"],
+              "properties": {
+                "url": {
+                  "pattern": "^https://agriculture\\.canada\\.ca(?::443)?/atlas/data_donnees/calms/data_donnees/tif/[^?%]+\\.zip$"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "archive": false,
+                "value_domain": false
+              }
+            }
+          },
+          {
+            "if": {"properties": {"importer": {"const": "aafc-geotiff"}}},
+            "then": {
+              "properties": {
                 "url": {
                   "pattern": "^https://agriculture\\.canada\\.ca(?::443)?/atlas/data_donnees/[^?%]+\\.tiff?$"
                 }
@@ -321,7 +406,7 @@
         "source_bytes": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 67108864
+          "maximum": 262144000
         },
         "output_bytes": {
           "type": "integer",
@@ -344,10 +429,14 @@
           "maximum": 3
         },
         "archive_entries": {
-          "const": 0
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32
         },
         "expanded_bytes": {
-          "const": 0
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 536870912
         }
       }
     },

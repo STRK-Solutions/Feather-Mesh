@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"html/template"
 	"io"
 	"net/http"
 	"strings"
@@ -100,7 +99,7 @@ func (g *Gateway) pipelineReview(w http.ResponseWriter, r *http.Request, a contr
 		data.Token = g.pipelineToken(a, data.Action, id, view.Status.CandidateHash)
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_ = pipelineTemplate.Execute(w, data)
+	_ = pipelineTemplateV2.Execute(w, data)
 }
 
 type pipelinePlan struct {
@@ -115,7 +114,7 @@ func (g *Gateway) showPipelinePlan(w http.ResponseWriter, r *http.Request, a con
 	}
 	jobJSON, _ := json.MarshalIndent(plan.Job, "", "  ")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_ = pipelineTemplate.Execute(w, pipelinePage{CSRF: r.PostForm.Get("csrf"), Plan: &plan, JobJSON: string(jobJSON), Action: "enqueue", Token: g.pipelineToken(a, "enqueue", plan.Job.ID, plan.Hash)})
+	_ = pipelineTemplateV2.Execute(w, pipelinePage{CSRF: r.PostForm.Get("csrf"), Plan: &plan, JobJSON: string(jobJSON), Action: "enqueue", Token: g.pipelineToken(a, "enqueue", plan.Job.ID, plan.Hash)})
 }
 func (g *Gateway) pipelineAction(w http.ResponseWriter, r *http.Request, a control.Account) {
 	if a.Role != "admin" || r.Host != g.Config.AdminHost {
@@ -196,5 +195,3 @@ type pipelinePage struct {
 	Plan                         *pipelinePlan
 	Review                       *pipeline.Review
 }
-
-var pipelineTemplate = template.Must(template.New("pipeline").Parse(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Dataset review</title><style>body{font:16px system-ui;max-width:75rem;margin:2rem auto;padding:1rem}pre{white-space:pre-wrap;overflow-wrap:anywhere}td{padding:.5rem;overflow-wrap:anywhere}table{width:100%;table-layout:fixed}button{padding:.7rem}</style><h1>Dataset review</h1>{{with .Plan}}<h2>Bounded source job</h2><p>Review the exact source objects, hashes, limits, audience and disclosure policy. Confirming this step queues private preparation; release promotion requires a separate complete-candidate review.</p><p>Job hash: <code>{{.Hash}}</code></p>{{end}}{{with .Review}}<p>Job {{.Status.ID}} · {{.Status.State}} · {{.ReleaseStatus}}</p><p>Manifest outcome: {{.Status.ManifestOutcome}} · Promotion outcome: {{.Status.PromotionOutcome}}</p><h2>Complete candidate</h2><p>{{.CandidateBytes}} bytes · SHA-256 <code>{{.Status.CandidateHash}}</code></p><table><tr><th>Relative path</th><th>Bytes</th><th>SHA-256</th></tr>{{range .Inventory}}<tr><td>{{.Path}}</td><td>{{.Bytes}}</td><td>{{.SHA256}}</td></tr>{{end}}</table>{{end}}<h2>Source and policy record</h2><pre>{{.JobJSON}}</pre>{{if .Action}}<form method="post" action="/pipeline/{{.Action}}"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="review" value="{{.Token}}">{{if .Plan}}<textarea name="job" hidden>{{.JobJSON}}</textarea>{{end}}{{if eq .Action "enqueue"}}<button>Confirm exact job and queue preparation</button>{{else if eq .Action "approve"}}<button>Approve this exact complete candidate</button>{{else if eq .Action "promote"}}<p>Promotion makes this approved release eligible for grants. A withdrawal release also revokes existing grants and stops affected workspaces.</p><button>Promote approved release</button>{{else if eq .Action "prune"}}<p>Delete this exact retained release only if no active or pending grant, candidate or withdrawal policy protects it. This deletion cannot be undone.</p><button>Delete unpinned retained release</button>{{else}}<button>Reconcile recorded outcome without replay</button>{{end}}</form>{{end}}<p><a href="/">Administrator page</a></p></html>`))

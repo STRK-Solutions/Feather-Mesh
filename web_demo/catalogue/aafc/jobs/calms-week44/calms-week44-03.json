@@ -1,0 +1,187 @@
+{
+  "protocol": "feam.pipeline.v1",
+  "id": "fa6a3c46-18a2-5792-a685-3a32d2325b3b",
+  "bundle": "earth-observation",
+  "namespace": "earth-observation",
+  "parent_digest": "",
+  "importer_version": "3",
+  "sources": [
+    {
+      "id": "calms-baseline-count-week44",
+      "importer": "aafc-calms-zip",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/calms/data_donnees/tif/mod_bestquality_maxndvi_baseline_count/2026/AgExtent_MOD_Baseline_Count_BestQuality_MaxNDVI_2006_2025_Week_44.zip",
+      "sha256": "88c60929cc2102c3e4bba2f2e276c3269afe7a59aee78a34eef131354e3b3d17",
+      "max_bytes": 12741833,
+      "upstream_version": "2006-2025; ISO week 44",
+      "retrieved_at": "2026-11-14T21:57:53Z",
+      "license": "https://open.canada.ca/en/open-government-licence-canada",
+      "attribution": "Agriculture and Agri-Food Canada; bounded demonstration derivative",
+      "station": "",
+      "start_date": "",
+      "end_date": "",
+      "scientific_time": {
+        "kind": "climatology-interval",
+        "start": "2006-01-01T00:00:00Z",
+        "end": "2026-01-01T00:00:00Z",
+        "evidence": "CALMS filename and ISO 19131 specification: count of valid Week-44 observations used in the 2006-2025 baseline; interval records the half-open span of constituent years."
+      },
+      "bbox": [
+        -76.0,
+        45.0,
+        -75.0,
+        46.0
+      ],
+      "resampling": "nearest",
+      "variable": "valid_observation_count_for_weekly_maximum_ndvi_baseline",
+      "unit": "count",
+      "archive": {
+        "primary_member": "AgExtent.MOD.Baseline.Count.BestQuality.MaxNDVI.2006.2025.Week.44.tif",
+        "members": [
+          {
+            "name": "AgExtent.MOD.Baseline.Count.BestQuality.MaxNDVI.2006.2025.Week.44.tfw",
+            "bytes": 96,
+            "sha256": "70ac20a52352521b9a12c316480fd62adda6c6490cde5543c5789b7fa250f686"
+          },
+          {
+            "name": "AgExtent.MOD.Baseline.Count.BestQuality.MaxNDVI.2006.2025.Week.44.tif",
+            "bytes": 12276056,
+            "sha256": "2b59591b5f3bce006f4158933e9b0e21095145208fd5177f656b44d7929bacf9"
+          },
+          {
+            "name": "AgExtent.MOD.Baseline.Count.BestQuality.MaxNDVI.2006.2025.Week.44.tif.aux.xml",
+            "bytes": 776,
+            "sha256": "db2502b7669dbb0641632fd31dc1c90d63cf9ccb7a2b13a6fb2e33540beef0c7"
+          },
+          {
+            "name": "AgExtent.MOD.Baseline.Count.BestQuality.MaxNDVI.2006.2025.Week.44.tif.ovr",
+            "bytes": 4295739,
+            "sha256": "6e50b783442f120e345938d99d3d9bfce364d22572ed4d99f290b88b0ed88ab9"
+          },
+          {
+            "name": "AgExtent.MOD.Baseline.Count.BestQuality.MaxNDVI.2006.2025.Week.44.tif.xml",
+            "bytes": 6843,
+            "sha256": "d295c2c240005a29a2595427af5365ac74d99847bb0979767e4954bf8ef36519"
+          }
+        ]
+      },
+      "value_domain": {
+        "ranges": [
+          {
+            "min": 0,
+            "max": 20
+          }
+        ],
+        "labels": {}
+      }
+    },
+    {
+      "id": "calms-baseline-mean-week44",
+      "importer": "aafc-calms-zip",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/calms/data_donnees/tif/mod_bestquality_maxndvi_baseline_mean/2026/AgExtent_MOD_Baseline_Mean_BestQuality_MaxNDVI_2006_2025_Week_44.zip",
+      "sha256": "c55c21fe3cd7de6216f78633f2c4b89d13ca1fa3bd44e62303411fc63c3e047a",
+      "max_bytes": 142057627,
+      "upstream_version": "2006-2025; ISO week 44",
+      "retrieved_at": "2026-11-14T21:57:53Z",
+      "license": "https://open.canada.ca/en/open-government-licence-canada",
+      "attribution": "Agriculture and Agri-Food Canada; bounded demonstration derivative",
+      "station": "",
+      "start_date": "",
+      "end_date": "",
+      "scientific_time": {
+        "kind": "climatology-interval",
+        "start": "2006-01-01T00:00:00Z",
+        "end": "2026-01-01T00:00:00Z",
+        "evidence": "CALMS filename and ISO 19131 specification: mean Week-44 Best-Quality Maximum NDVI over 2006-2025; interval records the half-open span of constituent years."
+      },
+      "bbox": [
+        -76.0,
+        45.0,
+        -75.0,
+        46.0
+      ],
+      "resampling": "nearest",
+      "variable": "mean_weekly_best_quality_maximum_normalized_difference_vegetation_index",
+      "unit": "1",
+      "archive": {
+        "primary_member": "AgExtent.MOD.Baseline.Mean.BestQuality.MaxNDVI.2006.2025.Week.44.tif",
+        "members": [
+          {
+            "name": "AgExtent.MOD.Baseline.Mean.BestQuality.MaxNDVI.2006.2025.Week.44.tfw",
+            "bytes": 96,
+            "sha256": "70ac20a52352521b9a12c316480fd62adda6c6490cde5543c5789b7fa250f686"
+          },
+          {
+            "name": "AgExtent.MOD.Baseline.Mean.BestQuality.MaxNDVI.2006.2025.Week.44.tif",
+            "bytes": 125655520,
+            "sha256": "1c8dd5f7a47ba557b3e034790957822bdcbe4984f95bd7af9020a03bf5b87489"
+          },
+          {
+            "name": "AgExtent.MOD.Baseline.Mean.BestQuality.MaxNDVI.2006.2025.Week.44.tif.aux.xml",
+            "bytes": 1929,
+            "sha256": "02af5825a75979b80ef07834026509871f139793c70ea47786f7ec7c8cabe5cf"
+          },
+          {
+            "name": "AgExtent.MOD.Baseline.Mean.BestQuality.MaxNDVI.2006.2025.Week.44.tif.ovr",
+            "bytes": 31347581,
+            "sha256": "35efed201484203dff2b9bb22f1fa59c5774561c9b59d80463459227b7b41053"
+          },
+          {
+            "name": "AgExtent.MOD.Baseline.Mean.BestQuality.MaxNDVI.2006.2025.Week.44.tif.xml",
+            "bytes": 6844,
+            "sha256": "752439cba3665acabad2b3fdc03611df99a4c6b8940d6e2bc5bb0471861eafa5"
+          }
+        ]
+      },
+      "value_domain": {
+        "ranges": [
+          {
+            "min": 0,
+            "max": 1
+          }
+        ],
+        "labels": {}
+      }
+    }
+  ],
+  "products": [
+    {
+      "source_id": "calms-baseline-count-week44",
+      "id": "count-of-mean-weekly-best-quality-maximum-ndvi",
+      "version": "v2006-2025w44",
+      "name": "CALMS Count of Mean Weekly Best-Quality Maximum NDVI bounded demo",
+      "description": "Ottawa-area WGS84 derivative of the selected Agriculture and Agri-Food Canada CALMS Count of Mean Weekly Best-Quality Maximum NDVI source.",
+      "intended_use": "Web-demo catalogue and bounded raster-read demonstration.",
+      "limitations": "Demonstration subset only; not a national replacement for the Agriculture and Agri-Food Canada CALMS source raster.",
+      "producer": "Agriculture and Agri-Food Canada",
+      "contact": "agri-geomatics-agrog@agr.gc.ca",
+      "asset_id": "raster"
+    },
+    {
+      "source_id": "calms-baseline-mean-week44",
+      "id": "mean-weekly-best-quality-maximum-ndvi",
+      "version": "v2006-2025w44",
+      "name": "CALMS Mean Weekly Best-Quality Maximum NDVI bounded demo",
+      "description": "Ottawa-area WGS84 derivative of the selected Agriculture and Agri-Food Canada CALMS Mean Weekly Best-Quality Maximum NDVI source.",
+      "intended_use": "Web-demo catalogue and bounded raster-read demonstration.",
+      "limitations": "Demonstration subset only; not a national replacement for the Agriculture and Agri-Food Canada CALMS source raster.",
+      "producer": "Agriculture and Agri-Food Canada",
+      "contact": "agri-geomatics-agrog@agr.gc.ca",
+      "asset_id": "raster"
+    }
+  ],
+  "limits": {
+    "source_bytes": 142057627,
+    "output_bytes": 8388608,
+    "candidate_bytes": 67108864,
+    "elapsed_seconds": 300,
+    "redirects": 3,
+    "archive_entries": 10,
+    "expanded_bytes": 173591480
+  },
+  "policy": {
+    "audience": "invited-users",
+    "model_metadata": true,
+    "model_payload": false,
+    "research_eligible": true
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "kind": "feam.aafc-calms-demo-subset-selection.v1",
+  "publication_boundary": "pipeline_input_selection",
+  "retrieved_at": "2026-11-14T21:57:53Z",
+  "license": "https://open.canada.ca/en/open-government-licence-canada",
+  "attribution": "Agriculture and Agri-Food Canada; bounded demonstration derivative",
+  "contact": "agri-geomatics-agrog@agr.gc.ca",
+  "source_specification": "ISO 19131 CALMS DATA PRODUCTS",
+  "subset": {
+    "bbox": [-76.0, 45.0, -75.0, 46.0],
+    "target_crs": "EPSG:4326",
+    "maximum_width": 512,
+    "maximum_height": 512,
+    "resampling": "nearest"
+  },
+  "products": [
+    {
+      "suite": "calms",
+      "category": "vegetation-condition",
+      "product_id": "days-of-week-maximum-ndvi",
+      "source_id": "calms-day-week44",
+      "title": "Days of Week Maximum NDVI",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/calms/data_donnees/tif/mod_allquality_day_of_week/2026/AgExtent_MOD_DayOfWeek_MaxNDVI_2026299_2026305.zip",
+      "expected_bytes": 6129703,
+      "sha256": "fa5f2f2ae57bd28072a87ca81c85f078580010ae87de1c7fc213836a09d23f5a",
+      "upstream_version": "2026299-2026305",
+      "version": "v2026w44",
+      "scientific_time": {
+        "kind": "interval",
+        "start": "2026-10-26T00:00:00Z",
+        "end": "2026-11-02T00:00:00Z",
+        "evidence": "CALMS filename Julian days 299-305 and ISO 19131 specification: ISO week 44 runs Monday 2026-10-26 through Sunday 2026-11-01; represented as a half-open UTC interval."
+      },
+      "variable": "day_of_week_of_maximum_ndvi",
+      "unit": "category",
+      "value_domain": {
+        "ranges": [{"min": 1, "max": 7}],
+        "labels": {"1": "Monday", "2": "Tuesday", "3": "Wednesday", "4": "Thursday", "5": "Friday", "6": "Saturday", "7": "Sunday"}
+      },
+      "archive": {
+        "primary_member": "AgExtent.MOD.DayOfWeek.MaxNDVI.2026299.2026305.tif",
+        "members": [
+          {"name": "AgExtent.MOD.DayOfWeek.MaxNDVI.2026299.2026305.tfw", "bytes": 96, "sha256": "00b0f6d65f9323434ab6e350d3db3d1777207f162bcf0edf31a0ad30273bf0e5"},
+          {"name": "AgExtent.MOD.DayOfWeek.MaxNDVI.2026299.2026305.tif", "bytes": 8098742, "sha256": "2a99bbd64788fcfec6d3f2da67770ec8671f83d6653fb74efc73ea51cefe7bb7"},
+          {"name": "AgExtent.MOD.DayOfWeek.MaxNDVI.2026299.2026305.tif.aux.xml", "bytes": 459, "sha256": "99bead2261b0065a2437d5e021188452866fe17c0d02243d5c4ebca372712ba0"},
+          {"name": "AgExtent.MOD.DayOfWeek.MaxNDVI.2026299.2026305.tif.ovr", "bytes": 1981738, "sha256": "456caecd5f6e61dc7e2829026301185ee4c34fd34954e994cb10b58c64296544"},
+          {"name": "AgExtent.MOD.DayOfWeek.MaxNDVI.2026299.2026305.tif.xml", "bytes": 6713, "sha256": "8132ff9553e39cf9c75b7bcf1dbcef08060fa60fff1f44d1bda76e57fd77b082"}
+        ]
+      }
+    },
+    {
+      "suite": "calms",
+      "category": "vegetation-condition",
+      "product_id": "quality-control-cloud-and-snow-flags",
+      "source_id": "calms-quality-week44",
+      "title": "Quality Control, Cloud and Snow Flags",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/calms/data_donnees/tif/mod_allquality_snowfraction_cloud_qaqc/2026/AgExtent_MOD_SnowFraction_CloudCover_OtherQuality_MaxNDVI_2026299_2026305.zip",
+      "expected_bytes": 2802328,
+      "sha256": "71689af48b0c990e86d7efaab156228ff78a713cd813ef3de6a2484ebbf35a19",
+      "upstream_version": "2026299-2026305",
+      "version": "v2026w44",
+      "scientific_time": {
+        "kind": "interval",
+        "start": "2026-10-26T00:00:00Z",
+        "end": "2026-11-02T00:00:00Z",
+        "evidence": "CALMS filename Julian days 299-305 and ISO 19131 specification: ISO week 44 represented as a half-open UTC interval."
+      },
+      "variable": "snow_fraction_cloud_and_quality_flags",
+      "unit": "category",
+      "value_domain": {
+        "ranges": [{"min": 0, "max": 100}, {"min": 200, "max": 201}, {"min": 250, "max": 250}, {"min": 254, "max": 255}],
+        "labels": {"0": "no snow", "1-100": "snow fraction percent", "200": "missing data", "201": "no decision", "250": "cloud", "254": "detector saturated", "255": "fill"}
+      },
+      "archive": {
+        "primary_member": "AgExtent.MOD.SnowFraction.CloudCover.OtherQuality.MaxNDVI.2026299.2026305.tif",
+        "members": [
+          {"name": "AgExtent.MOD.SnowFraction.CloudCover.OtherQuality.MaxNDVI.2026299.2026305.tfw", "bytes": 96, "sha256": "972d5d1680fefeb941285c0277520406046dc05838c7d9e797fec2ad61e08513"},
+          {"name": "AgExtent.MOD.SnowFraction.CloudCover.OtherQuality.MaxNDVI.2026299.2026305.tif", "bytes": 2968502, "sha256": "65365ebaaf062e55936f83971dd299c013d9e1c72f6eebbcfe58c38b08dfc0ee"},
+          {"name": "AgExtent.MOD.SnowFraction.CloudCover.OtherQuality.MaxNDVI.2026299.2026305.tif.aux.xml", "bytes": 1229, "sha256": "5be715c3587c37ec656b10f4607cea6f3cd79b34b3aee645d68874bb5bc67d4a"},
+          {"name": "AgExtent.MOD.SnowFraction.CloudCover.OtherQuality.MaxNDVI.2026299.2026305.tif.ovr", "bytes": 841171, "sha256": "cf99e020998b17d970092dca71a39cda0ecab1ef0b87d826b760cf8c7d9eab99"},
+          {"name": "AgExtent.MOD.SnowFraction.CloudCover.OtherQuality.MaxNDVI.2026299.2026305.tif.xml", "bytes": 6877, "sha256": "018e856ab0931d336e107933c87efa2eef73fbd3027aa11bf1786ee2a3dc7c3c"}
+        ]
+      }
+    },
+    {
+      "suite": "calms",
+      "category": "vegetation-condition",
+      "product_id": "weekly-best-quality-maximum-ndvi",
+      "source_id": "calms-best-ndvi-week44",
+      "title": "Weekly Best-Quality Maximum NDVI",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/calms/data_donnees/tif/mod_bestquality_maxndvi/2026/AgExtent_MOD_BestQuality_MaxNDVI_2026299_2026305.zip",
+      "expected_bytes": 91562863,
+      "sha256": "fb68bfaa530eb78aa224de45b1277f738b2529aee03a08a3666df391d8c08a0e",
+      "upstream_version": "2026299-2026305",
+      "version": "v2026w44",
+      "scientific_time": {
+        "kind": "interval",
+        "start": "2026-10-26T00:00:00Z",
+        "end": "2026-11-02T00:00:00Z",
+        "evidence": "CALMS filename Julian days 299-305 and ISO 19131 specification: ISO week 44 represented as a half-open UTC interval."
+      },
+      "variable": "normalized_difference_vegetation_index",
+      "unit": "1",
+      "value_domain": {"ranges": [{"min": 0, "max": 1}], "labels": {}},
+      "archive": {
+        "primary_member": "AgExtent.MOD.BestQuality.MaxNDVI.2026299.2026305.tif",
+        "members": [
+          {"name": "AgExtent.MOD.BestQuality.MaxNDVI.2026299.2026305.tfw", "bytes": 96, "sha256": "493a936ab554380cf7f2ad0224a025512a97bb9c725a3dd3fcadc8343098b2cf"},
+          {"name": "AgExtent.MOD.BestQuality.MaxNDVI.2026299.2026305.tif", "bytes": 81569326, "sha256": "a9f5b7efa101f904d7de495707bcf699aeaee824f53365eb2eab6140f1a54178"},
+          {"name": "AgExtent.MOD.BestQuality.MaxNDVI.2026299.2026305.tif.aux.xml", "bytes": 1967, "sha256": "863abd64a97f87bfc195e05a328aad9715b38bb91c523795ecb9264000cd93d2"},
+          {"name": "AgExtent.MOD.BestQuality.MaxNDVI.2026299.2026305.tif.ovr", "bytes": 21975254, "sha256": "6956f909654380fa86f6106c319c04e4484d2db41568316c79665f3fc30d52ec"},
+          {"name": "AgExtent.MOD.BestQuality.MaxNDVI.2026299.2026305.tif.xml", "bytes": 6734, "sha256": "d4114a0473f73452c11dbdb23da01801decee4f7371ff7eb6b6f33db2961919e"}
+        ]
+      }
+    },
+    {
+      "suite": "calms",
+      "category": "vegetation-condition",
+      "product_id": "weekly-best-quality-maximum-ndvi-anomalies",
+      "source_id": "calms-anomaly-week44",
+      "title": "Weekly Best-Quality Maximum NDVI Anomalies",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/calms/data_donnees/tif/mod_bestquality_maxndvi_anomaly/2026/AgExtent_MOD_Anomaly_BestQuality_MaxNDVI_2026299_2026305_Week_44.zip",
+      "expected_bytes": 101395147,
+      "sha256": "56f91132c48a6e82b44f3755a9a281d7a4c61990df496249aac9db5718c044e8",
+      "upstream_version": "2026299-2026305; ISO week 44",
+      "version": "v2026w44",
+      "scientific_time": {
+        "kind": "interval",
+        "start": "2026-10-26T00:00:00Z",
+        "end": "2026-11-02T00:00:00Z",
+        "evidence": "CALMS filename Julian days 299-305 and Week 44 plus ISO 19131 anomaly definition; represented as a half-open UTC interval."
+      },
+      "variable": "normalized_difference_vegetation_index_anomaly",
+      "unit": "1",
+      "value_domain": {"ranges": [{"min": -2, "max": 2}], "labels": {}},
+      "archive": {
+        "primary_member": "AgExtent.MOD.Anomaly.BestQuality.MaxNDVI.2026299.2026305.Week.44.tif",
+        "members": [
+          {"name": "AgExtent.MOD.Anomaly.BestQuality.MaxNDVI.2026299.2026305.Week.44.tfw", "bytes": 96, "sha256": "70ac20a52352521b9a12c316480fd62adda6c6490cde5543c5789b7fa250f686"},
+          {"name": "AgExtent.MOD.Anomaly.BestQuality.MaxNDVI.2026299.2026305.Week.44.tif", "bytes": 93289698, "sha256": "b0c7cb9f180d25c503856a11b1e1f7aa00193aac41db79e557293ae2728f89d7"},
+          {"name": "AgExtent.MOD.Anomaly.BestQuality.MaxNDVI.2026299.2026305.Week.44.tif.aux.xml", "bytes": 1611, "sha256": "b0e31b9eb325ff227444d461112588455d6070344146271c4a3b67cebdc463e5"},
+          {"name": "AgExtent.MOD.Anomaly.BestQuality.MaxNDVI.2026299.2026305.Week.44.tif.ovr", "bytes": 22952596, "sha256": "71ca61e15d2aa41e015bc0e1171c775c8197c09df4530d9e69907503f39386f4"},
+          {"name": "AgExtent.MOD.Anomaly.BestQuality.MaxNDVI.2026299.2026305.Week.44.tif.xml", "bytes": 6845, "sha256": "5c02c2d3e1f710f26fd84ecb80f9ec45e4b6438d56a39510e952de3428ead448"}
+        ]
+      }
+    },
+    {
+      "suite": "calms",
+      "category": "vegetation-condition",
+      "product_id": "count-of-mean-weekly-best-quality-maximum-ndvi",
+      "source_id": "calms-baseline-count-week44",
+      "title": "Count of Mean Weekly Best-Quality Maximum NDVI",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/calms/data_donnees/tif/mod_bestquality_maxndvi_baseline_count/2026/AgExtent_MOD_Baseline_Count_BestQuality_MaxNDVI_2006_2025_Week_44.zip",
+      "expected_bytes": 12741833,
+      "sha256": "88c60929cc2102c3e4bba2f2e276c3269afe7a59aee78a34eef131354e3b3d17",
+      "upstream_version": "2006-2025; ISO week 44",
+      "version": "v2006-2025w44",
+      "scientific_time": {
+        "kind": "climatology-interval",
+        "start": "2006-01-01T00:00:00Z",
+        "end": "2026-01-01T00:00:00Z",
+        "evidence": "CALMS filename and ISO 19131 specification: count of valid Week-44 observations used in the 2006-2025 baseline; interval records the half-open span of constituent years."
+      },
+      "variable": "valid_observation_count_for_weekly_maximum_ndvi_baseline",
+      "unit": "count",
+      "value_domain": {"ranges": [{"min": 0, "max": 20}], "labels": {}},
+      "archive": {
+        "primary_member": "AgExtent.MOD.Baseline.Count.BestQuality.MaxNDVI.2006.2025.Week.44.tif",
+        "members": [
+          {"name": "AgExtent.MOD.Baseline.Count.BestQuality.MaxNDVI.2006.2025.Week.44.tfw", "bytes": 96, "sha256": "70ac20a52352521b9a12c316480fd62adda6c6490cde5543c5789b7fa250f686"},
+          {"name": "AgExtent.MOD.Baseline.Count.BestQuality.MaxNDVI.2006.2025.Week.44.tif", "bytes": 12276056, "sha256": "2b59591b5f3bce006f4158933e9b0e21095145208fd5177f656b44d7929bacf9"},
+          {"name": "AgExtent.MOD.Baseline.Count.BestQuality.MaxNDVI.2006.2025.Week.44.tif.aux.xml", "bytes": 776, "sha256": "db2502b7669dbb0641632fd31dc1c90d63cf9ccb7a2b13a6fb2e33540beef0c7"},
+          {"name": "AgExtent.MOD.Baseline.Count.BestQuality.MaxNDVI.2006.2025.Week.44.tif.ovr", "bytes": 4295739, "sha256": "6e50b783442f120e345938d99d3d9bfce364d22572ed4d99f290b88b0ed88ab9"},
+          {"name": "AgExtent.MOD.Baseline.Count.BestQuality.MaxNDVI.2006.2025.Week.44.tif.xml", "bytes": 6843, "sha256": "d295c2c240005a29a2595427af5365ac74d99847bb0979767e4954bf8ef36519"}
+        ]
+      }
+    },
+    {
+      "suite": "calms",
+      "category": "vegetation-condition",
+      "product_id": "mean-weekly-best-quality-maximum-ndvi",
+      "source_id": "calms-baseline-mean-week44",
+      "title": "Mean Weekly Best-Quality Maximum NDVI",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/calms/data_donnees/tif/mod_bestquality_maxndvi_baseline_mean/2026/AgExtent_MOD_Baseline_Mean_BestQuality_MaxNDVI_2006_2025_Week_44.zip",
+      "expected_bytes": 142057627,
+      "sha256": "c55c21fe3cd7de6216f78633f2c4b89d13ca1fa3bd44e62303411fc63c3e047a",
+      "upstream_version": "2006-2025; ISO week 44",
+      "version": "v2006-2025w44",
+      "scientific_time": {
+        "kind": "climatology-interval",
+        "start": "2006-01-01T00:00:00Z",
+        "end": "2026-01-01T00:00:00Z",
+        "evidence": "CALMS filename and ISO 19131 specification: mean Week-44 Best-Quality Maximum NDVI over 2006-2025; interval records the half-open span of constituent years."
+      },
+      "variable": "mean_weekly_best_quality_maximum_normalized_difference_vegetation_index",
+      "unit": "1",
+      "value_domain": {"ranges": [{"min": 0, "max": 1}], "labels": {}},
+      "archive": {
+        "primary_member": "AgExtent.MOD.Baseline.Mean.BestQuality.MaxNDVI.2006.2025.Week.44.tif",
+        "members": [
+          {"name": "AgExtent.MOD.Baseline.Mean.BestQuality.MaxNDVI.2006.2025.Week.44.tfw", "bytes": 96, "sha256": "70ac20a52352521b9a12c316480fd62adda6c6490cde5543c5789b7fa250f686"},
+          {"name": "AgExtent.MOD.Baseline.Mean.BestQuality.MaxNDVI.2006.2025.Week.44.tif", "bytes": 125655520, "sha256": "1c8dd5f7a47ba557b3e034790957822bdcbe4984f95bd7af9020a03bf5b87489"},
+          {"name": "AgExtent.MOD.Baseline.Mean.BestQuality.MaxNDVI.2006.2025.Week.44.tif.aux.xml", "bytes": 1929, "sha256": "02af5825a75979b80ef07834026509871f139793c70ea47786f7ec7c8cabe5cf"},
+          {"name": "AgExtent.MOD.Baseline.Mean.BestQuality.MaxNDVI.2006.2025.Week.44.tif.ovr", "bytes": 31347581, "sha256": "35efed201484203dff2b9bb22f1fa59c5774561c9b59d80463459227b7b41053"},
+          {"name": "AgExtent.MOD.Baseline.Mean.BestQuality.MaxNDVI.2006.2025.Week.44.tif.xml", "bytes": 6844, "sha256": "752439cba3665acabad2b3fdc03611df99a4c6b8940d6e2bc5bb0471861eafa5"}
+        ]
+      }
+    }
+  ]
+}

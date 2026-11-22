@@ -1,0 +1,76 @@
+{
+  "protocol": "feam.web-demo.dataset-release-evidence.v1",
+  "observed_at": "2026-10-30",
+  "status": "deployed_live_partial_release",
+  "scope": {
+    "bundle": "climate",
+    "namespace": "climate",
+    "selected_products": 35,
+    "released_products": 8,
+    "pending_products": 27,
+    "calms_included": false
+  },
+  "current_release": {
+    "digest": "01820c04781a72b9d3dd22492b8e2dafbb033dcc685b38eee41ad80f879f00a5",
+    "candidate_bytes": 236795,
+    "products": [
+      "blended-drought-indicator-long-term",
+      "blended-drought-indicator-short-term",
+      "difference-from-normal-soil-moisture",
+      "moisture-anomaly-index",
+      "palmer-hydrological-drought-index",
+      "palmer-modified-drought-index",
+      "percent-of-normal-soil-moisture",
+      "total-soil-moisture"
+    ]
+  },
+  "release_lineage": [
+    {
+      "job_id": "fe1c67d2-16e3-5127-b959-6fd20705a71a",
+      "job_sha256": "6405e07205294944870c62000e9b5e37d748116e1e53396fafaf84798f9055ff",
+      "parent_digest": "",
+      "release_digest": "128bc456283bf846c8322f1d12f09980faf69f8961ee601a925a4c9495ad3202"
+    },
+    {
+      "job_id": "f04487cc-c92a-5aef-90f3-47f8eb562591",
+      "job_sha256": "6dcc7885b4e63c9a0cac4155daed22b5c08297ef3049b76e55ceee7c42e3778b",
+      "parent_digest": "128bc456283bf846c8322f1d12f09980faf69f8961ee601a925a4c9495ad3202",
+      "release_digest": "7f9f84c1d02fd428608d8fabedf58705c76537a198bae25a56b5a36ac9d31f0c"
+    },
+    {
+      "job_id": "3ddb7488-dd07-4b7d-8cea-2afcfde9456f",
+      "job_sha256": "1bbe4ebfb044ac7d618c68ca78d29ce68b7fe78b3ab4769ae0911c08cc9d4515",
+      "parent_digest": "7f9f84c1d02fd428608d8fabedf58705c76537a198bae25a56b5a36ac9d31f0c",
+      "release_digest": "74d2ba5cbe830afea9b41b5833adcb9ba733279eab4e9800caf39b63df1a83a0"
+    },
+    {
+      "job_id": "3974efa1-7aec-4362-ba02-83b32767b17c",
+      "job_sha256": "e3ab0ae1e3f5711c69f0998e402324b5d6d505d8b075d89a6a96e760975c1e20",
+      "parent_digest": "74d2ba5cbe830afea9b41b5833adcb9ba733279eab4e9800caf39b63df1a83a0",
+      "release_digest": "01820c04781a72b9d3dd22492b8e2dafbb033dcc685b38eee41ad80f879f00a5"
+    }
+  ],
+  "runtime_verification": {
+    "existing_user_workspaces_checked": 7,
+    "workspaces_ready": 7,
+    "exact_climate_grants": 7,
+    "retained_demo_climate_grants": 7,
+    "retained_demo_climate_digest": "9894f3498b7d0828d3358b6dd415f6ee0ba298442bca7f615987af147a2aef41"
+  },
+  "storage_statement": {
+    "full_source_datasets_published": false,
+    "serving_payload": "bounded Ottawa-area WGS84 GeoTIFF derivatives only",
+    "source_handling": "pipeline fetched exact hash-pinned source TIFFs into private staging"
+  },
+  "remaining_gate": {
+    "reason": "The live service supports importer version 1. The remaining products have truthful interval metadata and require importer version 2.",
+    "affected_families": [
+      "Agroclimate period products including SPI",
+      "NASDI weekly products",
+      "NASDI monthly products"
+    ],
+    "required_action": "Deploy the reviewed version-2 pipeline and converter, then publish cumulative successor jobs bound to the current climate digest.",
+    "access_blocker": "The dedicated Ubuntu SSH inventory and deployment key were not present in the current Mac checkout during this operation."
+  },
+  "evidence_boundary": "Authenticated admin browser review established job planning, preparation, exact-candidate approval, promotion, grants, and Ready readback. It does not establish the pending version-2 service deployment or the remaining 27 products."
+}

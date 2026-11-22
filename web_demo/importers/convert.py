@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Fixed offline climate converters. No network, shell, arbitrary plugins or archives.
+"""Fixed offline climate converters. No network, shell or arbitrary plugins.
 
 The Go pipeline validates and pins the job and invokes this file with an argument
-array. Inputs/provenance stay private; only Parquet/GeoTIFF enter serving/.
+array. CALMS ZIP extraction accepts one exact approved flat member inventory.
+Inputs/provenance stay private; only Parquet/GeoTIFF enter serving/.
 """
 from __future__ import annotations
 
@@ -13,9 +14,12 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import stat
 import sys
+import tempfile
+import zipfile
 
-VERSION = "1"
+SUPPORTED_VERSIONS = {"1", "2", "3"}
 FIELDS = {
     "Max Temp (°C)": ("maximum_temperature", "degree_Celsius"),
     "Min Temp (°C)": ("minimum_temperature", "degree_Celsius"),
@@ -30,6 +34,55 @@ def sha256(path: Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def extract_calms_geotiff(source: Path, destination: Path, spec: dict, limits: dict) -> dict:
+    archive = spec.get("archive")
+    if not archive or spec.get("importer") != "aafc-calms-zip":
+        raise ValueError("CALMS archive contract is required")
+    expected = {member["name"]: member for member in archive["members"]}
+    if len(expected) != len(archive["members"]) or archive["primary_member"] not in expected:
+        raise ValueError("invalid approved archive inventory")
+    if any(Path(name).name != name or "\\" in name for name in expected):
+        raise ValueError("archive members must be flat names")
+    if len(expected) > limits["archive_entries"] or sum(member["bytes"] for member in expected.values()) > limits["expanded_bytes"]:
+        raise ValueError("archive exceeds approved expansion limits")
+
+    observed = []
+    with zipfile.ZipFile(source) as package:
+        infos = package.infolist()
+        if len(infos) != len(expected) or {info.filename for info in infos} != set(expected):
+            raise ValueError("archive member inventory differs")
+        for info in infos:
+            member = expected[info.filename]
+            mode = info.external_attr >> 16
+            typed_mode = mode & 0o170000
+            if (info.is_dir() or info.flag_bits & 1 or info.compress_type not in {zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED}
+                    or (typed_mode and not stat.S_ISREG(mode)) or info.file_size != member["bytes"]):
+                raise ValueError("unsupported archive member")
+            digest = hashlib.sha256()
+            written = 0
+            target = destination if info.filename == archive["primary_member"] else None
+            output = target.open("xb") if target else None
+            try:
+                with package.open(info) as incoming:
+                    for block in iter(lambda: incoming.read(1024 * 1024), b""):
+                        written += len(block)
+                        if written > member["bytes"]:
+                            raise ValueError("archive member expanded beyond bound")
+                        digest.update(block)
+                        if output:
+                            output.write(block)
+                if written != member["bytes"] or digest.hexdigest() != member["sha256"]:
+                    raise ValueError("archive member integrity mismatch")
+            finally:
+                if output:
+                    output.close()
+            observed.append({"name": info.filename, "bytes": written, "sha256": digest.hexdigest()})
+    if not destination.is_file() or destination.is_symlink():
+        raise ValueError("approved primary GeoTIFF was not extracted")
+    return {"primary_member": archive["primary_member"], "entries": len(observed),
+            "expanded_bytes": sum(item["bytes"] for item in observed), "members": observed}
 
 
 def csv_to_parquet(source: Path, destination: Path, spec: dict) -> dict:
@@ -94,15 +147,17 @@ def geotiff_to_wgs84(source: Path, destination: Path, spec: dict) -> dict:
     if len(bbox) != 4 or not all(math.isfinite(v) for v in bbox) or not (-180 <= bbox[0] < bbox[2] <= 180 and -90 <= bbox[1] < bbox[3] <= 90):
         raise ValueError("invalid WGS84 subset")
     scientific = spec["scientific_time"]
-    if scientific["kind"] not in {"instant", "climatology-interval"} or not scientific["evidence"]:
+    if scientific["kind"] not in {"instant", "interval", "climatology-interval"} or not scientific["evidence"]:
         raise ValueError("source scientific time evidence is required")
     start, end = datetime.fromisoformat(scientific["start"]), datetime.fromisoformat(scientific["end"])
-    if not scientific["start"].endswith("Z") or not scientific["end"].endswith("Z") or end < start:
+    if (not scientific["start"].endswith("Z") or not scientific["end"].endswith("Z")
+            or (scientific["kind"] == "instant" and end != start)
+            or (scientific["kind"] != "instant" and end <= start)):
         raise ValueError("invalid scientific interval")
     if spec["resampling"] != "nearest":
         raise ValueError("unapproved resampling")
     with rasterio.open(source) as src:
-        if src.driver != "GTiff" or not src.crs or src.transform.is_identity or src.count != 1 or src.nodata is None or not math.isfinite(src.nodata) or src.width * src.height > 32_000_000 or src.dtypes[0] not in {"uint8", "int16", "uint16", "int32", "uint32", "float32", "float64"}:
+        if src.driver != "GTiff" or not src.crs or src.transform.is_identity or src.count != 1 or src.nodata is None or not math.isfinite(src.nodata) or src.width * src.height > 300_000_000 or src.dtypes[0] not in {"uint8", "int16", "uint16", "int32", "uint32", "float32", "float64"}:
             raise ValueError("unsupported, unreferenced or oversized source GeoTIFF")
         if len(src.files) != 1 or Path(src.files[0]).resolve() != source.resolve():
             raise ValueError("external raster dependencies are forbidden")
@@ -118,6 +173,17 @@ def geotiff_to_wgs84(source: Path, destination: Path, spec: dict) -> dict:
         reproject(source=rasterio.band(src, 1), destination=output, src_transform=src.transform, src_crs=src.crs,
                   src_nodata=src.nodata, dst_transform=target_transform, dst_crs="EPSG:4326", dst_nodata=src.nodata,
                   resampling=Resampling.nearest, num_threads=1, warp_mem_limit=32)
+        domain = spec.get("value_domain")
+        masked_values = 0
+        if domain:
+            valid = np.zeros(output.shape, dtype=bool)
+            for value_range in domain["ranges"]:
+                valid |= (output >= value_range["min"]) & (output <= value_range["max"])
+            nodata = output == src.nodata
+            masked_values = int(np.count_nonzero(~valid & ~nodata))
+            output[~valid & ~nodata] = src.nodata
+            if not np.any(valid):
+                raise ValueError("requested subset contains no valid scientific values")
         with rasterio.open(destination, "w", driver="GTiff", width=width, height=height, count=1, dtype=output.dtype,
                            crs="EPSG:4326", transform=target_transform, nodata=src.nodata, compress="deflate") as dst:
             dst.write(output, 1)
@@ -125,6 +191,9 @@ def geotiff_to_wgs84(source: Path, destination: Path, spec: dict) -> dict:
         provenance = {"source_crs": src.crs.to_string(), "source_transform": list(src.transform), "source_nodata": src.nodata,
                       "target_crs": "EPSG:4326", "target_transform": list(target_transform), "width": width, "height": height,
                       "resampling": "nearest", "scientific_time": scientific, "source_scale": src.scales[0], "source_offset": src.offsets[0]}
+        if domain:
+            provenance.update(value_domain=domain, invalid_pixels_masked=masked_values,
+                              valid_pixels=int(np.count_nonzero(output != src.nodata)))
         # Applying a source scale/offset silently would change physical semantics.
         if src.scales != (1.0,) or src.offsets != (0.0,):
             raise ValueError("scaled source needs an explicitly reviewed converter")
@@ -132,16 +201,26 @@ def geotiff_to_wgs84(source: Path, destination: Path, spec: dict) -> dict:
         if verified.crs.to_epsg() != 4326 or not np.array_equal(verified.read(1), output):
             raise ValueError("GeoTIFF round-trip mismatch")
     result = {"data_kind": "raster", "data_format": "geotiff", "conversion": provenance}
+    semantics = {"band_1": spec["variable"], "units": spec["unit"], "scientific_time_evidence": scientific["evidence"], "time_kind": scientific["kind"]}
+    if spec.get("value_domain"):
+        semantics["valid_ranges"] = json.dumps(spec["value_domain"]["ranges"], sort_keys=True, separators=(",", ":"))
+        semantics["value_labels"] = json.dumps(spec["value_domain"]["labels"], sort_keys=True, separators=(",", ":"))
     result["raster"] = {"datetime": scientific["start"] if scientific["kind"] == "instant" else None, "bbox": bbox,
-                        "semantics": {"band_1": spec["variable"], "units": spec["unit"], "scientific_time_evidence": scientific["evidence"], "time_kind": scientific["kind"]}}
+                        "semantics": semantics}
     if scientific["kind"] != "instant":
         result["raster"].update(start_datetime=scientific["start"], end_datetime=scientific["end"])
     return result
 
 
 def convert(job: dict, inputs: Path, output: Path, reports: Path) -> None:
-    if job["protocol"] != "feam.pipeline.v1" or job["importer_version"] != VERSION:
+    if job["protocol"] != "feam.pipeline.v1" or job["importer_version"] not in SUPPORTED_VERSIONS:
         raise ValueError("unsupported converter job")
+    if job["importer_version"] == "1" and any(
+        source["importer"] in {"aafc-geotiff", "aafc-calms-zip"}
+        and source["scientific_time"]["kind"] == "interval"
+        for source in job["sources"]
+    ):
+        raise ValueError("regular raster intervals require importer version 2")
     sources = {source["id"]: source for source in job["sources"]}
     for product in job["products"]:
         spec = sources[product["source_id"]]
@@ -152,8 +231,17 @@ def convert(job: dict, inputs: Path, output: Path, reports: Path) -> None:
         relative = Path("datasets") / product["id"] / product["version"] / (product["asset_id"] + extension)
         target = output / relative
         target.parent.mkdir(parents=True, exist_ok=False)
-        converter = {"eccc-csv": csv_to_parquet, "aafc-geotiff": geotiff_to_wgs84}[spec["importer"]]
-        result = converter(raw, target, spec)
+        archive_provenance = None
+        if spec["importer"] == "aafc-calms-zip":
+            if job["importer_version"] != "3":
+                raise ValueError("CALMS archives require importer version 3")
+            with tempfile.TemporaryDirectory(prefix=".calms-", dir=reports) as temporary:
+                extracted = Path(temporary) / "source.tif"
+                archive_provenance = extract_calms_geotiff(raw, extracted, spec, job["limits"])
+                result = geotiff_to_wgs84(extracted, target, spec)
+        else:
+            converter = {"eccc-csv": csv_to_parquet, "aafc-geotiff": geotiff_to_wgs84}[spec["importer"]]
+            result = converter(raw, target, spec)
         if target.stat().st_size > job["limits"]["output_bytes"]:
             raise ValueError("prepared output exceeds bound")
         metadata = {"schema_version": 1, "namespace": job["namespace"], "product_id": product["id"], "name": product["name"],
@@ -165,9 +253,11 @@ def convert(job: dict, inputs: Path, output: Path, reports: Path) -> None:
         for key in ("table", "raster"):
             if key in result:
                 metadata[key] = result[key]
-        provenance = {"protocol": "feam.pipeline.provenance.v1", "importer_version": VERSION, "source": spec,
+        provenance = {"protocol": "feam.pipeline.provenance.v1", "importer_version": job["importer_version"], "source": spec,
                       "output_path": relative.as_posix(), "output_sha256": sha256(target), "output_bytes": target.stat().st_size,
                       "conversion": result["conversion"]}
+        if archive_provenance:
+            provenance["archive"] = archive_provenance
         (reports / (product["id"] + ".provenance.json")).write_text(json.dumps(provenance, sort_keys=True, indent=2) + "\n")
         (reports / (product["id"] + ".metadata.json")).write_text(json.dumps(metadata, sort_keys=True, indent=2) + "\n")
 

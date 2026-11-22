@@ -83,6 +83,16 @@ fn tui_requires_an_explicit_project_and_never_creates_a_legacy_registry() {
 }
 
 #[test]
+fn tui_help_documents_the_read_only_source_catalogue_option() {
+    feam()
+        .args(["tui", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--source-catalogue"))
+        .stdout(predicate::str::contains("descriptive source-product"));
+}
+
+#[test]
 fn primary_demo_workflow_works_with_json_outputs_and_receipt() {
     let temp = tempdir().unwrap();
     let registry = temp.path().join("registry.db");

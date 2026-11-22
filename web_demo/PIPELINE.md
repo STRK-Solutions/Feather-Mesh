@@ -55,10 +55,17 @@ threshold; the production command has no flag to do that.
 The [closed job schema](schemas/dataset-job.schema.json) describes all required
 fields. Go additionally validates cross-field relationships, duplicate keys,
 station/date bounds, public source destinations and exact required field presence.
-Archives are unsupported: file count and expansion limits are zero. Fetches
-disable environment proxies and decompression, validate every redirect, reject
-all private/reserved DNS answers, and dial a validated literal IP while preserving
-HTTPS hostname verification. The converter has no network or executable job field.
+Importer version `3` admits only checksum-pinned CALMS ZIPs from the fixed AAFC
+CALMS path. Each source locks a flat regular member inventory with exact names,
+expanded sizes and SHA-256 values plus one primary GeoTIFF. Job-level entry and
+expanded-byte limits must equal that inventory; extraction rejects links,
+directories, encryption, nested paths, unexpected/duplicate members and
+unsupported compression. Only the primary TIFF is extracted privately and only
+the bounded GeoTIFF derivative enters `serving/`. Non-archive jobs retain zero
+archive limits. Fetches disable environment proxies and decompression, validate
+every redirect, reject all private/reserved DNS answers, and dial a validated
+literal IP while preserving HTTPS hostname verification. The converter has no
+network or executable job field.
 
 `pipeline hash --job PRIVATE_JOB` prints SHA-256 of Go's canonical typed JSON.
 Prepare only with that exact approved job hash:
@@ -105,8 +112,19 @@ gateway/controller still owns live account grants and read-only mounting.
 
 Raster publication now supports truthful intervals: `datetime: null` with
 `start_datetime` and `end_datetime`. Instant records retain their previous
-serialization. The January normal records both the 1991–2020 interval and January
-aggregation semantics; no retrieval/modification date becomes an observation time.
+serialization. Importer version `2` additionally permits an ordinary `interval`
+for bounded weekly and monthly source products; version `1` remains restricted to
+instant and climatology intervals. The January normal records both the 1991–2020
+interval and January aggregation semantics; no retrieval/modification date becomes
+an observation time.
+
+CALMS importer version `3` retains version-2 interval behavior and adds the
+archive contract above. It masks values outside each source's approved scientific
+domain to that GeoTIFF's nodata value before publication. The locked Week-44
+selection and three sequential job templates are documented in
+[`catalogue/aafc/README.md`](catalogue/aafc/README.md). Source archives and
+sidecars remain private pipeline inputs; FEAM registers exactly one bounded
+GeoTIFF asset per product.
 
 The [MAC source-reader receipt](../docs/evaluations/web-demo/w4-mac-real-source-readers.json)
 and [candidate review](../docs/evaluations/web-demo/w4-mac-candidate-review.json)
@@ -118,6 +136,11 @@ python web_demo/importers/verify_bundle.py --provider PRIVATE_PROVIDER \
   --raw PRIVATE_SOURCE_DIRECTORY --job PRIVATE_JOB --output SANITIZED_RECEIPT \
   --executable ABSOLUTE_FEAM_BINARY
 ```
+
+The [CALMS Week-44 local record](../docs/evaluations/web-demo/calms-week44-local-evidence.md)
+and [exact hash receipt](../docs/evaluations/web-demo/calms-week44-mac-real-source-readers.json)
+apply the same boundary to all six archive families: real local conversion and
+native-reader success are evidence for review, not an Ubuntu promotion.
 
 For the installed Linux web demo, pass `--web-demo-acl` to operator pipeline
 actions and the service. The fixed deployment map is runner UID 2101, controller

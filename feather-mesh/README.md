@@ -184,6 +184,23 @@ falls back to a legacy `registry.db`:
 cargo run -p mesh_cli --features tui -- tui --project /work/client --agent off
 ```
 
+An optional descriptive source-product catalogue opens in a separate read-only
+`Sources` tab. It does not add entries to the registered product catalog and is
+never treated as `serving/manifest.json`:
+
+```bash
+cargo run -p mesh_cli --features tui -- tui \
+  --project /work/client \
+  --agent off \
+  --source-catalogue ../web_demo/catalogue/aafc/catalogue.json
+```
+
+Inside an already running TUI, load or replace it with
+`:source-catalogue "/absolute/path/to/catalogue.json"`. The loader accepts
+bounded, versioned catalogue files in one directory, rejects symlinks and
+escaping suite references, and displays product shapes without inventing
+versions, assets, checksums, spatial bounds, or publication state.
+
 It supports manifest-backed catalog browsing with per-peer coverage, pinned
 details/lineage/inventory, direct-resolution CLI/SDK examples, peer refresh,
 and reviewed publication/staging/withdrawal. Catalog shows product versions
@@ -207,19 +224,11 @@ to 1 MiB of rendered text, reset on project/profile changes, and are never
 persisted automatically.
 
 Profiles, disclosure policy, API-key environment references, bounded tools,
-review semantics, and recovery outcomes are defined in
-[the Stage-1 contract](../docs/tui_agent_stage1_contract.md). See the
-[demo runbook](../docs/tui_agent_stage1_demo.md) for a synthetic provider/client
-fixture and the [acceptance record](../docs/tui_agent_stage1_acceptance.md) for
-separate local/live/HPC evidence. Drafts are editable with `:draft` commands;
-`:recover` reconciles pending journal records without replay. The runbook includes
-PTY restoration tests, complete manual/fake walkthroughs and the fixture-backed
-100-task evaluation runner.
-
-For hosted model comparison, see the [synthetic screening runbook and results](../docs/tui_agent_model_screening.md).
-The screen exports the Rust tool schemas and simulates results; it does not
-execute peer operations or establish Stage-1 acceptance. Its offline checks are
-`python3 -m unittest discover -s scripts -p test_router_model_screen.py`.
+review semantics, and recovery outcomes are defined in the
+[TUI and agent-harness design](../docs/tui_agent_harness_design.md). Drafts are
+editable with `:draft` commands; `:recover` reconciles pending journal records
+without replay. Runnable terminal, evaluation, and router-screening checks live
+in [`scripts/`](scripts/); live router traffic requires explicit opt-in.
 
 ### Commands
 

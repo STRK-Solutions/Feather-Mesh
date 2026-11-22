@@ -1,0 +1,99 @@
+{
+  "protocol": "feam.pipeline.v1",
+  "id": "2b7c2a7e-2c0f-4e65-9df3-6d21f1b8e9a1",
+  "bundle": "climate",
+  "namespace": "climate",
+  "parent_digest": "",
+  "importer_version": "2",
+  "sources": [
+    {
+      "id": "aafc-spi-30d",
+      "importer": "aafc-geotiff",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/agClimate/data_donnees/tif/spi/30/spi_30_20261019.tif",
+      "sha256": "335be1d814c841ab94d34e0eb683eef29b4e67dc2f1ba90e12d7b36c7a3c13f2",
+      "max_bytes": 1048576,
+      "upstream_version": "2026-10-19",
+      "retrieved_at": "2026-10-28T00:00:00Z",
+      "license": "https://open.canada.ca/en/open-government-licence-canada",
+      "attribution": "Agriculture and Agri-Food Canada; bounded demonstration derivative",
+      "station": "",
+      "start_date": "",
+      "end_date": "",
+      "scientific_time": {
+        "kind": "interval",
+        "start": "2026-09-20T00:00:00Z",
+        "end": "2026-10-20T00:00:00Z",
+        "evidence": "AAFC SPI 30-day period code; interval is represented as UTC day boundaries and ends on the raster date 2026-10-19."
+      },
+      "bbox": [-76.0, 45.0, -75.0, 46.0],
+      "resampling": "nearest",
+      "variable": "standardized_precipitation_index",
+      "unit": "standard_deviation"
+    },
+    {
+      "id": "nasdi-monthly-precipitation",
+      "importer": "aafc-geotiff",
+      "url": "https://agriculture.canada.ca/atlas/data_donnees/nasdi/data_donnees/monthly/accumulated_precipitation/nasdi_pcp_mm_202609.tif",
+      "sha256": "32a5afac16739fc97d350a94ecbd5aafaadd145346af84e3af5970dff4bca196",
+      "max_bytes": 4194304,
+      "upstream_version": "2026-09",
+      "retrieved_at": "2026-10-28T00:00:00Z",
+      "license": "https://open.canada.ca/en/open-government-licence-canada",
+      "attribution": "Agriculture and Agri-Food Canada; bounded demonstration derivative",
+      "station": "",
+      "start_date": "",
+      "end_date": "",
+      "scientific_time": {
+        "kind": "interval",
+        "start": "2026-09-01T00:00:00Z",
+        "end": "2026-10-01T00:00:00Z",
+        "evidence": "NASDI monthly accumulated-precipitation filename 202609; represented as the September 2026 UTC calendar interval."
+      },
+      "bbox": [-76.0, 45.0, -75.0, 46.0],
+      "resampling": "nearest",
+      "variable": "accumulated_precipitation",
+      "unit": "mm"
+    }
+  ],
+  "products": [
+    {
+      "source_id": "aafc-spi-30d",
+      "id": "standardized-precipitation-index",
+      "version": "v20261019",
+      "name": "AAFC SPI 30-day bounded demo",
+      "description": "Ottawa-area WGS84 derivative of the AAFC 30-day Standardized Precipitation Index source.",
+      "intended_use": "Web-demo catalogue and bounded raster-read demonstration.",
+      "limitations": "Demonstration subset only; not a national replacement for the AAFC source raster.",
+      "producer": "Agriculture and Agri-Food Canada",
+      "contact": "open-data@example.invalid",
+      "asset_id": "spi"
+    },
+    {
+      "source_id": "nasdi-monthly-precipitation",
+      "id": "accumulated-precipitation-monthly",
+      "version": "v202609",
+      "name": "NASDI monthly accumulated precipitation bounded demo",
+      "description": "Ottawa-area WGS84 derivative of the NASDI September 2026 monthly accumulated precipitation source.",
+      "intended_use": "Web-demo catalogue and bounded raster-read demonstration.",
+      "limitations": "Demonstration subset only; not a national replacement for the NASDI source raster.",
+      "producer": "Agriculture and Agri-Food Canada",
+      "contact": "open-data@example.invalid",
+      "asset_id": "precipitation"
+    }
+  ],
+  "limits": {
+    "source_bytes": 5242880,
+    "output_bytes": 8388608,
+    "candidate_bytes": 16777216,
+    "elapsed_seconds": 300,
+    "redirects": 3,
+    "archive_entries": 0,
+    "expanded_bytes": 0
+  },
+  "policy": {
+    "audience": "invited-users",
+    "model_metadata": true,
+    "model_payload": false,
+    "research_eligible": true
+  }
+}

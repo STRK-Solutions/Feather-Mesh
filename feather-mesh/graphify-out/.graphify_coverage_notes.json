@@ -1,0 +1,13 @@
+{
+  "code_files_without_symbols": [
+    "Cargo.toml",
+    "mesh_agent/evaluations/held-out-v1.json",
+    "mesh_agent/evaluations/held-out-v2.json",
+    "mesh_agent/evaluations/held-out-v3.1.json",
+    "mesh_agent/evaluations/held-out-v3.json",
+    "mesh_agent/evaluations/screening-profiles-2026-09-22.json",
+    "mesh_agent/evaluations/screening-v1.json",
+    "mesh_core/tests/data/peer_access/expected.json"
+  ],
+  "semantic_token_usage": "unavailable: collaboration tool does not expose token usage"
+}

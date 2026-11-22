@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Confirm workspace change</title>
+  <style>{{instrumentCSS}}</style>
+</head>
+<body>
+<div class="shell">
+  <main>
+    <div class="hero">
+      <p class="eyebrow">Exact confirmation</p>
+      <h1>Confirm workspace change</h1>
+      <p class="lede">This operation discards workspace files. Retained research records remain subject to their separate retention policy.</p>
+    </div>
+    <section>
+      <div class="section-head"><p class="section-label">Reviewed operation</p></div>
+      <div class="instrument">
+        <div class="instrument-copy"><h2>{{.Action}}</h2><div class="readouts"><span class="readout">Workspace {{.Workspace}}</span></div></div>
+        <form method="post" action="/workspace/action">
+          <input type="hidden" name="csrf" value="{{.CSRF}}">
+          <input type="hidden" name="confirmation" value="{{.Confirmation}}">
+          <button class="danger">Confirm this change</button>
+        </form>
+      </div>
+      <a class="back-link" href="/">&larr; Cancel and return</a>
+    </section>
+  </main>
+</div>
+</body>
+</html>

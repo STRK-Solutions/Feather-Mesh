@@ -16,9 +16,8 @@ For agent-specific repository guidance, use [`AGENTS.md`](/AGENTS.md). Keep that
 
 For peer data access, start with the [requirements](docs/data_access.md), the settled
 [contract](docs/data_access_contract.md), and the
-[implementation workplan](data_access_implementation_workplan.md). The workplan's
-execution record distinguishes locally delivered behavior from target-HPC
-acceptance that is still pending.
+[HPC acceptance checklist](docs/data_access_hpc_checklist.md). Source and tests
+establish implemented behavior; target-HPC acceptance remains separate.
 
 ## Repository Overview
 
@@ -36,10 +35,6 @@ Key parts of this directory include:
 
 See [`feather-mesh/README.md`](/feather-mesh/README.md) for workspace layout, crate boundary notes, build guidance, and the `cargo test` command.
 
-### `diagrams/`
-
-Stores architecture, schema, and workflow visuals used to explain the system design and project direction. These files are useful for understanding the conceptual model without digging into code first.
-
 ### `imgs/`
 
 Holds image assets used by the documentation and project branding, including the Feather Mesh logo files referenced by README content.
@@ -55,10 +50,6 @@ Contains the repository's task-specific AI-SDLC guidance. These skills route
 Rust, CLI, peer-access, and context-maintenance work to the correct contracts,
 owners, tests, and validation commands.
 
-### `proposal.md`
-
-Contains project-level written documentation separate from the implementation directories. Use this for broader context on the capstone proposal and framing.
-
 ### `Feather_Mesh_PDD_Revised.pdf`
 
 The product definition document, outlining an in-depth overview of the Feather Mesh product.
@@ -70,9 +61,10 @@ The product definition document, outlining an in-depth overview of the Feather M
 - If you are investigating peer manifests, direct reads, staging, Python, or
   STAC, read the [peer data-access contract](docs/data_access_contract.md).
 - If you are investigating the TUI or hosted assistant, read the
-  [Stage-1 contract](docs/tui_agent_stage1_contract.md) and
-  [acceptance record](docs/tui_agent_stage1_acceptance.md).
+  [TUI and agent-harness design](docs/tui_agent_harness_design.md) and use the
+  validation scripts in [`feather-mesh/scripts/`](feather-mesh/scripts/).
 - For the proposed on-demand browser demo on Ubuntu or disposable cloud compute, with hosted assistance, shared datasets, retained research evidence, and Terraform/Ansible provisioning, see [Ubuntu web demo environment](docs/ubuntu_web_dev_demo_design.md).
 - To implement that demo, follow the [agent-ready development workplan](docs/ubuntu_web_dev_demo_workplan.md), with checkable tasks, Mac versus Ubuntu responsibilities, and separate deployment/acceptance gates.
 - W0's [web contracts and validation](web_demo/README.md), [operator preflight tools](infra/demo/README.md), and [acceptance index](docs/ubuntu_web_dev_demo_acceptance.md) are available; deployed services remain later work.
-- If you want architecture context, browse `diagrams/`, `proposal.md`, `Feather_Mesh_PDD_Revised.pdf`, and [`feather-mesh/README.md`](/feather-mesh/README.md).
+- If you want architecture context, browse `Feather_Mesh_PDD_Revised.pdf`,
+  [`map.md`](map.md), and [`feather-mesh/README.md`](/feather-mesh/README.md).

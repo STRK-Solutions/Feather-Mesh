@@ -7,7 +7,33 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+
+	"github.com/STRK-Solutions/Feather-Mesh/web_demo/internal/control"
 )
+
+func TestParticipantDashboardShowsOnlyOwnedDatasetGrants(t *testing.T) {
+	f := setup(t, "/run/absent.sock")
+	for _, grant := range []struct {
+		account string
+		bundle  string
+	}{
+		{account: f.accounts[4].ID, bundle: "owned-climate-data"},
+		{account: f.accounts[5].ID, bundle: "other-participant-data"},
+	} {
+		if _, err := f.g.Store.DB.Exec(`INSERT INTO grants(id,account_id,bundle,release_digest,version,status,actor_id,effective_at) VALUES(?,?,?,?,1,'active',?,datetime('now'))`, control.ID(), grant.account, grant.bundle, strings.Repeat("a", 64), f.accounts[0].ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	response := httptest.NewRecorder()
+	f.g.ServeHTTP(response, request(f, "GET", f.g.Config.PortalHost, "/", f.accounts[4].Email, "portal", ""))
+	if response.Code != http.StatusOK {
+		t.Fatal(response.Code)
+	}
+	body := response.Body.String()
+	if !strings.Contains(body, "owned-climate-data") || strings.Contains(body, "other-participant-data") {
+		t.Fatal("participant dataset view crossed account ownership")
+	}
+}
 
 func TestParticipantStatusWarningAndStaleGeneration(t *testing.T) {
 	f := setup(t, "/run/absent.sock")
