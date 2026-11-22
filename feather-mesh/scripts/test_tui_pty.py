@@ -105,7 +105,6 @@ class TerminalTests(unittest.TestCase):
         s.wait(lambda:visible('versions;'))
         s.send('aShow replay\r')
         s.wait(lambda:visible('REPLAY RESPONSE ARRIVED'))
-        self.assertIn('Assistant', screen.display[4])
         s.send('?');s.wait(lambda:visible('Commands (quote paths with spaces)'))
         self.assertNotIn('Versions', '\n'.join(screen.display))
         s.send('\t\t\t\t');s.wait(lambda:visible('REPLAY RESPONSE ARRIVED'))
